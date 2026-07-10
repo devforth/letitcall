@@ -46,10 +46,7 @@
 			"command": "dotenvx",
 			"args": ["run", "-f", ".env.local", "--", "go", "run", "./cmd/server"],
 			"options": {
-				"cwd": "${workspaceFolder}/api",
-				"env": {
-					"HTTP__PORT": "41784"
-				}
+				"cwd": "${workspaceFolder}/api"
 			},
 			"isBackground": true,
 			"problemMatcher": {
