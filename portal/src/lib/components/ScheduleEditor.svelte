@@ -1,8 +1,13 @@
 <script lang="ts">
+	import Icon from '@iconify/svelte';
+	import plusIcon from '@iconify-icons/tabler/plus';
+	import xIcon from '@iconify-icons/tabler/x';
+	import AvailabilityCopyMenu from '$lib/components/AvailabilityCopyMenu.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
 	import Checkbox from '$lib/components/ui/Checkbox.svelte';
+	import IconButton from '$lib/components/ui/IconButton.svelte';
 	import TimeInput from '$lib/components/ui/TimeInput.svelte';
-	import type { ScheduleDay } from '$lib/types';
+	import type { ScheduleDay, TimeRange } from '$lib/types';
 
 	let { schedule = $bindable() }: { schedule: ScheduleDay[] } = $props();
 
@@ -32,26 +37,59 @@
 		}
 	}
 
-	function addBreak(day: ScheduleDay) {
-		const start = toMinutes(day.start ?? '10:00');
-		const end = toMinutes(day.end ?? '16:00');
-		let pauseStart = 12 * 60;
-		let pauseEnd = 13 * 60;
-		if (pauseStart <= start || pauseEnd >= end) {
-			const midpoint = Math.floor((start + end) / 30) * 15;
-			pauseStart = Math.max(start + 15, midpoint - 30);
-			pauseEnd = Math.min(end - 15, pauseStart + 60);
+	function availabilityRanges(day: ScheduleDay): TimeRange[] {
+		if (!day.enabled) return [];
+		const ranges: TimeRange[] = [];
+		let start = day.start ?? '';
+		for (const pause of day.breaks) {
+			ranges.push({ start, end: pause.start });
+			start = pause.end;
 		}
-		day.breaks = [{ start: fromMinutes(pauseStart), end: fromMinutes(pauseEnd) }];
+		ranges.push({ start, end: day.end ?? '' });
+		return ranges;
 	}
 
-	function toMinutes(value: string) {
-		const [hours, minutes] = value.split(':').map(Number);
-		return hours * 60 + minutes;
+	function setAvailabilityRanges(day: ScheduleDay, ranges: TimeRange[]) {
+		if (ranges.length === 0) {
+			day.enabled = false;
+			day.start = '';
+			day.end = '';
+			day.breaks = [];
+			return;
+		}
+		day.enabled = true;
+		day.start = ranges[0].start;
+		day.end = ranges[ranges.length - 1].end;
+		day.breaks = ranges.slice(0, -1).map((range, index) => ({
+			start: range.end,
+			end: ranges[index + 1].start
+		}));
 	}
 
-	function fromMinutes(value: number) {
-		return `${String(Math.floor(value / 60)).padStart(2, '0')}:${String(value % 60).padStart(2, '0')}`;
+	function updateRange(day: ScheduleDay, index: number, field: keyof TimeRange, value: string) {
+		const ranges = availabilityRanges(day);
+		ranges[index] = { ...ranges[index], [field]: value };
+		setAvailabilityRanges(day, ranges);
+	}
+
+	function addRange(day: ScheduleDay) {
+		const ranges = availabilityRanges(day);
+		ranges.push(day.enabled ? { start: '', end: '' } : { start: quickStart, end: quickEnd });
+		setAvailabilityRanges(day, ranges);
+	}
+
+	function removeRange(day: ScheduleDay, index: number) {
+		setAvailabilityRanges(
+			day,
+			availabilityRanges(day).filter((_, rangeIndex) => rangeIndex !== index)
+		);
+	}
+
+	function copyRanges(source: ScheduleDay, targetDays: string[]) {
+		const ranges = availabilityRanges(source);
+		for (const target of schedule.filter(({ day }) => targetDays.includes(day))) {
+			setAvailabilityRanges(target, ranges.map((range) => ({ ...range })));
+		}
 	}
 </script>
 
@@ -78,26 +116,57 @@
 		<summary class="cursor-pointer px-4 py-3 text-sm font-medium">Customize individual days</summary>
 		<div class="grid border-t border-black">
 			{#each schedule as day (day.day)}
-				<div class="grid gap-3 border-b border-black p-4 last:border-b-0 lg:grid-cols-[9rem_1fr]">
-					<Checkbox id={`schedule-${day.day}`} label={labels[day.day]} bind:checked={day.enabled} />
+				{@const ranges = availabilityRanges(day)}
+				<div class="grid gap-4 border-b border-black p-4 last:border-b-0 lg:grid-cols-[9rem_1fr_auto] lg:items-start">
+					<div class="flex min-h-11 items-center gap-3">
+						<span class="grid size-9 shrink-0 place-items-center rounded-full bg-black text-xs font-semibold text-white" aria-hidden="true">
+							{labels[day.day].slice(0, 1)}
+						</span>
+						<span class="text-sm font-medium">{labels[day.day]}</span>
+					</div>
+
 					{#if day.enabled}
 						<div class="grid gap-3">
-							<div class="grid gap-3 sm:grid-cols-2">
-								<TimeInput id={`${day.day}-start`} label="From" bind:value={day.start} />
-								<TimeInput id={`${day.day}-end`} label="To" bind:value={day.end} />
-							</div>
-							{#each day.breaks as pause, index (`${day.day}-${index}`)}
-								<div class="grid gap-3 border border-black p-3 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
-									<TimeInput id={`${day.day}-break-${index}-start`} label="Break from" bind:value={pause.start} />
-									<TimeInput id={`${day.day}-break-${index}-end`} label="Break to" bind:value={pause.end} />
-									<Button variant="danger" onclick={() => (day.breaks = [])}>Remove break</Button>
+							{#each ranges as range, index (`${day.day}-${index}`)}
+								<div class="grid gap-3 sm:grid-cols-[1fr_auto_1fr_auto] sm:items-end">
+									<TimeInput
+										id={`${day.day}-${index}-start`}
+										label="From"
+										value={range.start}
+										onchange={(value) => updateRange(day, index, 'start', value)}
+									/>
+									<span class="hidden min-h-11 items-center sm:flex" aria-hidden="true">–</span>
+									<TimeInput
+										id={`${day.day}-${index}-end`}
+										label="To"
+										value={range.end}
+										onchange={(value) => updateRange(day, index, 'end', value)}
+									/>
+									<IconButton label={`Remove ${labels[day.day]} range ${index + 1}`} onclick={() => removeRange(day, index)}>
+										<Icon icon={xIcon} width="22" height="22" />
+									</IconButton>
 								</div>
 							{/each}
-							{#if day.breaks.length === 0}
-								<div><Button variant="secondary" onclick={() => addBreak(day)}>Add break</Button></div>
-							{/if}
 						</div>
+					{:else}
+						<p class="flex min-h-11 items-center text-sm">Unavailable</p>
 					{/if}
+
+					<div class="flex gap-2 lg:pt-6">
+						<IconButton label={`Add ${labels[day.day]} range`} onclick={() => addRange(day)}>
+							<Icon icon={plusIcon} width="22" height="22" />
+						</IconButton>
+						{#if day.enabled}
+							<AvailabilityCopyMenu
+								sourceDay={day.day}
+								days={schedule.filter((target) => target.day !== day.day).map((target) => ({
+									day: target.day,
+									label: labels[target.day]
+								}))}
+								oncopy={(days) => copyRanges(day, days)}
+							/>
+						{/if}
+					</div>
 				</div>
 			{/each}
 		</div>
