@@ -1,11 +1,12 @@
 # syntax=docker/dockerfile:1.7
 
 FROM node:22-alpine AS portal
+RUN corepack enable
 WORKDIR /src/portal
-COPY portal/package.json portal/package-lock.json ./
-RUN npm ci
+COPY portal/package.json portal/pnpm-lock.yaml ./
+RUN pnpm install --frozen-lockfile
 COPY portal/ ./
-RUN npm run check && npm run build
+RUN pnpm run check && pnpm run build
 
 FROM golang:1.26.4-alpine AS api
 WORKDIR /src/api

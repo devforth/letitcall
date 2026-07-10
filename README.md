@@ -15,15 +15,17 @@ In a second terminal, start the portal:
 
 ```sh
 cd portal
-npm install
-npm run dev -- --host 127.0.0.1 --port 41783 --strictPort
+pnpm install
+pnpm run dev -- --host 127.0.0.1 --port 41783 --strictPort
 ```
+
+Open portal at `http://127.0.0.1:41783`. 
 
 Default local login credentials is admin:admin.
 
-Opening the repository in VS Code automatically starts both development tasks on ports `41783` (portal) and `41784` (API). The automatic API task loads the committed `api/.env.local` settings through the pinned `godotenv` Go tool.
+Opening the repository in VS Code automatically starts both development tasks on ports `41783` (portal) and `41784` (API).
 
-There is no signup route. When the users table is empty, the API creates its first user from `FIRSTUSER__CREDENTIALS__EMAIL` and `FIRSTUSER__CREDENTIALS__PASSWORD`. Later users are created from Dashboard → Users.
+There is no signup route. When the users table is empty, the API creates its first user from `FIRSTUSER__CREDENTIALS__EMAIL` and `FIRSTUSER__CREDENTIALS__PASSWORD` from the `api/.env.local` file. Later users are created from Dashboard → Users.
 
 ## Docker
 
@@ -36,7 +38,7 @@ docker run --rm -p 8080:80 \
   letitcall
 ```
 
-The server listens on `HTTP__PORT` (default `80`). LevelDB data is stored at `STORAGE__LEVELDB__PATH` (default `./data`, `/data` in Docker). Each logical table has its own LevelDB database.
+The server listens on `HTTP__PORT` (default `80`). LevelDB data is stored at `STORAGE__LEVELDB__PATH` (`/data` in Docker). Each logical table has its own LevelDB database.
 
 ## Configuration
 
@@ -64,7 +66,7 @@ The requested scopes include identity and permission to manage Google Calendar e
 
 ```sh
 cd api && go test ./...
-cd ../portal && npm run check && npm run build
+cd ../portal && pnpm run check && pnpm run build
 ```
 
 `publish.sh` creates and pushes multi-platform version and `latest` tags in one Buildx invocation:

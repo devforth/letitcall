@@ -4,17 +4,7 @@
 		{
 			"label": "Dev: Svelte portal (41783)",
 			"type": "shell",
-			"command": "npm",
-			"args": [
-				"run",
-				"dev",
-				"--",
-				"--host",
-				"127.0.0.1",
-				"--port",
-				"41783",
-				"--strictPort"
-			],
+			"command": "pnpm install && pnpm run dev -- --host 127.0.0.1 --port 41783 --strictPort",
 			"options": {
 				"cwd": "${workspaceFolder}/portal"
 			},
@@ -43,8 +33,7 @@
 		{
 			"label": "Dev: Go API (41784)",
 			"type": "shell",
-			"command": "go",
-			"args": ["tool", "godotenv", "-f", ".env.local", "go", "run", "./cmd/server"],
+			"command": "go mod download && go tool godotenv -f .env.local go run ./cmd/server",
 			"options": {
 				"cwd": "${workspaceFolder}/api"
 			},
