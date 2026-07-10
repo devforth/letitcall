@@ -44,13 +44,18 @@ The server listens on `HTTP__PORT` (default `80`). LevelDB data is stored at `ST
 
 All backend settings use structured uppercase environment variables:
 
-- `HTTP__PORT` (default `80`)
-- `HTTP__BASE__PATH` (optional; must start with `/`, for example `/letitcall`)
-- `STORAGE__LEVELDB__PATH`
-- `FIRSTUSER__CREDENTIALS__EMAIL`, `FIRSTUSER__CREDENTIALS__PASSWORD`
-- `LOGIN__SESSION__TTL`
-- `LOGIN__PASSWORD__MAX_ATTEMPTS`, `LOGIN__PASSWORD__LOCKOUT`
-- `LOGIN__OAUTH__GOOGLE__CLIENT_ID`, `LOGIN__OAUTH__GOOGLE__CLIENT_SECRET`
+| Name | What it does | Default value |
+| --- | --- | --- |
+| `HTTP__PORT` | Sets the HTTP server port. | `80` |
+| `HTTP__BASE__PATH` | Sets the URL path prefix where the application is served. A configured value must start with `/`, for example `/letitcall`. | Empty (served at `/`) |
+| `STORAGE__LEVELDB__PATH` | Sets the directory containing the LevelDB databases. | `./data` (`/data` in Docker) |
+| `FIRSTUSER__CREDENTIALS__EMAIL` | Sets the email of the user created when the users table is empty. Must be set together with the first-user password. | Not set |
+| `FIRSTUSER__CREDENTIALS__PASSWORD` | Sets the password of the user created when the users table is empty. Must be set together with the first-user email. | Not set |
+| `LOGIN__SESSION__TTL` | Sets how long an authenticated session remains valid. | `24h` |
+| `LOGIN__PASSWORD__MAX_ATTEMPTS` | Sets the number of failed password attempts allowed before login is temporarily locked. | `5` |
+| `LOGIN__PASSWORD__LOCKOUT` | Sets how long a password login remains locked after reaching the failed-attempt limit. | `15m` |
+| `LOGIN__OAUTH__GOOGLE__CLIENT_ID` | Sets the Google OAuth client ID and enables Google login when the client secret is also set. | Not set |
+| `LOGIN__OAUTH__GOOGLE__CLIENT_SECRET` | Sets the Google OAuth client secret. Must be set together with the client ID. | Not set |
 
 To enable Google OAuth, set both Google settings and add this authorized redirect URI to the Google client:
 
@@ -58,7 +63,7 @@ To enable Google OAuth, set both Google settings and add this authorized redirec
 https://your-host.example{HTTP__BASE__PATH}/api/auth/google/callback
 ```
 
-For example, a base path of `/letitcall` produces `https://your-host.example/letitcall/api/auth/google/callback`. Omit the base path portion when the application is served at `/`. A TLS-terminating reverse proxy must preserve the request host and set `X-Forwarded-Proto: https` so the server forms the same redirect URI.
+For example, a HTTP__BASE__PATH  of `/letitcall` produces `https://your-host.example/letitcall/api/auth/google/callback`. Omit the base path portion when the application is served at `/`. A TLS-terminating reverse proxy must preserve the request host and set `X-Forwarded-Proto: https` so the server forms the same redirect URI.
 
 The requested scopes include identity and permission to manage Google Calendar events. OAuth state uses PKCE. Google tokens are encrypted with a random key generated on first use and kept in `google-token.key` under `STORAGE__LEVELDB__PATH`; persist the data directory across restarts.
 
