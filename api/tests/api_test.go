@@ -2,11 +2,11 @@ package tests
 
 import (
 	"bytes"
-	"encoding/base64"
 	"encoding/json"
 	"io"
 	"net/http"
 	"net/http/cookiejar"
+	"net/http/httptest"
 	"net/url"
 	"strings"
 	"testing"
@@ -16,7 +16,6 @@ import (
 	"github.com/letitcall/letitcall/api/internal/httpapi"
 	"github.com/letitcall/letitcall/api/internal/security"
 	"github.com/letitcall/letitcall/api/internal/store"
-	"net/http/httptest"
 )
 
 const (
@@ -25,15 +24,21 @@ const (
 )
 
 type fixture struct {
-	t      *testing.T
-	server *httptest.Server
-	client *http.Client
-	store  *store.Store
+	t        *testing.T
+	server   *httptest.Server
+	client   *http.Client
+	store    *store.Store
+	basePath string
 }
 
 func newFixture(t *testing.T, googleEnabled bool) *fixture {
+	return newFixtureAtBasePath(t, googleEnabled, "")
+}
+
+func newFixtureAtBasePath(t *testing.T, googleEnabled bool, basePath string) *fixture {
 	t.Helper()
-	database, err := store.Open(t.TempDir())
+	dataPath := t.TempDir()
+	database, err := store.Open(dataPath)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -44,13 +49,12 @@ func newFixture(t *testing.T, googleEnabled bool) *fixture {
 	if err := database.CreateUser(user); err != nil {
 		t.Fatal(err)
 	}
-	cfg := testConfig()
+	cfg := testConfig(dataPath)
+	cfg.HTTP.BasePath = basePath
 	if googleEnabled {
 		cfg.Login.Google = config.GoogleOAuth{
-			ClientID:           "google-client-id",
-			ClientSecret:       "google-client-secret",
-			RedirectURL:        "http://localhost/api/auth/google/callback",
-			TokenEncryptionKey: base64.RawURLEncoding.EncodeToString(bytes.Repeat([]byte{7}, 32)),
+			ClientID:     "google-client-id",
+			ClientSecret: "google-client-secret",
 		}
 	}
 	handler, err := httpapi.New(cfg, database)
@@ -66,7 +70,7 @@ func newFixture(t *testing.T, googleEnabled bool) *fixture {
 	client := testServer.Client()
 	client.Jar = jar
 	client.CheckRedirect = func(_ *http.Request, _ []*http.Request) error { return http.ErrUseLastResponse }
-	result := &fixture{t: t, server: testServer, client: client, store: database}
+	result := &fixture{t: t, server: testServer, client: client, store: database, basePath: basePath}
 	t.Cleanup(func() {
 		testServer.Close()
 		if err := database.Close(); err != nil {
@@ -76,16 +80,10 @@ func newFixture(t *testing.T, googleEnabled bool) *fixture {
 	return result
 }
 
-func testConfig() config.Config {
+func testConfig(dataPath string) config.Config {
 	return config.Config{
-		HTTP: config.HTTP{
-			Port:            80,
-			ReadTimeout:     10 * time.Second,
-			WriteTimeout:    30 * time.Second,
-			IdleTimeout:     60 * time.Second,
-			ShutdownTimeout: 10 * time.Second,
-		},
-		Storage: config.Storage{LevelDBPath: "unused"},
+		HTTP:    config.HTTP{Port: 80},
+		Storage: config.Storage{LevelDBPath: dataPath},
 		Login: config.Login{
 			SessionTTL:          time.Hour,
 			PasswordMaxAttempts: 20,
@@ -104,7 +102,7 @@ func (f *fixture) request(method, path string, body any) *http.Response {
 		}
 		reader = bytes.NewReader(encoded)
 	}
-	request, err := http.NewRequest(method, f.server.URL+path, reader)
+	request, err := http.NewRequest(method, f.server.URL+f.basePath+path, reader)
 	if err != nil {
 		f.t.Fatal(err)
 	}
@@ -153,6 +151,19 @@ func TestPublicAndUnknownEndpoints(t *testing.T) {
 	if !strings.Contains(string(portal), "Let It Call") {
 		t.Fatalf("SPA fallback did not serve the portal: %s", portal)
 	}
+}
+
+func TestBasePathMountsAPIAndPortal(t *testing.T) {
+	f := newFixtureAtBasePath(t, false, "/letitcall")
+	expectStatus(t, f.request(http.MethodGet, "/api/health", nil), http.StatusOK)
+	expectStatus(t, f.request(http.MethodGet, "/users", nil), http.StatusOK)
+	expectStatus(t, f.login(adminEmail, adminPassword), http.StatusOK)
+	expectStatus(t, f.request(http.MethodGet, "/api/auth/session", nil), http.StatusOK)
+	request, err := http.NewRequest(http.MethodGet, f.server.URL+"/api/health", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	expectStatus(t, mustDo(t, f.client, request), http.StatusNotFound)
 }
 
 func TestAuthenticationAPIs(t *testing.T) {
@@ -258,7 +269,7 @@ func TestGoogleOAuthAPIs(t *testing.T) {
 	expectStatus(t, disabled.request(http.MethodGet, "/api/auth/google/start", nil), http.StatusNotFound)
 	expectStatus(t, disabled.request(http.MethodGet, "/api/auth/google/callback", nil), http.StatusNotFound)
 
-	enabled := newFixture(t, true)
+	enabled := newFixtureAtBasePath(t, true, "/calendar")
 	configBody := expectStatus(t, enabled.request(http.MethodGet, "/api/config/public", nil), http.StatusOK)
 	if !strings.Contains(string(configBody), `"googleLoginEnabled":true`) {
 		t.Fatalf("unexpected config: %s", configBody)
@@ -275,6 +286,9 @@ func TestGoogleOAuthAPIs(t *testing.T) {
 	}
 	if !strings.Contains(query.Get("scope"), "calendar.events") {
 		t.Fatalf("OAuth redirect is missing calendar scope: %s", query.Get("scope"))
+	}
+	if query.Get("redirect_uri") != enabled.server.URL+"/calendar/api/auth/google/callback" {
+		t.Fatalf("unexpected OAuth redirect URI: %s", query.Get("redirect_uri"))
 	}
 	expectStatus(t, enabled.request(http.MethodGet, "/api/auth/google/callback?state=invalid&code=invalid", nil), http.StatusBadRequest)
 }

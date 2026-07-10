@@ -46,7 +46,7 @@ func (s *Server) login(w http.ResponseWriter, r *http.Request) {
 	}
 
 	s.limiter.Success(limitKey)
-	if err := s.createSession(w, user.Email); err != nil {
+	if err := s.createSession(w, r, user.Email); err != nil {
 		internalError(w, err, "create session")
 		return
 	}
@@ -64,6 +64,6 @@ func (s *Server) logout(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	clearCookie(w, s.cfg.Login.SessionCookieSecure)
+	s.clearCookie(w, r)
 	w.WriteHeader(http.StatusNoContent)
 }
