@@ -21,8 +21,10 @@ import (
 
 	"github.com/letitcall/letitcall/api/internal/config"
 	"github.com/letitcall/letitcall/api/internal/httpapi"
+	"github.com/letitcall/letitcall/api/internal/model"
 	"github.com/letitcall/letitcall/api/internal/security"
 	"github.com/letitcall/letitcall/api/internal/store"
+	"github.com/syndtr/goleveldb/leveldb"
 )
 
 const (
@@ -337,7 +339,7 @@ func TestBookingAPIs(t *testing.T) {
 	expectStatus(t, f.request(http.MethodPost, "/api/bookings", offset), http.StatusBadRequest)
 	expectStatus(t, f.request(http.MethodPost, "/api/auth/logout", nil), http.StatusNoContent)
 	booking := map[string]string{
-		"eventSlug": "planning-call", "time": bookingTime, "attendeeEmail": "guest@example.com",
+		"eventSlug": "planning-call", "time": bookingTime, "attendeeName": "Guest Person", "attendeeEmail": "guest@example.com", "notes": "Discuss launch",
 	}
 	created := expectStatus(t, f.request(http.MethodPost, "/api/bookings", booking), http.StatusCreated)
 	var createdResponse struct {
@@ -348,8 +350,12 @@ func TestBookingAPIs(t *testing.T) {
 	if err := json.Unmarshal(created, &createdResponse); err != nil || createdResponse.Booking.ID == "" {
 		t.Fatalf("booking response did not include an ID: %s", created)
 	}
+	publicEventType := expectStatus(t, f.request(http.MethodGet, "/api/public/event-types/planning-call", nil), http.StatusOK)
+	if !strings.Contains(string(publicEventType), `"unavailableTimes":["`+bookingTime+`"]`) {
+		t.Fatalf("booked slot was not exposed as unavailable: %s", publicEventType)
+	}
 	limitReached := expectStatus(t, f.request(http.MethodPost, "/api/bookings", map[string]string{
-		"eventSlug": "planning-call", "time": bookingTime, "attendeeEmail": "second@example.com",
+		"eventSlug": "planning-call", "time": bookingTime, "attendeeName": "Second Guest", "attendeeEmail": "second@example.com", "notes": "",
 	}), http.StatusConflict)
 	if !strings.Contains(string(limitReached), "invitee limit has been reached") {
 		t.Fatalf("unexpected capacity error: %s", limitReached)
@@ -361,6 +367,48 @@ func TestBookingAPIs(t *testing.T) {
 	}
 	expectStatus(t, f.request(http.MethodDelete, "/api/bookings/"+createdResponse.Booking.ID, nil), http.StatusNoContent)
 	expectStatus(t, f.request(http.MethodDelete, "/api/bookings/"+createdResponse.Booking.ID, nil), http.StatusNotFound)
+}
+
+func TestBookingsUseUTCSlotKey(t *testing.T) {
+	dataPath := t.TempDir()
+	database, err := store.Open(dataPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	start := time.Date(2026, time.July, 16, 8, 0, 0, 0, time.UTC)
+	end := start.Add(30 * time.Minute)
+	slotKey := "planning-call" + start.Format(time.RFC3339) + "-" + end.Format(time.RFC3339)
+	limit := 2
+	for index, email := range []string{"first@example.com", "second@example.com"} {
+		booking := model.Booking{
+			ID:            fmt.Sprintf("booking-%d", index),
+			EventSlug:     "planning-call",
+			Time:          start,
+			EndTime:       end,
+			AttendeeName:  "Guest",
+			AttendeeEmail: email,
+		}
+		if err := database.CreateBooking(slotKey, booking, &limit); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := database.Close(); err != nil {
+		t.Fatal(err)
+	}
+
+	bookings, err := leveldb.OpenFile(filepath.Join(dataPath, "bookings.leveldb"), nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer bookings.Close()
+	iterator := bookings.NewIterator(nil, nil)
+	defer iterator.Release()
+	if !iterator.Next() || string(iterator.Key()) != slotKey {
+		t.Fatalf("booking slot key = %q, want %q", iterator.Key(), slotKey)
+	}
+	if iterator.Next() {
+		t.Fatalf("multiple LevelDB records were created for one booking slot")
+	}
 }
 
 func TestBookingDeliveryUsesMailgunAndConnectedGoogleCalendar(t *testing.T) {
@@ -376,7 +424,7 @@ func TestBookingDeliveryUsesMailgunAndConnectedGoogleCalendar(t *testing.T) {
 	candidate := time.Now().UTC().AddDate(0, 0, 2)
 	bookingTime := time.Date(candidate.Year(), candidate.Month(), candidate.Day(), 12, 0, 0, 0, time.UTC).Format(time.RFC3339)
 	expectStatus(t, f.request(http.MethodPost, "/api/bookings", map[string]string{
-		"eventSlug": "delivery-test", "time": bookingTime, "attendeeEmail": "guest@example.com",
+		"eventSlug": "delivery-test", "time": bookingTime, "attendeeName": "Guest Person", "attendeeEmail": "guest@example.com", "notes": "",
 	}), http.StatusCreated)
 	if *calendarRequests != 1 || *mailgunRequests != 1 {
 		t.Fatalf("unexpected delivery calls: calendar=%d mailgun=%d", *calendarRequests, *mailgunRequests)

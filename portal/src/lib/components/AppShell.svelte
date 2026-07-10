@@ -51,7 +51,7 @@
 				<li>
 					<a
 						class={`block border border-black px-4 py-3 text-sm font-medium ${page.url.pathname === appPath('/') ? 'bg-black text-white' : 'bg-white text-black'}`}
-						href={appPath('/')}>Dashboard</a
+						href={appPath('/')}>Bookings</a
 					>
 				</li>
 				<li>

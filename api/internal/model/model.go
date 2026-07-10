@@ -48,7 +48,9 @@ type Booking struct {
 	EventSlug       string    `json:"eventSlug"`
 	Time            time.Time `json:"time"`
 	EndTime         time.Time `json:"endTime"`
+	AttendeeName    string    `json:"attendeeName"`
 	AttendeeEmail   string    `json:"attendeeEmail"`
+	Notes           string    `json:"notes,omitempty"`
 	Title           string    `json:"title"`
 	RecipientEmails []string  `json:"recipientEmails"`
 	CreatedAt       time.Time `json:"createdAt"`

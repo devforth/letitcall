@@ -44,3 +44,30 @@ export type TimeRange = {
 	start: string;
 	end: string;
 };
+
+export type PublicEventType = Pick<
+	EventType,
+	| 'eventSlug'
+	| 'name'
+	| 'durationMinutes'
+	| 'bookingWindowDays'
+	| 'inviteeLimit'
+	| 'timezone'
+	| 'schedule'
+> & {
+	hosts: { email: string; avatarPath?: string }[];
+	unavailableTimes: string[];
+};
+
+export type Booking = {
+	id: string;
+	eventSlug: string;
+	time: string;
+	endTime: string;
+	attendeeName: string;
+	attendeeEmail: string;
+	notes?: string;
+	title: string;
+	recipientEmails: string[];
+	createdAt: string;
+};

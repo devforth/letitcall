@@ -23,7 +23,9 @@ func (s *Server) listBookings(w http.ResponseWriter, _ *http.Request) {
 type createBookingRequest struct {
 	EventSlug     string `json:"eventSlug"`
 	Time          string `json:"time"`
+	AttendeeName  string `json:"attendeeName"`
 	AttendeeEmail string `json:"attendeeEmail"`
+	Notes         string `json:"notes"`
 }
 
 func (s *Server) createBooking(w http.ResponseWriter, r *http.Request) {
@@ -54,6 +56,16 @@ func (s *Server) createBooking(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "attendeeEmail must be a valid address")
 		return
 	}
+	attendeeName := strings.TrimSpace(request.AttendeeName)
+	if attendeeName == "" || len(attendeeName) > 200 {
+		writeError(w, http.StatusBadRequest, "attendeeName must be between 1 and 200 characters")
+		return
+	}
+	notes := strings.TrimSpace(request.Notes)
+	if len(notes) > 2000 {
+		writeError(w, http.StatusBadRequest, "notes must not exceed 2000 characters")
+		return
+	}
 	id, err := security.RandomToken(12)
 	if err != nil {
 		internalError(w, err, "generate booking ID")
@@ -64,12 +76,15 @@ func (s *Server) createBooking(w http.ResponseWriter, r *http.Request) {
 		EventSlug:       eventType.EventSlug,
 		Time:            bookingTime,
 		EndTime:         bookingTime.Add(time.Duration(eventType.DurationMinutes) * time.Minute),
+		AttendeeName:    attendeeName,
 		AttendeeEmail:   attendeeEmail,
+		Notes:           notes,
 		Title:           eventType.Name,
 		RecipientEmails: append([]string(nil), eventType.RecipientEmails...),
 		CreatedAt:       s.now().UTC().Truncate(time.Second),
 	}
-	if err := s.store.CreateBooking(booking, eventType.InviteeLimit); errors.Is(err, store.ErrCapacity) {
+	slotKey := eventType.EventSlug + booking.Time.Format(time.RFC3339) + "-" + booking.EndTime.Format(time.RFC3339)
+	if err := s.store.CreateBooking(slotKey, booking, eventType.InviteeLimit); errors.Is(err, store.ErrCapacity) {
 		writeError(w, http.StatusConflict, "invitee limit has been reached for this time")
 		return
 	} else if errors.Is(err, store.ErrExists) {

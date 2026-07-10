@@ -21,13 +21,13 @@ pnpm run dev --host 127.0.0.1 --port 41783 --strictPort
 
 Open portal at `http://127.0.0.1:41783`. 
 
-Default local login credentials is admin:admin.
+Default local login credentials are admin:admin.
 
 Opening the repository in VS Code automatically starts both development tasks on ports `41783` (portal) and `41784` (API).
 
-There is no signup route. When the users table is empty, the API creates its first user from `FIRSTUSER__CREDENTIALS__EMAIL` and `FIRSTUSER__CREDENTIALS__PASSWORD` from the `api/.env.local` file. Later users are created from Dashboard → Users.
+There is no signup route. When the users table is empty, the API creates its first user from `FIRSTUSER__CREDENTIALS__EMAIL` and `FIRSTUSER__CREDENTIALS__PASSWORD` from the `api/.env.local` file. Later users are created from the portal's Users section.
 
-Shared event types are managed from Dashboard → Scheduling. Each event type has an immutable slug, one or more recipient users, local weekly working hours in the creator's IANA timezone, and a UTC booking contract. Public booking UI will use `/book/{event-slug}`; the public event-type data endpoint is available under `/api/public/event-types/{event-slug}`.
+Shared event types are managed from the Scheduling section. Each event type has an immutable slug, one or more recipient users, local weekly working hours in the creator's IANA timezone, and a UTC booking contract. The public booking UI is available at `/book/{event-slug}`; the public event-type data endpoint is available under `/api/public/event-types/{event-slug}`.
 
 ## Docker
 
