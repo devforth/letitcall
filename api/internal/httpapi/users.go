@@ -153,6 +153,13 @@ func (s *Server) deleteUser(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusConflict, "you cannot delete your own user")
 		return
 	}
+	if err := s.store.RemoveEventTypeRecipient(email, s.now().UTC().Truncate(time.Second)); errors.Is(err, store.ErrLastRecipient) {
+		writeError(w, http.StatusConflict, "user is the only recipient for an event type")
+		return
+	} else if err != nil {
+		internalError(w, err, "remove user from event types")
+		return
+	}
 	if err := s.store.DeleteUserIfMoreThanOne(email); errors.Is(err, store.ErrNotFound) {
 		writeError(w, http.StatusNotFound, "user not found")
 		return

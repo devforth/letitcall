@@ -44,9 +44,39 @@ type OAuthState struct {
 }
 
 type Booking struct {
-	Time          time.Time `json:"time"`
-	OwnerEmail    string    `json:"ownerEmail"`
-	AttendeeEmail string    `json:"attendeeEmail"`
-	Title         string    `json:"title"`
-	CreatedAt     time.Time `json:"createdAt"`
+	ID              string    `json:"id"`
+	EventSlug       string    `json:"eventSlug"`
+	Time            time.Time `json:"time"`
+	EndTime         time.Time `json:"endTime"`
+	AttendeeEmail   string    `json:"attendeeEmail"`
+	Title           string    `json:"title"`
+	RecipientEmails []string  `json:"recipientEmails"`
+	CreatedAt       time.Time `json:"createdAt"`
+}
+
+type EventType struct {
+	EventSlug         string        `json:"eventSlug"`
+	Name              string        `json:"name"`
+	DurationMinutes   int           `json:"durationMinutes"`
+	BookingWindowDays *int          `json:"bookingWindowDays"`
+	InviteeLimit      *int          `json:"inviteeLimit"`
+	Timezone          string        `json:"timezone"`
+	RecipientEmails   []string      `json:"recipientEmails"`
+	Schedule          []ScheduleDay `json:"schedule"`
+	CreatedBy         string        `json:"createdBy"`
+	CreatedAt         time.Time     `json:"createdAt"`
+	UpdatedAt         time.Time     `json:"updatedAt"`
+}
+
+type ScheduleDay struct {
+	Day     string      `json:"day"`
+	Enabled bool        `json:"enabled"`
+	Start   string      `json:"start,omitempty"`
+	End     string      `json:"end,omitempty"`
+	Breaks  []TimeRange `json:"breaks"`
+}
+
+type TimeRange struct {
+	Start string `json:"start"`
+	End   string `json:"end"`
 }

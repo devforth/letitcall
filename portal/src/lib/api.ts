@@ -1,5 +1,6 @@
 import { base } from '$app/paths';
 import type { ApiError, PublicConfig, SessionUser } from '$lib/types';
+import { showError } from '$lib/notifications';
 
 export function appPath(path: string): string {
 	return `${base}${path}`;
@@ -9,17 +10,24 @@ export function avatarURL(filename: string): string {
 	return appPath(`/content/avatars/${filename}`);
 }
 
-export async function api<T>(path: string, init?: RequestInit): Promise<T> {
+export async function callApi<T>(path: string, init?: RequestInit): Promise<T> {
 	const headers = new Headers(init?.headers);
 	if (init?.body && !headers.has('content-type')) {
 		headers.set('content-type', 'application/json');
 	}
 
-	const response = await fetch(appPath(path), {
-		...init,
-		headers,
-		credentials: 'same-origin'
-	});
+	let response: Response;
+	try {
+		response = await fetch(appPath(path), {
+			...init,
+			headers,
+			credentials: 'same-origin'
+		});
+	} catch (cause) {
+		const message = cause instanceof Error ? cause.message : 'Unable to reach the server';
+		showError(message);
+		throw cause;
+	}
 
 	if (!response.ok) {
 		let message = `Request failed (${response.status})`;
@@ -27,8 +35,9 @@ export async function api<T>(path: string, init?: RequestInit): Promise<T> {
 			const body = (await response.json()) as ApiError;
 			if (body.error) message = body.error;
 		} catch {
-			// Preserve the status-based fallback when the response has no JSON body.
+			// Preserve the status fallback for failures outside the API contract.
 		}
+		showError(message);
 		throw new Error(message);
 	}
 
@@ -37,9 +46,9 @@ export async function api<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 export function getSession(): Promise<{ user: SessionUser }> {
-	return api('/api/auth/session');
+	return callApi('/api/auth/session');
 }
 
 export function getPublicConfig(): Promise<PublicConfig> {
-	return api('/api/config/public');
+	return callApi('/api/config/public');
 }

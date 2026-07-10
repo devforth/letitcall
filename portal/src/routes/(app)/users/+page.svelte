@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
-	import { api, appPath, getSession } from '$lib/api';
+	import { callApi, appPath, getSession } from '$lib/api';
 	import AvatarSelector from '$lib/components/AvatarSelector.svelte';
 	import UserTable from '$lib/components/UserTable.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
@@ -31,7 +31,7 @@
 		try {
 			const [session, response] = await Promise.all([
 				getSession(),
-				api<{ users: ManagedUser[] }>('/api/users')
+				callApi<{ users: ManagedUser[] }>('/api/users')
 			]);
 			currentEmail = session.user.email;
 			users = response.users;
@@ -48,7 +48,7 @@
 		error = '';
 		try {
 			const avatar = (await avatarSelector?.exportAvatar()) ?? '';
-			const response = await api<{ user: ManagedUser }>('/api/users', {
+			const response = await callApi<{ user: ManagedUser }>('/api/users', {
 				method: 'POST',
 				body: JSON.stringify({ email, password, timezone, avatar })
 			});
@@ -73,7 +73,7 @@
 		deletingEmail = emailToDelete;
 		error = '';
 		try {
-			await api(`/api/users/${encodeURIComponent(emailToDelete)}`, { method: 'DELETE' });
+			await callApi(`/api/users/${encodeURIComponent(emailToDelete)}`, { method: 'DELETE' });
 			users = users.filter((user) => user.email !== emailToDelete);
 		} catch (cause) {
 			error = cause instanceof Error ? cause.message : 'Unable to delete user';

@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { onMount } from 'svelte';
-	import { api, appPath, getPublicConfig, getSession } from '$lib/api';
+	import { callApi, appPath, getPublicConfig, getSession } from '$lib/api';
 	import Button from '$lib/components/ui/Button.svelte';
 	import Input from '$lib/components/ui/Input.svelte';
 
@@ -33,7 +33,7 @@
 		error = '';
 
 		try {
-			await api('/api/auth/login', {
+			await callApi('/api/auth/login', {
 				method: 'POST',
 				body: JSON.stringify({ email, password })
 			});

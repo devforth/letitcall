@@ -1,5 +1,6 @@
 <script lang="ts">
 	import './layout.css';
+	import NotificationStack from '$lib/components/NotificationStack.svelte';
 
 	let { children } = $props();
 </script>
@@ -13,3 +14,4 @@
 </svelte:head>
 
 {@render children()}
+<NotificationStack />

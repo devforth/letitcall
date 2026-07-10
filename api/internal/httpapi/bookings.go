@@ -21,9 +21,9 @@ func (s *Server) listBookings(w http.ResponseWriter, _ *http.Request) {
 }
 
 type createBookingRequest struct {
+	EventSlug     string `json:"eventSlug"`
 	Time          string `json:"time"`
 	AttendeeEmail string `json:"attendeeEmail"`
-	Title         string `json:"title"`
 }
 
 func (s *Server) createBooking(w http.ResponseWriter, r *http.Request) {
@@ -31,8 +31,21 @@ func (s *Server) createBooking(w http.ResponseWriter, r *http.Request) {
 	if err := decodeJSON(w, r, &request); err != nil {
 		return
 	}
-	key, bookingTime, err := bookingKey(request.Time)
+	eventType, err := s.store.GetEventType(strings.TrimSpace(request.EventSlug))
+	if errors.Is(err, store.ErrNotFound) {
+		writeError(w, http.StatusNotFound, "event type not found")
+		return
+	}
 	if err != nil {
+		internalError(w, err, "load event type for booking")
+		return
+	}
+	_, bookingTime, err := bookingKey(request.Time)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	if err := s.validateBookingTime(eventType, bookingTime); err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
@@ -41,50 +54,98 @@ func (s *Server) createBooking(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "attendeeEmail must be a valid address")
 		return
 	}
-	title := strings.TrimSpace(request.Title)
-	if title == "" || len(title) > 200 {
-		writeError(w, http.StatusBadRequest, "title must be between 1 and 200 characters")
+	id, err := security.RandomToken(12)
+	if err != nil {
+		internalError(w, err, "generate booking ID")
 		return
 	}
 	booking := model.Booking{
-		Time:          bookingTime,
-		OwnerEmail:    userFromRequest(r).Email,
-		AttendeeEmail: attendeeEmail,
-		Title:         title,
-		CreatedAt:     s.now().UTC().Truncate(time.Second),
+		ID:              id,
+		EventSlug:       eventType.EventSlug,
+		Time:            bookingTime,
+		EndTime:         bookingTime.Add(time.Duration(eventType.DurationMinutes) * time.Minute),
+		AttendeeEmail:   attendeeEmail,
+		Title:           eventType.Name,
+		RecipientEmails: append([]string(nil), eventType.RecipientEmails...),
+		CreatedAt:       s.now().UTC().Truncate(time.Second),
 	}
-	if err := s.store.CreateBooking(key, booking); errors.Is(err, store.ErrExists) {
-		writeError(w, http.StatusConflict, "a booking already exists at this UTC time")
+	if err := s.store.CreateBooking(booking, eventType.InviteeLimit); errors.Is(err, store.ErrCapacity) {
+		writeError(w, http.StatusConflict, "invitee limit has been reached for this time")
+		return
+	} else if errors.Is(err, store.ErrExists) {
+		writeError(w, http.StatusConflict, "this invitee already has a booking at this time")
 		return
 	} else if err != nil {
 		internalError(w, err, "create booking")
 		return
 	}
+	s.deliverBooking(r.Context(), eventType, booking)
 	writeJSON(w, http.StatusCreated, map[string]any{"booking": booking})
 }
 
 func (s *Server) deleteBooking(w http.ResponseWriter, r *http.Request) {
-	key, _, err := bookingKey(r.PathValue("time"))
-	if err != nil {
-		writeError(w, http.StatusBadRequest, err.Error())
-		return
-	}
-	booking, err := s.store.GetBooking(key)
-	if errors.Is(err, store.ErrNotFound) {
+	id := r.PathValue("id")
+	if _, err := s.store.GetBooking(id); errors.Is(err, store.ErrNotFound) {
 		writeError(w, http.StatusNotFound, "booking not found")
 		return
-	}
-	if err != nil {
+	} else if err != nil {
 		internalError(w, err, "load booking for deletion")
 		return
 	}
-	if booking.OwnerEmail != userFromRequest(r).Email {
-		writeError(w, http.StatusForbidden, "only the booking owner can delete it")
-		return
-	}
-	if err := s.store.DeleteBooking(key); err != nil {
+	if err := s.store.DeleteBooking(id); err != nil {
 		internalError(w, err, "delete booking")
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)
+}
+
+func (s *Server) validateBookingTime(eventType model.EventType, bookingTime time.Time) error {
+	if !bookingTime.After(s.now().UTC()) {
+		return errors.New("booking time must be in the future")
+	}
+	location, err := time.LoadLocation(eventType.Timezone)
+	if err != nil {
+		return err
+	}
+	local := bookingTime.In(location)
+	localEnd := local.Add(time.Duration(eventType.DurationMinutes) * time.Minute)
+	dayName := strings.ToLower(local.Weekday().String())
+	var day model.ScheduleDay
+	for _, candidate := range eventType.Schedule {
+		if candidate.Day == dayName {
+			day = candidate
+			break
+		}
+	}
+	if !day.Enabled {
+		return errors.New("booking time is outside event availability")
+	}
+	startMinute := local.Hour()*60 + local.Minute()
+	endMinute := localEnd.Hour()*60 + localEnd.Minute()
+	workingStart, _ := minuteOfDay(day.Start)
+	workingEnd, _ := minuteOfDay(day.End)
+	if local.YearDay() != localEnd.YearDay() || startMinute < workingStart || endMinute > workingEnd {
+		return errors.New("booking time is outside event availability")
+	}
+	for _, pause := range day.Breaks {
+		pauseStart, _ := minuteOfDay(pause.Start)
+		pauseEnd, _ := minuteOfDay(pause.End)
+		if startMinute < pauseEnd && endMinute > pauseStart {
+			return errors.New("booking time overlaps an availability break")
+		}
+	}
+	today := localDate(s.now().In(location), location)
+	bookingDate := localDate(local, location)
+	if bookingDate.Before(today) {
+		return errors.New("booking time must be in the future")
+	}
+	if eventType.BookingWindowDays != nil && bookingDate.After(today.AddDate(0, 0, *eventType.BookingWindowDays)) {
+		return errors.New("booking time is outside the booking window")
+	}
+	return nil
+}
+
+func localDate(value time.Time, location *time.Location) time.Time {
+	year, month, day := value.Date()
+	return time.Date(year, month, day, 0, 0, 0, 0, location)
 }

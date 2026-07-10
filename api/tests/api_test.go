@@ -44,6 +44,10 @@ func newFixture(t *testing.T, googleEnabled bool) *fixture {
 }
 
 func newFixtureAtBasePath(t *testing.T, googleEnabled bool, basePath string) *fixture {
+	return newConfiguredFixture(t, googleEnabled, basePath, nil)
+}
+
+func newConfiguredFixture(t *testing.T, googleEnabled bool, basePath string, configure func(*config.Config)) *fixture {
 	t.Helper()
 	dataPath := t.TempDir()
 	database, err := store.Open(dataPath)
@@ -64,6 +68,9 @@ func newFixtureAtBasePath(t *testing.T, googleEnabled bool, basePath string) *fi
 			ClientID:     "google-client-id",
 			ClientSecret: "google-client-secret",
 		}
+	}
+	if configure != nil {
+		configure(&cfg)
 	}
 	handler, err := httpapi.New(cfg, database)
 	if err != nil {
@@ -314,24 +321,120 @@ func TestBookingAPIs(t *testing.T) {
 	f := newFixture(t, false)
 	expectStatus(t, f.request(http.MethodGet, "/api/bookings", nil), http.StatusUnauthorized)
 	expectStatus(t, f.login(adminEmail, adminPassword), http.StatusOK)
+	createdEventType := expectStatus(t, f.request(http.MethodPost, "/api/event-types", eventTypeBody("Planning Call", []string{adminEmail}, 1)), http.StatusCreated)
+	if !strings.Contains(string(createdEventType), `"eventSlug":"planning-call"`) {
+		t.Fatalf("unexpected event type response: %s", createdEventType)
+	}
+	candidate := time.Now().UTC().AddDate(0, 0, 2)
+	bookingTime := time.Date(candidate.Year(), candidate.Month(), candidate.Day(), 12, 0, 0, 0, time.UTC).Format(time.RFC3339)
 	fractional := map[string]string{
-		"time": "2026-08-10T12:00:00.000Z", "attendeeEmail": "guest@example.com", "title": "Planning",
+		"eventSlug": "planning-call", "time": strings.TrimSuffix(bookingTime, "Z") + ".000Z", "attendeeEmail": "guest@example.com",
 	}
 	expectStatus(t, f.request(http.MethodPost, "/api/bookings", fractional), http.StatusBadRequest)
+	offset := map[string]string{
+		"eventSlug": "planning-call", "time": strings.TrimSuffix(bookingTime, "Z") + "+00:00", "attendeeEmail": "guest@example.com",
+	}
+	expectStatus(t, f.request(http.MethodPost, "/api/bookings", offset), http.StatusBadRequest)
+	expectStatus(t, f.request(http.MethodPost, "/api/auth/logout", nil), http.StatusNoContent)
 	booking := map[string]string{
-		"time": "2026-08-10T14:00:00+02:00", "attendeeEmail": "guest@example.com", "title": "Planning",
+		"eventSlug": "planning-call", "time": bookingTime, "attendeeEmail": "guest@example.com",
 	}
 	created := expectStatus(t, f.request(http.MethodPost, "/api/bookings", booking), http.StatusCreated)
-	if !strings.Contains(string(created), `"time":"2026-08-10T12:00:00Z"`) {
-		t.Fatalf("booking was not normalized to UTC seconds: %s", created)
+	var createdResponse struct {
+		Booking struct {
+			ID string `json:"id"`
+		} `json:"booking"`
 	}
-	expectStatus(t, f.request(http.MethodPost, "/api/bookings", booking), http.StatusConflict)
+	if err := json.Unmarshal(created, &createdResponse); err != nil || createdResponse.Booking.ID == "" {
+		t.Fatalf("booking response did not include an ID: %s", created)
+	}
+	limitReached := expectStatus(t, f.request(http.MethodPost, "/api/bookings", map[string]string{
+		"eventSlug": "planning-call", "time": bookingTime, "attendeeEmail": "second@example.com",
+	}), http.StatusConflict)
+	if !strings.Contains(string(limitReached), "invitee limit has been reached") {
+		t.Fatalf("unexpected capacity error: %s", limitReached)
+	}
+	expectStatus(t, f.login(adminEmail, adminPassword), http.StatusOK)
 	listed := expectStatus(t, f.request(http.MethodGet, "/api/bookings", nil), http.StatusOK)
 	if !strings.Contains(string(listed), "guest@example.com") {
 		t.Fatalf("booking missing from list: %s", listed)
 	}
-	expectStatus(t, f.request(http.MethodDelete, "/api/bookings/"+url.PathEscape("2026-08-10T12:00:00Z"), nil), http.StatusNoContent)
-	expectStatus(t, f.request(http.MethodDelete, "/api/bookings/"+url.PathEscape("2026-08-10T12:00:00Z"), nil), http.StatusNotFound)
+	expectStatus(t, f.request(http.MethodDelete, "/api/bookings/"+createdResponse.Booking.ID, nil), http.StatusNoContent)
+	expectStatus(t, f.request(http.MethodDelete, "/api/bookings/"+createdResponse.Booking.ID, nil), http.StatusNotFound)
+}
+
+func TestBookingDeliveryUsesMailgunAndConnectedGoogleCalendar(t *testing.T) {
+	f := newConfiguredFixture(t, true, "", func(cfg *config.Config) {
+		cfg.Mailing.Mailgun = config.Mailgun{
+			APIKey: "mailgun-key", Domain: "mail.example.com", From: "Bookings <bookings@example.com>",
+		}
+	})
+	mockGoogleProvider(t, adminEmail, "", nil)
+	expectStatus(t, googleCallback(f), http.StatusSeeOther)
+	calendarRequests, mailgunRequests := mockBookingDelivery(t)
+	expectStatus(t, f.request(http.MethodPost, "/api/event-types", eventTypeBody("Delivery test", []string{adminEmail}, 1)), http.StatusCreated)
+	candidate := time.Now().UTC().AddDate(0, 0, 2)
+	bookingTime := time.Date(candidate.Year(), candidate.Month(), candidate.Day(), 12, 0, 0, 0, time.UTC).Format(time.RFC3339)
+	expectStatus(t, f.request(http.MethodPost, "/api/bookings", map[string]string{
+		"eventSlug": "delivery-test", "time": bookingTime, "attendeeEmail": "guest@example.com",
+	}), http.StatusCreated)
+	if *calendarRequests != 1 || *mailgunRequests != 1 {
+		t.Fatalf("unexpected delivery calls: calendar=%d mailgun=%d", *calendarRequests, *mailgunRequests)
+	}
+}
+
+func TestEventTypeAPIs(t *testing.T) {
+	f := newFixture(t, false)
+	expectStatus(t, f.request(http.MethodGet, "/api/event-types", nil), http.StatusUnauthorized)
+	expectStatus(t, f.login(adminEmail, adminPassword), http.StatusOK)
+	expectStatus(t, f.request(http.MethodPost, "/api/users", map[string]string{
+		"email": "member@example.com", "password": "MemberPassword123!", "timezone": "Europe/Kyiv",
+	}), http.StatusCreated)
+	created := expectStatus(t, f.request(http.MethodPost, "/api/event-types", eventTypeBody("Team Consultation!", []string{adminEmail}, 3)), http.StatusCreated)
+	if !strings.Contains(string(created), `"eventSlug":"team-consultation"`) {
+		t.Fatalf("event slug was not generated: %s", created)
+	}
+	expectStatus(t, f.request(http.MethodPost, "/api/event-types", eventTypeBody("Team Consultation", []string{adminEmail}, 3)), http.StatusConflict)
+	updatedBody := eventTypeBody("Renamed Consultation", []string{adminEmail, "member@example.com"}, 4)
+	updated := expectStatus(t, f.request(http.MethodPut, "/api/event-types/team-consultation", updatedBody), http.StatusOK)
+	if !strings.Contains(string(updated), `"eventSlug":"team-consultation"`) || !strings.Contains(string(updated), "member@example.com") {
+		t.Fatalf("event type update changed the slug or missed its recipient: %s", updated)
+	}
+	listed := expectStatus(t, f.request(http.MethodGet, "/api/event-types", nil), http.StatusOK)
+	if !strings.Contains(string(listed), "Renamed Consultation") {
+		t.Fatalf("event type missing from list: %s", listed)
+	}
+	public := expectStatus(t, f.request(http.MethodGet, "/api/public/event-types/team-consultation", nil), http.StatusOK)
+	if !strings.Contains(string(public), `"hosts"`) || !strings.Contains(string(public), "member@example.com") {
+		t.Fatalf("public event type did not include hosts: %s", public)
+	}
+	invalid := eventTypeBody("No recipients", nil, 1)
+	expectStatus(t, f.request(http.MethodPost, "/api/event-types", invalid), http.StatusBadRequest)
+}
+
+func TestDeletingUserUpdatesEventTypeRecipients(t *testing.T) {
+	f := newFixture(t, false)
+	expectStatus(t, f.login(adminEmail, adminPassword), http.StatusOK)
+	createUser := map[string]string{"email": "member@example.com", "password": "MemberPassword123!", "timezone": "UTC"}
+	expectStatus(t, f.request(http.MethodPost, "/api/users", createUser), http.StatusCreated)
+	expectStatus(t, f.request(http.MethodPost, "/api/event-types", eventTypeBody("Shared", []string{adminEmail, "member@example.com"}, 1)), http.StatusCreated)
+	expectStatus(t, f.request(http.MethodDelete, "/api/users/member@example.com", nil), http.StatusNoContent)
+	eventType, err := f.store.GetEventType("shared")
+	if err != nil || len(eventType.RecipientEmails) != 1 || eventType.RecipientEmails[0] != adminEmail {
+		t.Fatalf("deleted user was not removed from event type: event=%#v err=%v", eventType, err)
+	}
+}
+
+func TestDeletingFinalEventTypeRecipientIsRejected(t *testing.T) {
+	f := newFixture(t, false)
+	expectStatus(t, f.login(adminEmail, adminPassword), http.StatusOK)
+	createUser := map[string]string{"email": "member@example.com", "password": "MemberPassword123!", "timezone": "UTC"}
+	expectStatus(t, f.request(http.MethodPost, "/api/users", createUser), http.StatusCreated)
+	expectStatus(t, f.request(http.MethodPost, "/api/event-types", eventTypeBody("Member only", []string{"member@example.com"}, 1)), http.StatusCreated)
+	expectStatus(t, f.request(http.MethodDelete, "/api/users/member@example.com", nil), http.StatusConflict)
+	if _, err := f.store.GetUser("member@example.com"); err != nil {
+		t.Fatal("final event type recipient was deleted")
+	}
 }
 
 func TestGoogleOAuthAPIs(t *testing.T) {
@@ -424,6 +527,24 @@ func mustDo(t *testing.T, client *http.Client, request *http.Request) *http.Resp
 		t.Fatal(err)
 	}
 	return response
+}
+
+func eventTypeBody(name string, recipients []string, inviteeLimit int) map[string]any {
+	schedule := make([]map[string]any, 0, 7)
+	for _, day := range []string{"monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"} {
+		schedule = append(schedule, map[string]any{
+			"day": day, "enabled": true, "start": "00:00", "end": "23:59", "breaks": []any{},
+		})
+	}
+	return map[string]any{
+		"name":              name,
+		"durationMinutes":   30,
+		"bookingWindowDays": 60,
+		"inviteeLimit":      inviteeLimit,
+		"timezone":          "UTC",
+		"recipientEmails":   recipients,
+		"schedule":          schedule,
+	}
 }
 
 func avatarFilenameFromResponse(t *testing.T, body []byte, emailSlug string) string {
@@ -520,4 +641,30 @@ func mockGoogleProvider(t *testing.T, email, pictureURL string, picture []byte) 
 	})
 	t.Cleanup(func() { http.DefaultTransport = originalTransport })
 	return &avatarRequests
+}
+
+func mockBookingDelivery(t *testing.T) (*int, *int) {
+	t.Helper()
+	originalTransport := http.DefaultTransport
+	calendarRequests := 0
+	mailgunRequests := 0
+	http.DefaultTransport = roundTripFunc(func(request *http.Request) (*http.Response, error) {
+		switch request.URL.String() {
+		case "https://www.googleapis.com/calendar/v3/calendars/primary/events":
+			calendarRequests++
+		case "https://api.mailgun.net/v3/mail.example.com/messages":
+			mailgunRequests++
+		default:
+			return nil, fmt.Errorf("unexpected delivery request: %s", request.URL)
+		}
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			Status:     http.StatusText(http.StatusOK),
+			Header:     make(http.Header),
+			Body:       io.NopCloser(strings.NewReader(`{"id":"accepted"}`)),
+			Request:    request,
+		}, nil
+	})
+	t.Cleanup(func() { http.DefaultTransport = originalTransport })
+	return &calendarRequests, &mailgunRequests
 }
