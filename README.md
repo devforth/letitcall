@@ -8,7 +8,7 @@ Start the API on the portal's development-proxy port:
 
 ```sh
 cd api
-HTTP__PORT=41784 dotenvx run -f .env.local -- go run ./cmd/server
+dotenvx run -f .env.local -- go run ./cmd/server
 ```
 
 In a second terminal, start the portal:
