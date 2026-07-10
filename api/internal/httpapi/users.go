@@ -2,10 +2,12 @@ package httpapi
 
 import (
 	"errors"
+	"log/slog"
 	"net/http"
 	"strings"
 	"time"
 
+	"github.com/letitcall/letitcall/api/internal/content"
 	"github.com/letitcall/letitcall/api/internal/model"
 	"github.com/letitcall/letitcall/api/internal/security"
 	"github.com/letitcall/letitcall/api/internal/store"
@@ -28,6 +30,7 @@ type createUserRequest struct {
 	Email    string `json:"email"`
 	Password string `json:"password"`
 	Timezone string `json:"timezone"`
+	Avatar   string `json:"avatar"`
 }
 
 func (s *Server) createUser(w http.ResponseWriter, r *http.Request) {
@@ -40,6 +43,15 @@ func (s *Server) createUser(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
+	var avatar content.Avatar
+	if request.Avatar != "" {
+		avatar, err = s.avatars.Prepare(user.Email, request.Avatar)
+		if err != nil {
+			writeError(w, http.StatusBadRequest, err.Error())
+			return
+		}
+		user.AvatarPath = avatar.Filename
+	}
 	if err := s.store.CreateUser(user); errors.Is(err, store.ErrExists) {
 		writeError(w, http.StatusConflict, "a user with this email already exists")
 		return
@@ -47,12 +59,20 @@ func (s *Server) createUser(w http.ResponseWriter, r *http.Request) {
 		internalError(w, err, "create user")
 		return
 	}
+	if avatar.Filename != "" {
+		if err := s.avatars.Write(avatar); err != nil {
+			_ = s.store.DeleteUser(user.Email)
+			internalError(w, err, "store user avatar")
+			return
+		}
+	}
 	writeJSON(w, http.StatusCreated, map[string]any{"user": user.Public()})
 }
 
 type updateUserRequest struct {
 	Password *string `json:"password"`
 	Timezone *string `json:"timezone"`
+	Avatar   *string `json:"avatar"`
 }
 
 func (s *Server) updateUser(w http.ResponseWriter, r *http.Request) {
@@ -65,8 +85,8 @@ func (s *Server) updateUser(w http.ResponseWriter, r *http.Request) {
 	if err := decodeJSON(w, r, &request); err != nil {
 		return
 	}
-	if request.Password == nil && request.Timezone == nil {
-		writeError(w, http.StatusBadRequest, "password or timezone is required")
+	if request.Password == nil && request.Timezone == nil && request.Avatar == nil {
+		writeError(w, http.StatusBadRequest, "password, timezone, or avatar is required")
 		return
 	}
 	user, err := s.store.GetUser(email)
@@ -78,6 +98,7 @@ func (s *Server) updateUser(w http.ResponseWriter, r *http.Request) {
 		internalError(w, err, "load user for update")
 		return
 	}
+	previousAvatarFilename := user.AvatarPath
 	if request.Password != nil {
 		hash, hashErr := security.HashPassword(*request.Password)
 		if hashErr != nil {
@@ -94,10 +115,30 @@ func (s *Server) updateUser(w http.ResponseWriter, r *http.Request) {
 		}
 		user.Timezone = timezone
 	}
+	var avatar content.Avatar
+	if request.Avatar != nil {
+		avatar, err = s.avatars.Prepare(user.Email, *request.Avatar)
+		if err != nil {
+			writeError(w, http.StatusBadRequest, err.Error())
+			return
+		}
+		user.AvatarPath = avatar.Filename
+	}
 	user.UpdatedAt = s.now().UTC().Truncate(time.Second)
+	if avatar.Filename != "" {
+		if err := s.avatars.Write(avatar); err != nil {
+			internalError(w, err, "store user avatar")
+			return
+		}
+	}
 	if err := s.store.PutUser(user); err != nil {
 		internalError(w, err, "update user")
 		return
+	}
+	if avatar.Filename != "" && previousAvatarFilename != "" {
+		if err := s.avatars.Remove(previousAvatarFilename); err != nil {
+			slog.Error("remove previous user avatar", "error", err, "filename", previousAvatarFilename)
+		}
 	}
 	writeJSON(w, http.StatusOK, map[string]any{"user": user.Public()})
 }

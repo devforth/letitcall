@@ -21,7 +21,7 @@ export default defineConfig(({ command }) => ({
 	],
 	server: {
 		proxy: {
-			'/api': {
+			'^/(api|content)(?:/|$)': {
 				target: 'http://127.0.0.1:41784',
 				changeOrigin: false
 			}

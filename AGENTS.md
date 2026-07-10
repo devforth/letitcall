@@ -2,6 +2,7 @@
 - Every backend API must have tests in `api/tests`.
 - Every backend setting must be configurable through a strictly structured uppercase environment variable in the `SECTION__SETTING__PROVIDER` form, such as `LOGIN__OAUTH__GOOGLE__CLIENT_ID` or `MAILING__SENDING__MAILGUN__API_KEY`.
 - Do not add configuration settings unless the user explicitly requests them; implement behavior directly when no operator choice is needed.
+- After changing Go API code, automatically restart the VS Code task `Dev: Go API (41784)` before testing the running application so it uses the newly compiled backend; do not wait for the user to restart it.
 
 
 
