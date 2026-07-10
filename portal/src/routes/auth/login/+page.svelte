@@ -4,6 +4,7 @@
 	import { api, appPath, getPublicConfig, getSession } from '$lib/api';
 	import Button from '$lib/components/ui/Button.svelte';
 	import Input from '$lib/components/ui/Input.svelte';
+	import ThemeToggle from '$lib/components/ThemeToggle.svelte';
 
 	let email = $state('');
 	let password = $state('');
@@ -50,44 +51,197 @@
 	}
 </script>
 
+<style>
+	/* Input styling */
+	:global(input) {
+		border-color: #e5e5e5 !important;
+		border-radius: 10px !important;
+		background-color: white !important;
+		color: #333 !important;
+		transition: all 0.2s !important;
+	}
+
+	:global(input:focus) {
+		outline: none !important;
+		border-color: #00C950 !important;
+		box-shadow: 0 0 0 3px rgba(0, 201, 80, 0.15) !important;
+	}
+
+	:global(input::placeholder) {
+		color: #999 !important;
+	}
+
+	/* Label styling */
+	:global(label span) {
+		color: #333 !important;
+		font-weight: 600 !important;
+	}
+
+	/* Button styling */
+	:global(button) {
+		border-radius: 10px !important;
+		transition: all 0.3s !important;
+		font-weight: 700 !important;
+		cursor: pointer !important;
+	}
+
+	/* Primary button styling */
+	:global(form button[type="submit"]) {
+		background: linear-gradient(135deg, #00C950 0%, #0da860 100%) !important;
+		border: 2px solid #00C950 !important;
+		color: white !important;
+		padding: 0.875rem !important;
+		min-height: auto !important;
+		font-size: 1rem !important;
+		box-shadow: 0 10px 30px rgba(0, 201, 80, 0.3) !important;
+	}
+
+	:global(form button[type="submit"]:hover:not(:disabled)) {
+		background: linear-gradient(135deg, #00a740 0%, #008a30 100%) !important;
+		box-shadow: 0 15px 40px rgba(0, 201, 80, 0.5) !important;
+	}
+
+	/* Secondary button styling */
+	:global(button[type="button"]) {
+		border: 2px solid #00C950 !important;
+		color: #00C950 !important;
+		background-color: white !important;
+		padding: 0.875rem !important;
+		min-height: auto !important;
+		font-size: 1rem !important;
+	}
+
+	:global(button[type="button"]:hover:not(:disabled)) {
+		background-color: #f0fdf4 !important;
+		border-color: #00C950 !important;
+	}
+
+	/* Dark mode overrides */
+	:global(html.dark) input {
+		background-color: rgba(255, 255, 255, 0.05) !important;
+		border-color: rgba(0, 201, 80, 0.3) !important;
+		color: white !important;
+	}
+
+	:global(html.dark) input:focus {
+		background-color: rgba(0, 201, 80, 0.1) !important;
+		border-color: #00C950 !important;
+		box-shadow: 0 0 15px rgba(0, 201, 80, 0.3) !important;
+	}
+
+
+	:global(html.dark) .min-h-screen {
+		background: linear-gradient(135deg, #006b2a 0%, #008a40 50%, #004d1f 100%);
+	}
+
+	:global(html.dark) section {
+		background-color: rgba(17, 24, 39, 0.95);
+		border-color: rgba(0, 201, 80, 0.4);
+	}
+
+	:global(html.dark) h1 {
+		color: white;
+	}
+
+	:global(html.dark) .text-gray-600 {
+		color: rgb(209, 213, 219);
+	}
+
+	:global(html.dark) .bg-red-50 {
+		background-color: rgba(127, 29, 29, 0.2);
+	}
+
+	:global(html.dark) .text-red-700 {
+		color: rgb(252, 165, 165);
+	}
+
+	:global(html.dark) .border-red-200 {
+		border-color: rgb(127, 29, 29);
+	}
+
+	:global(html.dark) .bg-gray-300 {
+		background-color: rgb(75, 85, 99);
+	}
+
+	:global(html.dark) .text-gray-500 {
+		color: rgb(156, 163, 175);
+	}
+</style>
+
 <svelte:head><title>Sign in · Let It Call</title></svelte:head>
 
-<main class="grid min-h-screen place-items-center px-4 py-12">
-	<section class="w-full max-w-md border border-black p-6 sm:p-8" aria-labelledby="login-title">
-		<div class="mb-8">
-			<p class="mb-2 text-sm font-medium">Let It Call</p>
-			<h1 id="login-title" class="text-2xl font-semibold tracking-tight">Sign in</h1>
-			<p class="mt-2 text-sm">Use the credentials created by an existing user.</p>
+<div class="relative min-h-screen overflow-hidden bg-white">
+	<!-- Gradient background - positioned to start from form midpoint -->
+	<div class="absolute top-0 right-0 bottom-0 w-3/5 bg-gradient-to-br from-[#00C950] via-[#00e560] to-[#0da860]" style="clip-path: polygon(50% 0%, 100% 0%, 100% 100%, 30% 100%);"></div>
+
+	<!-- Floating background elements -->
+	<div class="absolute top-0 right-12 w-96 h-96 bg-white/10 rounded-full blur-3xl -mr-48 -mt-48"></div>
+	<div class="absolute bottom-0 right-1/4 w-96 h-96 bg-white/10 rounded-full blur-3xl"></div>
+
+	<div class="fixed right-4 top-4 z-50">
+		<ThemeToggle />
+	</div>
+
+	<main class="relative z-10 grid min-h-screen grid-cols-1 lg:grid-cols-4 items-center gap-8 lg:gap-0">
+		<!-- Left side content -->
+		<div class="hidden lg:flex lg:col-span-2 flex-col justify-center px-12 xl:px-20">
+			<h2 class="text-5xl xl:text-6xl font-bold text-black mb-6 leading-tight">Schedule Better</h2>
+			<p class="text-lg text-black/70 mb-8 max-w-lg">Let It Call makes team scheduling simple and transparent. Share availability once. Get things booked faster.</p>
+			<div class="space-y-4">
+				<div class="flex items-start gap-3">
+					<span class="text-2xl">✓</span>
+					<span class="text-black/80">Simple availability sharing</span>
+				</div>
+				<div class="flex items-start gap-3">
+					<span class="text-2xl">✓</span>
+					<span class="text-black/80">Instant scheduling</span>
+				</div>
+				<div class="flex items-start gap-3">
+					<span class="text-2xl">✓</span>
+					<span class="text-black/80">Team coordination</span>
+				</div>
+			</div>
 		</div>
 
-		{#if error}
-			<p class="mb-5 border border-black p-3 text-sm" role="alert">{error}</p>
-		{/if}
+		<!-- Right side form -->
+		<section class="w-full max-w-md mx-auto lg:mx-0 lg:col-span-2 px-4 lg:pl-8 xl:pl-12" aria-labelledby="login-title">
+			<div class="bg-white/95 backdrop-blur-xl p-8 sm:p-10 rounded-2xl border-2 border-[#00bf4e]" style="box-shadow: 0 25px 50px rgba(0, 201, 80, 0.25), 0 10px 25px rgba(0, 0, 0, 0.15);">
+				<div class="mb-8">
+					<p class="mb-2 text-sm font-semibold text-[#00C950]">LET IT CALL</p>
+					<h1 id="login-title" class="text-3xl font-bold tracking-tight text-gray-900">Welcome Back</h1>
+					<p class="mt-2 text-sm text-gray-600">Sign in to manage your team's schedule</p>
+				</div>
 
-		<form class="grid gap-5" onsubmit={login}>
-			<Input id="email" label="Email or username" bind:value={email} required autocomplete="username" />
-			<Input
-				id="password"
-				label="Password"
-				type="password"
-				bind:value={password}
-				required
-				autocomplete="current-password"
-			/>
-			<Button type="submit" fullWidth disabled={submitting}>
-				{submitting ? 'Signing in…' : 'Sign in'}
-			</Button>
-		</form>
+				{#if error}
+					<p class="mb-5 border border-red-200 bg-red-50 p-3 text-sm text-red-700 rounded-lg" role="alert">{error}</p>
+				{/if}
 
-		{#if googleEnabled}
-			<div class="my-6 flex items-center gap-3" aria-hidden="true">
-				<div class="h-px flex-1 bg-black"></div>
-				<span class="text-xs uppercase">or</span>
-				<div class="h-px flex-1 bg-black"></div>
+				<form class="grid gap-5" onsubmit={login}>
+					<Input id="email" label="Email or username" bind:value={email} required autocomplete="username" />
+					<Input
+						id="password"
+						label="Password"
+						type="password"
+						bind:value={password}
+						required
+						autocomplete="current-password"
+					/>
+					<Button type="submit" fullWidth disabled={submitting}>
+						{submitting ? 'Signing in…' : 'Sign in'}
+					</Button>
+				</form>
+
+				{#if googleEnabled}
+					<div class="my-6 flex items-center gap-3" aria-hidden="true">
+						<div class="h-px flex-1 bg-gray-300"></div>
+						<span class="text-xs uppercase text-gray-500 font-medium">or continue with</span>
+						<div class="h-px flex-1 bg-gray-300"></div>
+					</div>
+					<Button variant="secondary" fullWidth onclick={googleLogin}>
+						Continue with Google and allow calendar access
+					</Button>
+				{/if}
 			</div>
-			<Button variant="secondary" fullWidth onclick={googleLogin}>
-				Continue with Google and allow calendar access
-			</Button>
-		{/if}
-	</section>
-</main>
+		</section>
+	</main>
+</div>
