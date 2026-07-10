@@ -65,7 +65,6 @@ Use the theme-aware CSS variables in your styles:
 
 ```css
 /* Colors automatically adapt to theme */
-color: rgb(var(--color-foreground));
 background: rgb(var(--color-background));
 border-color: rgb(var(--color-border));
 ```

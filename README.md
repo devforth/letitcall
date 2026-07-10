@@ -2,32 +2,7 @@
 
 A SvelteKit and Go scheduling application. The production image compiles the Svelte portal, embeds it in the Go binary, and serves the UI and JSON API from one HTTP process.
 
-## Run locally
 
-Start the API on the portal's development-proxy port:
-
-```sh
-cd api
-go tool godotenv -f .env.local go run ./cmd/server
-```
-
-In a second terminal, start the portal:
-
-```sh
-cd portal
-pnpm install
-pnpm run dev --host 127.0.0.1 --port 41783 --strictPort
-```
-
-Open portal at `http://127.0.0.1:41783`. 
-
-Default local login credentials is admin:admin.
-
-Opening the repository in VS Code automatically starts both development tasks on ports `41783` (portal) and `41784` (API).
-
-There is no signup route. When the users table is empty, the API creates its first user from `FIRSTUSER__CREDENTIALS__EMAIL` and `FIRSTUSER__CREDENTIALS__PASSWORD` from the `api/.env.local` file. Later users are created from Dashboard → Users.
-
-Shared event types are managed from Dashboard → Scheduling. Each event type has an immutable slug, one or more recipient users, local weekly working hours in the creator's IANA timezone, and a UTC booking contract. Public booking UI will use `/book/{event-slug}`; the public event-type data endpoint is available under `/api/public/event-types/{event-slug}`.
 
 ## Docker
 
@@ -65,26 +40,58 @@ All backend settings use structured uppercase environment variables:
 To enable Google OAuth, set both Google settings and add this authorized redirect URI to the Google client:
 
 ```text
-https://your-host.example{HTTP__BASE__PATH}/api/auth/google/callback
+https://your-host.example{HTTP__BASE__PATH}/auth/google/callback
 ```
 
-For example, a HTTP__BASE__PATH  of `/letitcall` produces `https://your-host.example/letitcall/api/auth/google/callback`. Omit the base path portion when the application is served at `/`. A TLS-terminating reverse proxy must preserve the request host and set `X-Forwarded-Proto: https` so the server forms the same redirect URI.
+For example, a HTTP__BASE__PATH of `/letitcall` produces `https://your-host.example/letitcall/auth/google/callback`. Omit the base path portion when the application is served at `/`. A TLS-terminating reverse proxy must preserve the request host and set `X-Forwarded-Proto: https` so the server forms the same redirect URI.
 
 The requested scopes include identity and permission to manage Google Calendar events. OAuth state uses PKCE. Google tokens are encrypted with a random key generated on first use and kept in `google-token.key` under `STORAGE__LEVELDB__PATH`; persist the data directory across restarts.
 
 When a booking is created, Mailgun delivery and Google Calendar delivery run in parallel. Email is sent to every event-type recipient when Mailgun is configured. A Google Calendar event is added separately to each recipient whose user account is Google-connected; recipients without a Google connection are silently skipped.
 
-## Test and publish
+## For Developers
+
+VS Code starts the portal on `41783` and API on `41784`. To run manually:
+
+```sh
+# Terminal 1
+cd api
+go run ./cmd/server
+
+# Terminal 2
+cd portal
+pnpm install
+pnpm run dev --host 127.0.0.1 --port 41783 --strictPort
+```
+
+Open `http://127.0.0.1:41783`; default login is `admin` / `admin`. There is no signup: the first user comes from `FIRSTUSER__CREDENTIALS__EMAIL` and `FIRSTUSER__CREDENTIALS__PASSWORD`; add later users in Users. Event types use immutable slugs, recipients, timezone-based weekly availability, and UTC bookings; manage them in Scheduling, book at `/book/{event-slug}`, and fetch public data from `/api/public/event-types/{event-slug}`.
+
+### Google OAuth test credentials
+
+Create a Web OAuth client, add the Google account as an OAuth test user, and register:
+
+Enable the [Google Calendar API](https://console.cloud.google.com/apis/library/calendar-json.googleapis.com) for your Google Cloud Console project after creating the OAuth credentials.
+
+```text
+http://127.0.0.1:41783/auth/google/callback
+```
+
+```dotenv
+# api/.env.local
+LOGIN__OAUTH__GOOGLE__CLIENT_ID=your-client-id
+LOGIN__OAUTH__GOOGLE__CLIENT_SECRET=your-client-secret
+```
+
+Do not commit credentials. Restart `Dev: Go API (41784)` and create a user with the Google account's email before signing in; Google login does not create users.
+
+### Test and publish
 
 ```sh
 cd api && go test ./...
 cd ../portal && pnpm run check && pnpm run build
 ```
 
-`publish.sh` creates and pushes multi-platform version and `latest` tags in one Buildx invocation:
-
 ```sh
+# Set VERSION and PACKAGE_NAME in publish.sh first.
 ./publish.sh
 ```
-
-Set `VERSION` and `PACKAGE_NAME` inside the script before publishing to Docker Hub.

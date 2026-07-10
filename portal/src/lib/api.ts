@@ -10,7 +10,7 @@ export function avatarURL(filename: string): string {
 	return appPath(`/content/avatars/${filename}`);
 }
 
-export async function callApi<T>(path: string, init?: RequestInit): Promise<T> {
+export async function callApi<T>(path: string, init?: RequestInit, reportError = true): Promise<T> {
 	const headers = new Headers(init?.headers);
 	if (init?.body && !headers.has('content-type')) {
 		headers.set('content-type', 'application/json');
@@ -25,7 +25,7 @@ export async function callApi<T>(path: string, init?: RequestInit): Promise<T> {
 		});
 	} catch (cause) {
 		const message = cause instanceof Error ? cause.message : 'Unable to reach the server';
-		showError(message);
+		if (reportError) showError(message);
 		throw cause;
 	}
 
@@ -37,7 +37,7 @@ export async function callApi<T>(path: string, init?: RequestInit): Promise<T> {
 		} catch {
 			// Preserve the status fallback for failures outside the API contract.
 		}
-		showError(message);
+		if (reportError) showError(message);
 		throw new Error(message);
 	}
 
@@ -45,8 +45,8 @@ export async function callApi<T>(path: string, init?: RequestInit): Promise<T> {
 	return (await response.json()) as T;
 }
 
-export function getSession(): Promise<{ user: SessionUser }> {
-	return callApi('/api/auth/session');
+export function getSession(reportError = true): Promise<{ user: SessionUser }> {
+	return callApi('/api/auth/session', undefined, reportError);
 }
 
 export function getPublicConfig(): Promise<PublicConfig> {

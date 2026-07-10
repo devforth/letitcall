@@ -29,6 +29,50 @@ func TestConfigUsesStrictEnvironmentNamesAndDefaults(t *testing.T) {
 	}
 }
 
+func TestDotEnvLoadOrderAndMissingFiles(t *testing.T) {
+	clearConfigEnvironment(t)
+	if err := os.Unsetenv(config.EnvHTTPPort); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Unsetenv(config.EnvHTTPBasePath); err != nil {
+		t.Fatal(err)
+	}
+	directory := t.TempDir()
+	workingDirectory, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chdir(directory); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() {
+		if err := os.Chdir(workingDirectory); err != nil {
+			t.Error(err)
+		}
+	})
+	if err := config.LoadDotEnv(); err != nil {
+		t.Fatal(err)
+	}
+	local := config.EnvHTTPPort + "=41784\n" + config.EnvHTTPBasePath + "=/local\n"
+	if err := os.WriteFile(filepath.Join(directory, ".env.local"), []byte(local), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(directory, ".env"), []byte(config.EnvHTTPPort+"=8080\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := config.LoadDotEnv(); err != nil {
+		t.Fatal(err)
+	}
+	cfg, err := config.Load()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cfg.HTTP.Port != 8080 || cfg.HTTP.BasePath != "/local" {
+		t.Fatalf("unexpected dotenv configuration: %#v", cfg.HTTP)
+	}
+}
+
 func TestConfigRejectsPartialGoogleOAuthSettings(t *testing.T) {
 	clearConfigEnvironment(t)
 	t.Setenv(config.EnvGoogleClientID, "client-id-only")

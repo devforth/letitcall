@@ -3,11 +3,15 @@
 	import Icon from '@iconify/svelte';
 	import externalLinkIcon from '@iconify-icons/tabler/external-link';
 	import { appPath, avatarURL, callApi } from '$lib/api';
+	import EventTypeActionsMenu from '$lib/components/EventTypeActionsMenu.svelte';
+	import ConfirmationDialog from '$lib/components/ui/ConfirmationDialog.svelte';
 	import type { EventType, ManagedUser } from '$lib/types';
 
 	let eventTypes = $state<EventType[]>([]);
 	let users = $state<ManagedUser[]>([]);
 	let loading = $state(true);
+	let deletingSlug = $state('');
+	let eventTypeToDelete = $state<EventType | null>(null);
 
 	onMount(async () => {
 		try {
@@ -26,6 +30,20 @@
 
 	function user(email: string) {
 		return users.find((candidate) => candidate.email === email);
+	}
+
+	async function deleteEventType() {
+		const eventType = eventTypeToDelete!;
+		deletingSlug = eventType.eventSlug;
+		try {
+			await callApi(`/api/event-types/${encodeURIComponent(eventType.eventSlug)}`, { method: 'DELETE' });
+			eventTypes = eventTypes.filter((candidate) => candidate.eventSlug !== eventType.eventSlug);
+			eventTypeToDelete = null;
+		} catch {
+			// callApi reports the error globally.
+		} finally {
+			deletingSlug = '';
+		}
 	}
 </script>
 
@@ -73,6 +91,11 @@
 							<Icon icon={externalLinkIcon} width="20" height="20" />
 						</a>
 						<a class="border border-black px-4 py-3 text-center text-sm font-medium" href={appPath(`/scheduling/${eventType.eventSlug}`)}>Edit</a>
+						<EventTypeActionsMenu
+							name={eventType.name}
+							deleting={deletingSlug === eventType.eventSlug}
+							ondelete={() => (eventTypeToDelete = eventType)}
+						/>
 					</div>
 				</article>
 			{:else}
@@ -81,3 +104,16 @@
 		</div>
 	{/if}
 </section>
+
+{#if eventTypeToDelete}
+	<ConfirmationDialog
+		open
+		title="Delete event type?"
+		description={`This will completely delete ${eventTypeToDelete.name}. This action cannot be undone.`}
+		confirmLabel="Delete event type"
+		confirmingLabel="Deleting…"
+		confirming={deletingSlug === eventTypeToDelete.eventSlug}
+		onconfirm={deleteEventType}
+		oncancel={() => (eventTypeToDelete = null)}
+	/>
+{/if}

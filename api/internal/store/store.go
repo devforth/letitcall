@@ -266,6 +266,10 @@ func (s *Store) GetEventType(slug string) (model.EventType, error) {
 	return eventType, nil
 }
 
+func (s *Store) DeleteEventType(slug string) error {
+	return s.eventTypes.Delete([]byte(slug), nil)
+}
+
 func (s *Store) ListEventTypes() ([]model.EventType, error) {
 	iterator := s.eventTypes.NewIterator(nil, nil)
 	defer iterator.Release()
@@ -323,40 +327,48 @@ func (s *Store) RemoveEventTypeRecipient(email string, updatedAt time.Time) erro
 	return s.eventTypes.Write(batch, nil)
 }
 
-func (s *Store) CreateBooking(booking model.Booking, inviteeLimit *int) error {
+func (s *Store) CreateBooking(slotKey string, booking model.Booking, inviteeLimit *int) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	iterator := s.bookings.NewIterator(nil, nil)
-	defer iterator.Release()
-	count := 0
-	for iterator.Next() {
-		var existing model.Booking
-		if err := json.Unmarshal(iterator.Value(), &existing); err != nil {
+	key := []byte(slotKey)
+	bookings := make([]model.Booking, 0)
+	encoded, err := s.bookings.Get(key, nil)
+	if err == nil {
+		if err := json.Unmarshal(encoded, &bookings); err != nil {
 			return err
 		}
-		if existing.EventSlug != booking.EventSlug || !existing.Time.Equal(booking.Time) {
-			continue
-		}
+	} else if !errors.Is(err, leveldb.ErrNotFound) {
+		return err
+	}
+	for _, existing := range bookings {
 		if normalizeEmail(existing.AttendeeEmail) == normalizeEmail(booking.AttendeeEmail) {
 			return ErrExists
 		}
-		count++
 	}
-	if err := iterator.Error(); err != nil {
-		return err
-	}
-	if inviteeLimit != nil && count >= *inviteeLimit {
+	if inviteeLimit != nil && len(bookings) >= *inviteeLimit {
 		return ErrCapacity
 	}
-	return putJSON(s.bookings, []byte(booking.ID), booking)
+	return putJSON(s.bookings, key, append(bookings, booking))
 }
 
 func (s *Store) GetBooking(id string) (model.Booking, error) {
-	var booking model.Booking
-	if err := getJSON(s.bookings, []byte(id), &booking); err != nil {
+	iterator := s.bookings.NewIterator(nil, nil)
+	defer iterator.Release()
+	for iterator.Next() {
+		var bookings []model.Booking
+		if err := json.Unmarshal(iterator.Value(), &bookings); err != nil {
+			return model.Booking{}, err
+		}
+		for _, booking := range bookings {
+			if booking.ID == id {
+				return booking, nil
+			}
+		}
+	}
+	if err := iterator.Error(); err != nil {
 		return model.Booking{}, err
 	}
-	return booking, nil
+	return model.Booking{}, ErrNotFound
 }
 
 func (s *Store) ListBookings() ([]model.Booking, error) {
@@ -364,11 +376,11 @@ func (s *Store) ListBookings() ([]model.Booking, error) {
 	defer iterator.Release()
 	bookings := make([]model.Booking, 0)
 	for iterator.Next() {
-		var booking model.Booking
-		if err := json.Unmarshal(iterator.Value(), &booking); err != nil {
+		var slotBookings []model.Booking
+		if err := json.Unmarshal(iterator.Value(), &slotBookings); err != nil {
 			return nil, err
 		}
-		bookings = append(bookings, booking)
+		bookings = append(bookings, slotBookings...)
 	}
 	if err := iterator.Error(); err != nil {
 		return nil, err
@@ -380,15 +392,29 @@ func (s *Store) ListBookings() ([]model.Booking, error) {
 func (s *Store) DeleteBooking(id string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	encodedKey := []byte(id)
-	exists, err := s.bookings.Has(encodedKey, nil)
-	if err != nil {
+	iterator := s.bookings.NewIterator(nil, nil)
+	defer iterator.Release()
+	for iterator.Next() {
+		var bookings []model.Booking
+		if err := json.Unmarshal(iterator.Value(), &bookings); err != nil {
+			return err
+		}
+		for index, booking := range bookings {
+			if booking.ID != id {
+				continue
+			}
+			key := append([]byte(nil), iterator.Key()...)
+			bookings = append(bookings[:index], bookings[index+1:]...)
+			if len(bookings) == 0 {
+				return s.bookings.Delete(key, nil)
+			}
+			return putJSON(s.bookings, key, bookings)
+		}
+	}
+	if err := iterator.Error(); err != nil {
 		return err
 	}
-	if !exists {
-		return ErrNotFound
-	}
-	return s.bookings.Delete(encodedKey, nil)
+	return ErrNotFound
 }
 
 func normalizeEmail(email string) string {

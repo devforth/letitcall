@@ -13,6 +13,7 @@
 	let users = $state<ManagedUser[]>([]);
 	let currentEmail = $state('');
 	let email = $state('');
+	let fullName = $state('');
 	let password = $state('');
 	let timezone = $state('UTC');
 	let timezones = $state<string[]>(['UTC']);
@@ -50,10 +51,11 @@
 			const avatar = (await avatarSelector?.exportAvatar()) ?? '';
 			const response = await callApi<{ user: ManagedUser }>('/api/users', {
 				method: 'POST',
-				body: JSON.stringify({ email, password, timezone, avatar })
+				body: JSON.stringify({ email, fullName, password, timezone, avatar })
 			});
 			users = [...users, response.user].sort((a, b) => a.email.localeCompare(b.email));
 			email = '';
+			fullName = '';
 			password = '';
 			timezone = getLocalTimezones().current;
 			showForm = false;
@@ -101,12 +103,12 @@
 	{#if showForm}
 		<form class="mb-8 grid gap-5 border border-black p-5 lg:grid-cols-3" onsubmit={createUser}>
 			<Input id="new-email" label="Email" type="email" bind:value={email} required autocomplete="off" />
+			<Input id="new-full-name" label="Full name (optional)" bind:value={fullName} autocomplete="name" />
 			<Input
 				id="new-password"
-				label="Temporary password"
+				label="Temporary password (optional)"
 				type="password"
 				bind:value={password}
-				required
 				minlength={12}
 				autocomplete="new-password"
 			/>

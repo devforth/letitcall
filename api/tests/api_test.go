@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"image"
 	"image/jpeg"
@@ -21,8 +22,10 @@ import (
 
 	"github.com/letitcall/letitcall/api/internal/config"
 	"github.com/letitcall/letitcall/api/internal/httpapi"
+	"github.com/letitcall/letitcall/api/internal/model"
 	"github.com/letitcall/letitcall/api/internal/security"
 	"github.com/letitcall/letitcall/api/internal/store"
+	"github.com/syndtr/goleveldb/leveldb"
 )
 
 const (
@@ -242,14 +245,30 @@ func TestUserManagementAPIs(t *testing.T) {
 	}), http.StatusBadRequest)
 
 	createBody := map[string]string{
-		"email": "member@example.com", "password": "MemberPassword123!", "timezone": "Europe/London",
+		"email": "member@example.com", "fullName": "Ada Lovelace", "password": "MemberPassword123!", "timezone": "Europe/London",
 	}
 	created := expectStatus(t, f.request(http.MethodPost, "/api/users", createBody), http.StatusCreated)
-	if !strings.Contains(string(created), `"googleConnected":false`) {
+	if !strings.Contains(string(created), `"fullName":"Ada Lovelace"`) || !strings.Contains(string(created), `"googleConnected":false`) {
 		t.Fatalf("unexpected create response: %s", created)
 	}
+	storedUser, err := f.store.GetUser("member@example.com")
+	if err != nil || storedUser.FullName != "Ada Lovelace" {
+		t.Fatalf("full name was not stored in LevelDB: user=%#v err=%v", storedUser, err)
+	}
 	expectStatus(t, f.request(http.MethodPost, "/api/users", createBody), http.StatusConflict)
+	emailOnly := expectStatus(t, f.request(http.MethodPost, "/api/users", map[string]string{"email": "google-only@example.com"}), http.StatusCreated)
+	if !strings.Contains(string(emailOnly), `"fullName":""`) || !strings.Contains(string(emailOnly), `"timezone":"UTC"`) {
+		t.Fatalf("unexpected email-only user response: %s", emailOnly)
+	}
+	storedEmailOnly, err := f.store.GetUser("google-only@example.com")
+	if err != nil || storedEmailOnly.PasswordHash != "" || storedEmailOnly.Timezone != "UTC" {
+		t.Fatalf("email-only user was not stored correctly: user=%#v err=%v", storedEmailOnly, err)
+	}
 	expectStatus(t, f.request(http.MethodPatch, "/api/users/member@example.com", map[string]string{"timezone": "America/New_York"}), http.StatusOK)
+	profileUpdated := expectStatus(t, f.request(http.MethodPatch, "/api/users/member@example.com", map[string]string{"fullName": "Grace Hopper"}), http.StatusOK)
+	if !strings.Contains(string(profileUpdated), `"fullName":"Grace Hopper"`) {
+		t.Fatalf("unexpected profile update response: %s", profileUpdated)
+	}
 	updated := expectStatus(t, f.request(http.MethodPatch, "/api/users/member@example.com", map[string]string{"avatar": jpegDataURL(t, 512, 512)}), http.StatusOK)
 	firstAvatarFilename := avatarFilenameFromResponse(t, updated, "member__example.com")
 	if _, err := os.Stat(filepath.Join(f.dataPath, "content", "avatars", firstAvatarFilename)); err != nil {
@@ -337,7 +356,7 @@ func TestBookingAPIs(t *testing.T) {
 	expectStatus(t, f.request(http.MethodPost, "/api/bookings", offset), http.StatusBadRequest)
 	expectStatus(t, f.request(http.MethodPost, "/api/auth/logout", nil), http.StatusNoContent)
 	booking := map[string]string{
-		"eventSlug": "planning-call", "time": bookingTime, "attendeeEmail": "guest@example.com",
+		"eventSlug": "planning-call", "time": bookingTime, "attendeeName": "Guest Person", "attendeeEmail": "guest@example.com", "notes": "Discuss launch",
 	}
 	created := expectStatus(t, f.request(http.MethodPost, "/api/bookings", booking), http.StatusCreated)
 	var createdResponse struct {
@@ -348,8 +367,12 @@ func TestBookingAPIs(t *testing.T) {
 	if err := json.Unmarshal(created, &createdResponse); err != nil || createdResponse.Booking.ID == "" {
 		t.Fatalf("booking response did not include an ID: %s", created)
 	}
+	publicEventType := expectStatus(t, f.request(http.MethodGet, "/api/public/event-types/planning-call", nil), http.StatusOK)
+	if !strings.Contains(string(publicEventType), `"unavailableTimes":["`+bookingTime+`"]`) {
+		t.Fatalf("booked slot was not exposed as unavailable: %s", publicEventType)
+	}
 	limitReached := expectStatus(t, f.request(http.MethodPost, "/api/bookings", map[string]string{
-		"eventSlug": "planning-call", "time": bookingTime, "attendeeEmail": "second@example.com",
+		"eventSlug": "planning-call", "time": bookingTime, "attendeeName": "Second Guest", "attendeeEmail": "second@example.com", "notes": "",
 	}), http.StatusConflict)
 	if !strings.Contains(string(limitReached), "invitee limit has been reached") {
 		t.Fatalf("unexpected capacity error: %s", limitReached)
@@ -363,20 +386,62 @@ func TestBookingAPIs(t *testing.T) {
 	expectStatus(t, f.request(http.MethodDelete, "/api/bookings/"+createdResponse.Booking.ID, nil), http.StatusNotFound)
 }
 
+func TestBookingsUseUTCSlotKey(t *testing.T) {
+	dataPath := t.TempDir()
+	database, err := store.Open(dataPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	start := time.Date(2026, time.July, 16, 8, 0, 0, 0, time.UTC)
+	end := start.Add(30 * time.Minute)
+	slotKey := "planning-call" + start.Format(time.RFC3339) + "-" + end.Format(time.RFC3339)
+	limit := 2
+	for index, email := range []string{"first@example.com", "second@example.com"} {
+		booking := model.Booking{
+			ID:            fmt.Sprintf("booking-%d", index),
+			EventSlug:     "planning-call",
+			Time:          start,
+			EndTime:       end,
+			AttendeeName:  "Guest",
+			AttendeeEmail: email,
+		}
+		if err := database.CreateBooking(slotKey, booking, &limit); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := database.Close(); err != nil {
+		t.Fatal(err)
+	}
+
+	bookings, err := leveldb.OpenFile(filepath.Join(dataPath, "bookings.leveldb"), nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer bookings.Close()
+	iterator := bookings.NewIterator(nil, nil)
+	defer iterator.Release()
+	if !iterator.Next() || string(iterator.Key()) != slotKey {
+		t.Fatalf("booking slot key = %q, want %q", iterator.Key(), slotKey)
+	}
+	if iterator.Next() {
+		t.Fatalf("multiple LevelDB records were created for one booking slot")
+	}
+}
+
 func TestBookingDeliveryUsesMailgunAndConnectedGoogleCalendar(t *testing.T) {
 	f := newConfiguredFixture(t, true, "", func(cfg *config.Config) {
 		cfg.Mailing.Mailgun = config.Mailgun{
 			APIKey: "mailgun-key", Domain: "mail.example.com", From: "Bookings <bookings@example.com>",
 		}
 	})
-	mockGoogleProvider(t, adminEmail, "", nil)
-	expectStatus(t, googleCallback(f), http.StatusSeeOther)
+	mockGoogleProvider(t, adminEmail, "", "", nil)
+	expectStatus(t, googleCallback(f), http.StatusOK)
 	calendarRequests, mailgunRequests := mockBookingDelivery(t)
 	expectStatus(t, f.request(http.MethodPost, "/api/event-types", eventTypeBody("Delivery test", []string{adminEmail}, 1)), http.StatusCreated)
 	candidate := time.Now().UTC().AddDate(0, 0, 2)
 	bookingTime := time.Date(candidate.Year(), candidate.Month(), candidate.Day(), 12, 0, 0, 0, time.UTC).Format(time.RFC3339)
 	expectStatus(t, f.request(http.MethodPost, "/api/bookings", map[string]string{
-		"eventSlug": "delivery-test", "time": bookingTime, "attendeeEmail": "guest@example.com",
+		"eventSlug": "delivery-test", "time": bookingTime, "attendeeName": "Guest Person", "attendeeEmail": "guest@example.com", "notes": "",
 	}), http.StatusCreated)
 	if *calendarRequests != 1 || *mailgunRequests != 1 {
 		t.Fatalf("unexpected delivery calls: calendar=%d mailgun=%d", *calendarRequests, *mailgunRequests)
@@ -388,7 +453,7 @@ func TestEventTypeAPIs(t *testing.T) {
 	expectStatus(t, f.request(http.MethodGet, "/api/event-types", nil), http.StatusUnauthorized)
 	expectStatus(t, f.login(adminEmail, adminPassword), http.StatusOK)
 	expectStatus(t, f.request(http.MethodPost, "/api/users", map[string]string{
-		"email": "member@example.com", "password": "MemberPassword123!", "timezone": "Europe/Kyiv",
+		"email": "member@example.com", "fullName": "Ada Lovelace", "password": "MemberPassword123!", "timezone": "Europe/Kyiv",
 	}), http.StatusCreated)
 	created := expectStatus(t, f.request(http.MethodPost, "/api/event-types", eventTypeBody("Team Consultation!", []string{adminEmail}, 3)), http.StatusCreated)
 	if !strings.Contains(string(created), `"eventSlug":"team-consultation"`) {
@@ -405,11 +470,15 @@ func TestEventTypeAPIs(t *testing.T) {
 		t.Fatalf("event type missing from list: %s", listed)
 	}
 	public := expectStatus(t, f.request(http.MethodGet, "/api/public/event-types/team-consultation", nil), http.StatusOK)
-	if !strings.Contains(string(public), `"hosts"`) || !strings.Contains(string(public), "member@example.com") {
+	if !strings.Contains(string(public), `"hosts"`) || !strings.Contains(string(public), `"fullName":"Ada Lovelace"`) {
 		t.Fatalf("public event type did not include hosts: %s", public)
 	}
 	invalid := eventTypeBody("No recipients", nil, 1)
 	expectStatus(t, f.request(http.MethodPost, "/api/event-types", invalid), http.StatusBadRequest)
+	expectStatus(t, f.request(http.MethodDelete, "/api/event-types/team-consultation", nil), http.StatusNoContent)
+	expectStatus(t, f.request(http.MethodGet, "/api/event-types/team-consultation", nil), http.StatusNotFound)
+	expectStatus(t, f.request(http.MethodGet, "/api/public/event-types/team-consultation", nil), http.StatusNotFound)
+	expectStatus(t, f.request(http.MethodDelete, "/api/event-types/team-consultation", nil), http.StatusNotFound)
 }
 
 func TestDeletingUserUpdatesEventTypeRecipients(t *testing.T) {
@@ -440,7 +509,7 @@ func TestDeletingFinalEventTypeRecipientIsRejected(t *testing.T) {
 func TestGoogleOAuthAPIs(t *testing.T) {
 	disabled := newFixture(t, false)
 	expectStatus(t, disabled.request(http.MethodGet, "/api/auth/google/start", nil), http.StatusNotFound)
-	expectStatus(t, disabled.request(http.MethodGet, "/api/auth/google/callback", nil), http.StatusNotFound)
+	expectStatus(t, disabled.request(http.MethodPost, "/api/auth/google/callback", nil), http.StatusNotFound)
 
 	enabled := newFixtureAtBasePath(t, true, "/calendar")
 	configBody := expectStatus(t, enabled.request(http.MethodGet, "/api/config/public", nil), http.StatusOK)
@@ -460,17 +529,58 @@ func TestGoogleOAuthAPIs(t *testing.T) {
 	if !strings.Contains(query.Get("scope"), "calendar.events") {
 		t.Fatalf("OAuth redirect is missing calendar scope: %s", query.Get("scope"))
 	}
-	if query.Get("redirect_uri") != enabled.server.URL+"/calendar/api/auth/google/callback" {
+	if query.Get("redirect_uri") != enabled.server.URL+"/calendar/auth/google/callback" {
 		t.Fatalf("unexpected OAuth redirect URI: %s", query.Get("redirect_uri"))
 	}
-	expectStatus(t, enabled.request(http.MethodGet, "/api/auth/google/callback?state=invalid&code=invalid", nil), http.StatusBadRequest)
+	expectStatus(t, enabled.request(http.MethodPost, "/api/auth/google/callback", map[string]string{"error": "access_denied"}), http.StatusBadRequest)
+	expectStatus(t, enabled.request(http.MethodPost, "/api/auth/google/callback", map[string]string{"state": "invalid", "code": "invalid"}), http.StatusBadRequest)
+}
+
+func TestGoogleOAuthImportsMissingFullName(t *testing.T) {
+	f := newFixture(t, true)
+	mockGoogleProvider(t, adminEmail, "Ada Lovelace", "", nil)
+	expectStatus(t, googleCallback(f), http.StatusOK)
+	user, err := f.store.GetUser(adminEmail)
+	if err != nil || user.FullName != "Ada Lovelace" {
+		t.Fatalf("Google full name was not imported: user=%#v err=%v", user, err)
+	}
+}
+
+func TestGoogleOAuthKeepsExistingFullName(t *testing.T) {
+	f := newFixture(t, true)
+	user, err := f.store.GetUser(adminEmail)
+	if err != nil {
+		t.Fatal(err)
+	}
+	user.FullName = "Existing User"
+	if err := f.store.PutUser(user); err != nil {
+		t.Fatal(err)
+	}
+	mockGoogleProvider(t, adminEmail, "Google Profile", "", nil)
+	expectStatus(t, googleCallback(f), http.StatusOK)
+	user, err = f.store.GetUser(adminEmail)
+	if err != nil || user.FullName != "Existing User" {
+		t.Fatalf("Google replaced an existing full name: user=%#v err=%v", user, err)
+	}
+}
+
+func TestGoogleOAuthRejectsUnknownUser(t *testing.T) {
+	f := newFixture(t, true)
+	mockGoogleProvider(t, "unknown@example.com", "Unknown User", "", nil)
+	body := expectStatus(t, googleCallback(f), http.StatusForbidden)
+	if !strings.Contains(string(body), "Ask an administrator to add your email") {
+		t.Fatalf("unexpected unknown-user error: %s", body)
+	}
+	if _, err := f.store.GetUser("unknown@example.com"); !errors.Is(err, store.ErrNotFound) {
+		t.Fatalf("unknown Google user was created: %v", err)
+	}
 }
 
 func TestGoogleOAuthImportsMissingAvatar(t *testing.T) {
 	f := newFixtureAtBasePath(t, true, "/calendar")
 	pictureURL := "https://lh3.googleusercontent.com/profile.jpg"
-	avatarRequests := mockGoogleProvider(t, adminEmail, pictureURL, jpegBytes(t, 640, 320))
-	expectStatus(t, googleCallback(f), http.StatusSeeOther)
+	avatarRequests := mockGoogleProvider(t, adminEmail, "", pictureURL, jpegBytes(t, 640, 320))
+	expectStatus(t, googleCallback(f), http.StatusOK)
 	if *avatarRequests != 1 {
 		t.Fatalf("expected one Google avatar request, got %d", *avatarRequests)
 	}
@@ -506,8 +616,8 @@ func TestGoogleOAuthKeepsExistingAvatar(t *testing.T) {
 		t.Fatal(err)
 	}
 	pictureURL := "https://lh3.googleusercontent.com/profile.jpg"
-	avatarRequests := mockGoogleProvider(t, adminEmail, pictureURL, jpegBytes(t, 320, 640))
-	expectStatus(t, googleCallback(f), http.StatusSeeOther)
+	avatarRequests := mockGoogleProvider(t, adminEmail, "", pictureURL, jpegBytes(t, 320, 640))
+	expectStatus(t, googleCallback(f), http.StatusOK)
 	if *avatarRequests != 0 {
 		t.Fatalf("Google avatar was requested despite an existing avatar path")
 	}
@@ -599,7 +709,10 @@ func googleCallback(f *fixture) *http.Response {
 	if err != nil {
 		f.t.Fatal(err)
 	}
-	return f.request(http.MethodGet, "/api/auth/google/callback?state="+url.QueryEscape(location.Query().Get("state"))+"&code=test-code", nil)
+	return f.request(http.MethodPost, "/api/auth/google/callback", map[string]string{
+		"state": location.Query().Get("state"),
+		"code":  "test-code",
+	})
 }
 
 type roundTripFunc func(*http.Request) (*http.Response, error)
@@ -608,7 +721,7 @@ func (roundTrip roundTripFunc) RoundTrip(request *http.Request) (*http.Response,
 	return roundTrip(request)
 }
 
-func mockGoogleProvider(t *testing.T, email, pictureURL string, picture []byte) *int {
+func mockGoogleProvider(t *testing.T, email, fullName, pictureURL string, picture []byte) *int {
 	t.Helper()
 	originalTransport := http.DefaultTransport
 	avatarRequests := 0
@@ -622,7 +735,7 @@ func mockGoogleProvider(t *testing.T, email, pictureURL string, picture []byte) 
 		case "https://openidconnect.googleapis.com/v1/userinfo":
 			contentType = "application/json"
 			body, _ = json.Marshal(map[string]any{
-				"email": email, "email_verified": true, "picture": pictureURL,
+				"email": email, "email_verified": true, "name": fullName, "picture": pictureURL,
 			})
 		case pictureURL:
 			avatarRequests++

@@ -11,6 +11,7 @@
 	import type { ManagedUser } from '$lib/types';
 
 	let email = $state('');
+	let fullName = $state('');
 	let password = $state('');
 	let timezone = $state('UTC');
 	let timezones = $state<string[]>(['UTC']);
@@ -28,6 +29,7 @@
 			const user = response.users.find((candidate) => candidate.email === page.params.email);
 			if (!user) throw new Error('User not found');
 			email = user.email;
+			fullName = user.fullName;
 			timezone = user.timezone;
 			avatarPath = user.avatarPath ?? '';
 			if (!timezones.includes(timezone)) timezones = [timezone, ...timezones];
@@ -43,7 +45,10 @@
 		saving = true;
 		error = '';
 		try {
-			const update: { timezone: string; password?: string; avatar?: string } = { timezone };
+			const update: { fullName: string; timezone: string; password?: string; avatar?: string } = {
+				fullName,
+				timezone
+			};
 			if (password) update.password = password;
 			const avatar = (await avatarSelector?.exportAvatar()) ?? '';
 			if (avatar) update.avatar = avatar;
@@ -77,6 +82,7 @@
 	{:else if email}
 		<form class="grid gap-5 border border-black p-5 lg:grid-cols-2" onsubmit={saveUser}>
 			<Input id="edit-email" label="Email" type="email" bind:value={email} readonly autocomplete="email" />
+			<Input id="edit-full-name" label="Full name" bind:value={fullName} autocomplete="name" />
 			<SearchableSelect
 				id="edit-timezone"
 				label="Timezone"
