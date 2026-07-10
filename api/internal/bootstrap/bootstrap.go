@@ -25,9 +25,9 @@ func EnsureFirstUser(database *store.Store, credentials config.FirstUser, now ti
 			config.EnvFirstUserPassword,
 		)
 	}
-	user, err := security.NewUser(credentials.Email, credentials.Password, "UTC", now)
+	user, err := security.NewFirstUser(credentials.Email, credentials.Password, now)
 	if err != nil {
-		return fmt.Errorf("validate first user: %w", err)
+		return fmt.Errorf("prepare first user: %w", err)
 	}
 	if err := database.CreateUser(user); err != nil && !errors.Is(err, store.ErrExists) {
 		return fmt.Errorf("create first user: %w", err)
