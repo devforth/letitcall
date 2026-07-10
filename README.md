@@ -8,11 +8,7 @@ Start the API on the portal's development-proxy port:
 
 ```sh
 cd api
-HTTP__PORT=41784 \
-STORAGE__LEVELDB__PATH=./data \
-FIRSTUSER__CREDENTIALS__EMAIL=owner@example.com \
-FIRSTUSER__CREDENTIALS__PASSWORD='replace-with-at-least-12-characters' \
-go run ./cmd/server
+HTTP__PORT=41784 dotenvx run -f .env.local -- go run ./cmd/server
 ```
 
 In a second terminal, start the portal:
@@ -23,7 +19,7 @@ npm install
 npm run dev -- --host 127.0.0.1 --port 41783 --strictPort
 ```
 
-Opening the repository in VS Code automatically starts both development tasks on ports `41783` (portal) and `41784` (API). The automatic API task uses local-only bootstrap credentials `developer@letitcall.local` / `LocalDevelopment123!` when its LevelDB users table is empty.
+Opening the repository in VS Code automatically starts both development tasks on ports `41783` (portal) and `41784` (API). The automatic API task loads the committed `api/.env.local` settings through dotenvx.
 
 There is no signup route. When the users table is empty, the API creates its first user from `FIRSTUSER__CREDENTIALS__EMAIL` and `FIRSTUSER__CREDENTIALS__PASSWORD`. Later users are created from Dashboard → Users.
 
