@@ -38,7 +38,7 @@ docker run --rm -p 8080:80 \
   letitcall
 ```
 
-The server listens on `HTTP__PORT` (default `80`). LevelDB data is stored at `STORAGE__LEVELDB__PATH` (`/data` in Docker). Each logical table has its own LevelDB database.
+The server listens on `HTTP__PORT` (default `80`). LevelDB data is stored at `STORAGE__LEVELDB__PATH` (`/data` in Docker). Each logical table has its own LevelDB database, and user avatars are stored under its `content/avatars` subdirectory.
 
 ## Configuration
 

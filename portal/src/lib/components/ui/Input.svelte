@@ -10,6 +10,7 @@
 		required = false,
 		autocomplete,
 		disabled = false,
+		readonly = false,
 		minlength,
 		error = ''
 	}: {
@@ -21,6 +22,7 @@
 		required?: boolean;
 		autocomplete?: HTMLInputAttributes['autocomplete'];
 		disabled?: boolean;
+		readonly?: boolean;
 		minlength?: number;
 		error?: string;
 	} = $props();
@@ -36,6 +38,7 @@
 		{required}
 		{autocomplete}
 		{disabled}
+		{readonly}
 		{minlength}
 		aria-invalid={error ? 'true' : undefined}
 		aria-describedby={error ? `${id}-error` : undefined}

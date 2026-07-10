@@ -7,10 +7,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"image"
 	"io"
 	"net/http"
 	"time"
 
+	"github.com/letitcall/letitcall/api/internal/content"
 	"github.com/letitcall/letitcall/api/internal/model"
 	"github.com/letitcall/letitcall/api/internal/security"
 	"github.com/letitcall/letitcall/api/internal/store"
@@ -124,9 +126,24 @@ func (s *Server) googleCallback(w http.ResponseWriter, r *http.Request) {
 		internalError(w, err, "encrypt Google token")
 		return
 	}
+	var googleAvatar content.Avatar
+	if user.AvatarPath == "" && identity.Picture != "" {
+		googleAvatar, err = fetchGoogleAvatar(r.Context(), identity.Picture, user.Email, s.avatars)
+		if err != nil {
+			internalError(w, err, "fetch Google avatar")
+			return
+		}
+		user.AvatarPath = googleAvatar.Filename
+	}
 	user.GoogleConnected = true
 	user.EncryptedGoogleToken = encryptedToken
 	user.UpdatedAt = s.now().UTC().Truncate(time.Second)
+	if googleAvatar.Filename != "" {
+		if err := s.avatars.Write(googleAvatar); err != nil {
+			internalError(w, err, "store Google avatar")
+			return
+		}
+	}
 	if err := s.store.PutUser(user); err != nil {
 		internalError(w, err, "save Google connection")
 		return
@@ -147,6 +164,7 @@ func (s *Server) googleOAuthConfig(r *http.Request) *oauth2.Config {
 type googleIdentity struct {
 	Email         string `json:"email"`
 	EmailVerified bool   `json:"email_verified"`
+	Picture       string `json:"picture"`
 }
 
 func fetchGoogleIdentity(ctx context.Context, oauthConfig *oauth2.Config, token *oauth2.Token) (googleIdentity, error) {
@@ -168,4 +186,25 @@ func fetchGoogleIdentity(ctx context.Context, oauthConfig *oauth2.Config, token 
 		return googleIdentity{}, err
 	}
 	return identity, nil
+}
+
+func fetchGoogleAvatar(ctx context.Context, pictureURL, email string, avatars *content.Avatars) (content.Avatar, error) {
+	request, err := http.NewRequestWithContext(ctx, http.MethodGet, pictureURL, nil)
+	if err != nil {
+		return content.Avatar{}, err
+	}
+	response, err := http.DefaultClient.Do(request)
+	if err != nil {
+		return content.Avatar{}, err
+	}
+	defer response.Body.Close()
+	if response.StatusCode != http.StatusOK {
+		_, _ = io.Copy(io.Discard, io.LimitReader(response.Body, 4096))
+		return content.Avatar{}, fmt.Errorf("Google avatar returned %s", response.Status)
+	}
+	source, _, err := image.Decode(io.LimitReader(response.Body, 10<<20))
+	if err != nil {
+		return content.Avatar{}, fmt.Errorf("decode Google avatar: %w", err)
+	}
+	return avatars.PrepareImage(email, source)
 }

@@ -17,6 +17,7 @@ import (
 	"time"
 
 	"github.com/letitcall/letitcall/api/internal/config"
+	"github.com/letitcall/letitcall/api/internal/content"
 	"github.com/letitcall/letitcall/api/internal/model"
 	"github.com/letitcall/letitcall/api/internal/security"
 	"github.com/letitcall/letitcall/api/internal/store"
@@ -37,6 +38,7 @@ const userContextKey contextKey = "authenticated-user"
 type Server struct {
 	cfg         config.Config
 	store       *store.Store
+	avatars     *content.Avatars
 	oauth       *oauth2.Config
 	tokenCipher *security.TokenCipher
 	limiter     *security.LoginLimiter
@@ -52,9 +54,14 @@ func New(cfg config.Config, database *store.Store) (*Server, error) {
 	if err != nil {
 		return nil, err
 	}
+	avatars, err := content.NewAvatars(cfg.Storage.LevelDBPath)
+	if err != nil {
+		return nil, err
+	}
 	server := &Server{
 		cfg:       cfg,
 		store:     database,
+		avatars:   avatars,
 		limiter:   security.NewLoginLimiter(cfg.Login.PasswordMaxAttempts, cfg.Login.PasswordLockout),
 		dummyHash: dummyHash,
 		now:       time.Now,
@@ -99,6 +106,8 @@ func (s *Server) Handler() http.Handler {
 	mux.Handle("GET /api/bookings", s.requireAuth(http.HandlerFunc(s.listBookings)))
 	mux.Handle("POST /api/bookings", s.requireAuth(http.HandlerFunc(s.createBooking)))
 	mux.Handle("DELETE /api/bookings/{time}", s.requireAuth(http.HandlerFunc(s.deleteBooking)))
+	mux.HandleFunc("GET /content/avatars/{filename}", s.serveAvatar)
+	mux.HandleFunc("/content/", http.NotFound)
 	mux.HandleFunc("/", s.servePortal)
 	handler := s.middleware(mux)
 	if s.cfg.HTTP.BasePath == "" {
@@ -111,7 +120,7 @@ func (s *Server) Handler() http.Handler {
 
 func (s *Server) middleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Security-Policy", "default-src 'self'; connect-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'")
+		w.Header().Set("Content-Security-Policy", "default-src 'self'; connect-src 'self'; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'")
 		w.Header().Set("Referrer-Policy", "same-origin")
 		w.Header().Set("X-Content-Type-Options", "nosniff")
 		w.Header().Set("X-Frame-Options", "DENY")

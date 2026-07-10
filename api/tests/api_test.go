@@ -2,12 +2,19 @@ package tests
 
 import (
 	"bytes"
+	"encoding/base64"
+	"encoding/hex"
 	"encoding/json"
+	"fmt"
+	"image"
+	"image/jpeg"
 	"io"
 	"net/http"
 	"net/http/cookiejar"
 	"net/http/httptest"
 	"net/url"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -29,6 +36,7 @@ type fixture struct {
 	client   *http.Client
 	store    *store.Store
 	basePath string
+	dataPath string
 }
 
 func newFixture(t *testing.T, googleEnabled bool) *fixture {
@@ -70,7 +78,7 @@ func newFixtureAtBasePath(t *testing.T, googleEnabled bool, basePath string) *fi
 	client := testServer.Client()
 	client.Jar = jar
 	client.CheckRedirect = func(_ *http.Request, _ []*http.Request) error { return http.ErrUseLastResponse }
-	result := &fixture{t: t, server: testServer, client: client, store: database, basePath: basePath}
+	result := &fixture{t: t, server: testServer, client: client, store: database, basePath: basePath, dataPath: dataPath}
 	t.Cleanup(func() {
 		testServer.Close()
 		if err := database.Close(); err != nil {
@@ -235,9 +243,71 @@ func TestUserManagementAPIs(t *testing.T) {
 	}
 	expectStatus(t, f.request(http.MethodPost, "/api/users", createBody), http.StatusConflict)
 	expectStatus(t, f.request(http.MethodPatch, "/api/users/member@example.com", map[string]string{"timezone": "America/New_York"}), http.StatusOK)
+	updated := expectStatus(t, f.request(http.MethodPatch, "/api/users/member@example.com", map[string]string{"avatar": jpegDataURL(t, 512, 512)}), http.StatusOK)
+	firstAvatarFilename := avatarFilenameFromResponse(t, updated, "member__example.com")
+	if _, err := os.Stat(filepath.Join(f.dataPath, "content", "avatars", firstAvatarFilename)); err != nil {
+		t.Fatalf("updated avatar file was not stored: %v", err)
+	}
+	reuploaded := expectStatus(t, f.request(http.MethodPatch, "/api/users/member@example.com", map[string]string{"avatar": jpegDataURL(t, 512, 512)}), http.StatusOK)
+	secondAvatarFilename := avatarFilenameFromResponse(t, reuploaded, "member__example.com")
+	if secondAvatarFilename == firstAvatarFilename {
+		t.Fatal("re-uploaded avatar reused the previous filename")
+	}
+	if _, err := os.Stat(filepath.Join(f.dataPath, "content", "avatars", firstAvatarFilename)); !os.IsNotExist(err) {
+		t.Fatalf("previous avatar file was not removed: %v", err)
+	}
+	if _, err := os.Stat(filepath.Join(f.dataPath, "content", "avatars", secondAvatarFilename)); err != nil {
+		t.Fatalf("re-uploaded avatar file was not stored: %v", err)
+	}
+	expectStatus(t, f.request(http.MethodPatch, "/api/users/member@example.com", map[string]string{"email": "renamed@example.com"}), http.StatusBadRequest)
 	expectStatus(t, f.request(http.MethodDelete, "/api/users/admin@example.com", nil), http.StatusConflict)
 	expectStatus(t, f.request(http.MethodDelete, "/api/users/member@example.com", nil), http.StatusNoContent)
 	expectStatus(t, f.request(http.MethodDelete, "/api/users/member@example.com", nil), http.StatusNotFound)
+}
+
+func TestUserAvatarStorageAndServing(t *testing.T) {
+	f := newFixtureAtBasePath(t, false, "/team")
+	expectStatus(t, f.login(adminEmail, adminPassword), http.StatusOK)
+	avatar := jpegDataURL(t, 512, 512)
+	created := expectStatus(t, f.request(http.MethodPost, "/api/users", map[string]string{
+		"email": "member+calls@example.com", "password": "MemberPassword123!", "timezone": "UTC", "avatar": avatar,
+	}), http.StatusCreated)
+	avatarFilename := avatarFilenameFromResponse(t, created, "member+calls__example.com")
+	user, err := f.store.GetUser("member+calls@example.com")
+	if err != nil || user.AvatarPath != avatarFilename {
+		t.Fatalf("avatar filename was not stored on the user: user=%#v err=%v", user, err)
+	}
+	stored, err := os.ReadFile(filepath.Join(f.dataPath, "content", "avatars", avatarFilename))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := jpeg.Decode(bytes.NewReader(stored)); err != nil {
+		t.Fatalf("stored avatar is not a JPEG: %v", err)
+	}
+	served := f.request(http.MethodGet, "/content/avatars/"+avatarFilename, nil)
+	servedBody := expectStatus(t, served, http.StatusOK)
+	if served.Header.Get("Content-Type") != "image/jpeg" || !bytes.Equal(servedBody, stored) {
+		t.Fatal("avatar response did not serve the stored JPEG")
+	}
+
+	expectStatus(t, f.request(http.MethodGet, "/content/avatars/not-an-avatar.txt", nil), http.StatusNotFound)
+	expectStatus(t, f.request(http.MethodGet, "/content/users.leveldb/CURRENT", nil), http.StatusNotFound)
+	traversal := f.request(http.MethodGet, "/content/avatars/%2e%2e%2fusers.leveldb", nil)
+	defer traversal.Body.Close()
+	if traversal.StatusCode >= 200 && traversal.StatusCode < 300 {
+		t.Fatalf("path traversal request succeeded with status %d", traversal.StatusCode)
+	}
+}
+
+func TestUserAvatarValidation(t *testing.T) {
+	f := newFixture(t, false)
+	expectStatus(t, f.login(adminEmail, adminPassword), http.StatusOK)
+	expectStatus(t, f.request(http.MethodPost, "/api/users", map[string]string{
+		"email": "member@example.com", "password": "MemberPassword123!", "timezone": "UTC", "avatar": jpegDataURL(t, 64, 64),
+	}), http.StatusBadRequest)
+	if _, err := f.store.GetUser("member@example.com"); err == nil {
+		t.Fatal("user was created with an invalid avatar")
+	}
 }
 
 func TestBookingAPIs(t *testing.T) {
@@ -293,6 +363,60 @@ func TestGoogleOAuthAPIs(t *testing.T) {
 	expectStatus(t, enabled.request(http.MethodGet, "/api/auth/google/callback?state=invalid&code=invalid", nil), http.StatusBadRequest)
 }
 
+func TestGoogleOAuthImportsMissingAvatar(t *testing.T) {
+	f := newFixtureAtBasePath(t, true, "/calendar")
+	pictureURL := "https://lh3.googleusercontent.com/profile.jpg"
+	avatarRequests := mockGoogleProvider(t, adminEmail, pictureURL, jpegBytes(t, 640, 320))
+	expectStatus(t, googleCallback(f), http.StatusSeeOther)
+	if *avatarRequests != 1 {
+		t.Fatalf("expected one Google avatar request, got %d", *avatarRequests)
+	}
+	user, err := f.store.GetUser(adminEmail)
+	if err != nil {
+		t.Fatal(err)
+	}
+	avatarFilename := requireAvatarFilename(t, user.AvatarPath, "admin__example.com")
+	stored, err := os.Open(filepath.Join(f.dataPath, "content", "avatars", avatarFilename))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer stored.Close()
+	config, err := jpeg.DecodeConfig(stored)
+	if err != nil || config.Width != 512 || config.Height != 512 {
+		t.Fatalf("Google avatar was not normalized to 512 by 512: config=%#v err=%v", config, err)
+	}
+}
+
+func TestGoogleOAuthKeepsExistingAvatar(t *testing.T) {
+	f := newFixture(t, true)
+	const avatarFilename = "admin__example.com-1234abcd.jpg"
+	existing := jpegBytes(t, 512, 512)
+	if err := os.WriteFile(filepath.Join(f.dataPath, "content", "avatars", avatarFilename), existing, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	user, err := f.store.GetUser(adminEmail)
+	if err != nil {
+		t.Fatal(err)
+	}
+	user.AvatarPath = avatarFilename
+	if err := f.store.PutUser(user); err != nil {
+		t.Fatal(err)
+	}
+	pictureURL := "https://lh3.googleusercontent.com/profile.jpg"
+	avatarRequests := mockGoogleProvider(t, adminEmail, pictureURL, jpegBytes(t, 320, 640))
+	expectStatus(t, googleCallback(f), http.StatusSeeOther)
+	if *avatarRequests != 0 {
+		t.Fatalf("Google avatar was requested despite an existing avatar path")
+	}
+	stored, err := os.ReadFile(filepath.Join(f.dataPath, "content", "avatars", avatarFilename))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Equal(stored, existing) {
+		t.Fatal("existing avatar file was overwritten")
+	}
+}
+
 func mustDo(t *testing.T, client *http.Client, request *http.Request) *http.Response {
 	t.Helper()
 	response, err := client.Do(request)
@@ -300,4 +424,100 @@ func mustDo(t *testing.T, client *http.Client, request *http.Request) *http.Resp
 		t.Fatal(err)
 	}
 	return response
+}
+
+func avatarFilenameFromResponse(t *testing.T, body []byte, emailSlug string) string {
+	t.Helper()
+	var response struct {
+		User struct {
+			AvatarPath string `json:"avatarPath"`
+		} `json:"user"`
+	}
+	if err := json.Unmarshal(body, &response); err != nil {
+		t.Fatal(err)
+	}
+	return requireAvatarFilename(t, response.User.AvatarPath, emailSlug)
+}
+
+func requireAvatarFilename(t *testing.T, filename, emailSlug string) string {
+	t.Helper()
+	prefix := emailSlug + "-"
+	token, found := strings.CutPrefix(filename, prefix)
+	if !found {
+		t.Fatalf("avatar filename %q does not start with %q", filename, prefix)
+	}
+	token, found = strings.CutSuffix(token, ".jpg")
+	if !found || len(token) != 8 {
+		t.Fatalf("avatar filename %q does not end with an eight-character token and .jpg", filename)
+	}
+	if _, err := hex.DecodeString(token); err != nil {
+		t.Fatalf("avatar filename %q does not contain a hexadecimal token", filename)
+	}
+	return filename
+}
+
+func jpegDataURL(t *testing.T, width, height int) string {
+	t.Helper()
+	return "data:image/jpeg;base64," + base64.StdEncoding.EncodeToString(jpegBytes(t, width, height))
+}
+
+func jpegBytes(t *testing.T, width, height int) []byte {
+	t.Helper()
+	var encoded bytes.Buffer
+	if err := jpeg.Encode(&encoded, image.NewRGBA(image.Rect(0, 0, width, height)), &jpeg.Options{Quality: 90}); err != nil {
+		t.Fatal(err)
+	}
+	return encoded.Bytes()
+}
+
+func googleCallback(f *fixture) *http.Response {
+	f.t.Helper()
+	start := f.request(http.MethodGet, "/api/auth/google/start", nil)
+	expectStatus(f.t, start, http.StatusFound)
+	location, err := url.Parse(start.Header.Get("Location"))
+	if err != nil {
+		f.t.Fatal(err)
+	}
+	return f.request(http.MethodGet, "/api/auth/google/callback?state="+url.QueryEscape(location.Query().Get("state"))+"&code=test-code", nil)
+}
+
+type roundTripFunc func(*http.Request) (*http.Response, error)
+
+func (roundTrip roundTripFunc) RoundTrip(request *http.Request) (*http.Response, error) {
+	return roundTrip(request)
+}
+
+func mockGoogleProvider(t *testing.T, email, pictureURL string, picture []byte) *int {
+	t.Helper()
+	originalTransport := http.DefaultTransport
+	avatarRequests := 0
+	http.DefaultTransport = roundTripFunc(func(request *http.Request) (*http.Response, error) {
+		var contentType string
+		var body []byte
+		switch request.URL.String() {
+		case "https://oauth2.googleapis.com/token":
+			contentType = "application/json"
+			body = []byte(`{"access_token":"google-access-token","token_type":"Bearer","refresh_token":"google-refresh-token","expires_in":3600}`)
+		case "https://openidconnect.googleapis.com/v1/userinfo":
+			contentType = "application/json"
+			body, _ = json.Marshal(map[string]any{
+				"email": email, "email_verified": true, "picture": pictureURL,
+			})
+		case pictureURL:
+			avatarRequests++
+			contentType = "image/jpeg"
+			body = picture
+		default:
+			return nil, fmt.Errorf("unexpected Google request: %s", request.URL)
+		}
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			Status:     http.StatusText(http.StatusOK),
+			Header:     http.Header{"Content-Type": []string{contentType}},
+			Body:       io.NopCloser(bytes.NewReader(body)),
+			Request:    request,
+		}, nil
+	})
+	t.Cleanup(func() { http.DefaultTransport = originalTransport })
+	return &avatarRequests
 }

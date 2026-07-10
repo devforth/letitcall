@@ -2,6 +2,7 @@ export type SessionUser = {
 	email: string;
 	timezone: string;
 	googleConnected: boolean;
+	avatarPath?: string;
 };
 
 export type ManagedUser = SessionUser & {

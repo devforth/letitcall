@@ -1,11 +1,14 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { api, getSession } from '$lib/api';
+	import { goto } from '$app/navigation';
+	import { api, appPath, getSession } from '$lib/api';
+	import AvatarSelector from '$lib/components/AvatarSelector.svelte';
 	import UserTable from '$lib/components/UserTable.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
 	import Input from '$lib/components/ui/Input.svelte';
 	import SearchableSelect from '$lib/components/ui/SearchableSelect.svelte';
 	import type { ManagedUser } from '$lib/types';
+	import { getLocalTimezones } from '$lib/timezones';
 
 	let users = $state<ManagedUser[]>([]);
 	let currentEmail = $state('');
@@ -18,17 +21,12 @@
 	let saving = $state(false);
 	let deletingEmail = $state('');
 	let error = $state('');
+	let avatarSelector = $state<AvatarSelector | null>(null);
 
 	onMount(async () => {
-		const browserTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
-		timezone = browserTimezone;
-		try {
-			const timezoneIntl = Intl as typeof Intl & { supportedValuesOf?: (key: string) => string[] };
-			timezones = timezoneIntl.supportedValuesOf?.('timeZone') ?? [browserTimezone, 'UTC'];
-			if (!timezones.includes(browserTimezone)) timezones = [browserTimezone, ...timezones];
-		} catch {
-			timezones = [browserTimezone, 'UTC'];
-		}
+		const localTimezones = getLocalTimezones();
+		timezone = localTimezones.current;
+		timezones = localTimezones.options;
 
 		try {
 			const [session, response] = await Promise.all([
@@ -49,20 +47,25 @@
 		saving = true;
 		error = '';
 		try {
+			const avatar = (await avatarSelector?.exportAvatar()) ?? '';
 			const response = await api<{ user: ManagedUser }>('/api/users', {
 				method: 'POST',
-				body: JSON.stringify({ email, password, timezone })
+				body: JSON.stringify({ email, password, timezone, avatar })
 			});
 			users = [...users, response.user].sort((a, b) => a.email.localeCompare(b.email));
 			email = '';
 			password = '';
-			timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+			timezone = getLocalTimezones().current;
 			showForm = false;
 		} catch (cause) {
 			error = cause instanceof Error ? cause.message : 'Unable to create user';
 		} finally {
 			saving = false;
 		}
+	}
+
+	function editUser(emailToEdit: string) {
+		void goto(appPath(`/users/${encodeURIComponent(emailToEdit)}`));
 	}
 
 	async function deleteUser(emailToDelete: string) {
@@ -114,6 +117,9 @@
 				bind:value={timezone}
 				required
 			/>
+			<div class="lg:col-span-3">
+				<AvatarSelector id="new-avatar" bind:this={avatarSelector} />
+			</div>
 			<div class="flex items-end lg:col-span-3">
 				<Button type="submit" disabled={saving}>{saving ? 'Creating…' : 'Create user'}</Button>
 			</div>
@@ -123,6 +129,6 @@
 	{#if loading}
 		<p class="border border-black p-6 text-sm">Loading users…</p>
 	{:else}
-		<UserTable {users} {currentEmail} {deletingEmail} ondelete={deleteUser} />
+		<UserTable {users} {currentEmail} {deletingEmail} onedit={editUser} ondelete={deleteUser} />
 	{/if}
 </section>

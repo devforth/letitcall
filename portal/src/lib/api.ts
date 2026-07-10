@@ -5,6 +5,10 @@ export function appPath(path: string): string {
 	return `${base}${path}`;
 }
 
+export function avatarURL(filename: string): string {
+	return appPath(`/content/avatars/${filename}`);
+}
+
 export async function api<T>(path: string, init?: RequestInit): Promise<T> {
 	const headers = new Headers(init?.headers);
 	if (init?.body && !headers.has('content-type')) {
