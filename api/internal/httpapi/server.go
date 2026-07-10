@@ -18,6 +18,7 @@ import (
 
 	"github.com/letitcall/letitcall/api/internal/config"
 	"github.com/letitcall/letitcall/api/internal/content"
+	"github.com/letitcall/letitcall/api/internal/mailing"
 	"github.com/letitcall/letitcall/api/internal/model"
 	"github.com/letitcall/letitcall/api/internal/security"
 	"github.com/letitcall/letitcall/api/internal/store"
@@ -42,6 +43,7 @@ type Server struct {
 	oauth       *oauth2.Config
 	tokenCipher *security.TokenCipher
 	limiter     *security.LoginLimiter
+	mailer      mailing.Sender
 	dummyHash   string
 	now         func() time.Time
 }
@@ -62,6 +64,7 @@ func New(cfg config.Config, database *store.Store) (*Server, error) {
 		cfg:       cfg,
 		store:     database,
 		avatars:   avatars,
+		mailer:    mailing.New(cfg.Mailing.Mailgun),
 		limiter:   security.NewLoginLimiter(cfg.Login.PasswordMaxAttempts, cfg.Login.PasswordLockout),
 		dummyHash: dummyHash,
 		now:       time.Now,
@@ -104,8 +107,13 @@ func (s *Server) Handler() http.Handler {
 	mux.Handle("PATCH /api/users/{email}", s.requireAuth(http.HandlerFunc(s.updateUser)))
 	mux.Handle("DELETE /api/users/{email}", s.requireAuth(http.HandlerFunc(s.deleteUser)))
 	mux.Handle("GET /api/bookings", s.requireAuth(http.HandlerFunc(s.listBookings)))
-	mux.Handle("POST /api/bookings", s.requireAuth(http.HandlerFunc(s.createBooking)))
-	mux.Handle("DELETE /api/bookings/{time}", s.requireAuth(http.HandlerFunc(s.deleteBooking)))
+	mux.HandleFunc("POST /api/bookings", s.createBooking)
+	mux.Handle("DELETE /api/bookings/{id}", s.requireAuth(http.HandlerFunc(s.deleteBooking)))
+	mux.Handle("GET /api/event-types", s.requireAuth(http.HandlerFunc(s.listEventTypes)))
+	mux.Handle("POST /api/event-types", s.requireAuth(http.HandlerFunc(s.createEventType)))
+	mux.Handle("GET /api/event-types/{slug}", s.requireAuth(http.HandlerFunc(s.getEventType)))
+	mux.Handle("PUT /api/event-types/{slug}", s.requireAuth(http.HandlerFunc(s.updateEventType)))
+	mux.HandleFunc("GET /api/public/event-types/{slug}", s.getPublicEventType)
 	mux.HandleFunc("GET /content/avatars/{filename}", s.serveAvatar)
 	mux.HandleFunc("/content/", http.NotFound)
 	mux.HandleFunc("/", s.servePortal)
@@ -318,10 +326,16 @@ func bookingKey(value string) (string, time.Time, error) {
 	if strings.Contains(value, ".") {
 		return "", time.Time{}, errors.New("booking time must not contain milliseconds")
 	}
+	if !strings.HasSuffix(value, "Z") {
+		return "", time.Time{}, errors.New("booking time must use UTC")
+	}
 	parsed, err := time.Parse(time.RFC3339, value)
 	if err != nil {
 		return "", time.Time{}, fmt.Errorf("booking time must use RFC3339: %w", err)
 	}
 	utc := parsed.UTC().Truncate(time.Second)
+	if utc.Format(time.RFC3339) != value {
+		return "", time.Time{}, errors.New("booking time must use UTC RFC3339 seconds")
+	}
 	return utc.Format(time.RFC3339), utc, nil
 }

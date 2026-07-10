@@ -2,7 +2,7 @@
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
 	import type { Snippet } from 'svelte';
-	import { api, appPath } from '$lib/api';
+	import { callApi, appPath } from '$lib/api';
 	import type { SessionUser } from '$lib/types';
 	import Button from '$lib/components/ui/Button.svelte';
 
@@ -19,7 +19,7 @@
 	async function logout() {
 		loggingOut = true;
 		try {
-			await api('/api/auth/logout', { method: 'POST' });
+			await callApi('/api/auth/logout', { method: 'POST' });
 		} finally {
 			await goto(appPath('/auth/login'), { replaceState: true });
 		}
@@ -42,6 +42,12 @@
 	<div class="mx-auto grid max-w-7xl md:grid-cols-[14rem_1fr]">
 		<nav class="border-b border-black p-4 md:min-h-[calc(100vh-77px)] md:border-r md:border-b-0 sm:p-6">
 			<ul class="flex gap-2 md:grid">
+				<li>
+					<a
+						class={`block border border-black px-4 py-3 text-sm font-medium ${page.url.pathname.startsWith(appPath('/scheduling')) ? 'bg-black text-white' : 'bg-white text-black'}`}
+						href={appPath('/scheduling')}>Scheduling</a
+					>
+				</li>
 				<li>
 					<a
 						class={`block border border-black px-4 py-3 text-sm font-medium ${page.url.pathname === appPath('/') ? 'bg-black text-white' : 'bg-white text-black'}`}

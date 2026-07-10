@@ -51,6 +51,28 @@ func TestConfigLoadsBasePathAndGoogleOAuthSettings(t *testing.T) {
 	}
 }
 
+func TestConfigLoadsMailgunSettings(t *testing.T) {
+	clearConfigEnvironment(t)
+	t.Setenv(config.EnvMailgunAPIKey, "mailgun-key")
+	t.Setenv(config.EnvMailgunDomain, "mail.example.com")
+	t.Setenv(config.EnvMailgunFrom, "Let It Call <bookings@example.com>")
+	cfg, err := config.Load()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !cfg.Mailing.Mailgun.Enabled() || cfg.Mailing.Mailgun.Domain != "mail.example.com" {
+		t.Fatalf("Mailgun settings were not loaded: %#v", cfg.Mailing.Mailgun)
+	}
+}
+
+func TestConfigRejectsPartialMailgunSettings(t *testing.T) {
+	clearConfigEnvironment(t)
+	t.Setenv(config.EnvMailgunAPIKey, "mailgun-key")
+	if _, err := config.Load(); err == nil || !strings.Contains(err.Error(), "must be set together") {
+		t.Fatalf("expected partial Mailgun config error, got %v", err)
+	}
+}
+
 func TestConfigRejectsBasePathWithoutLeadingSlash(t *testing.T) {
 	clearConfigEnvironment(t)
 	t.Setenv(config.EnvHTTPBasePath, "calendar")
@@ -72,6 +94,9 @@ func clearConfigEnvironment(t *testing.T) {
 		config.EnvPasswordLockout,
 		config.EnvGoogleClientID,
 		config.EnvGoogleClientSecret,
+		config.EnvMailgunAPIKey,
+		config.EnvMailgunDomain,
+		config.EnvMailgunFrom,
 	} {
 		t.Setenv(name, "")
 	}

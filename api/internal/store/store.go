@@ -16,12 +16,15 @@ import (
 )
 
 var (
-	ErrNotFound = errors.New("not found")
-	ErrExists   = errors.New("already exists")
+	ErrNotFound      = errors.New("not found")
+	ErrExists        = errors.New("already exists")
+	ErrCapacity      = errors.New("capacity reached")
+	ErrLastRecipient = errors.New("user is the final event type recipient")
 )
 
 type Store struct {
 	users       *leveldb.DB
+	eventTypes  *leveldb.DB
 	bookings    *leveldb.DB
 	sessions    *leveldb.DB
 	oauthStates *leveldb.DB
@@ -33,7 +36,7 @@ func Open(root string) (*Store, error) {
 		return nil, fmt.Errorf("create LevelDB root: %w", err)
 	}
 
-	opened := make([]*leveldb.DB, 0, 4)
+	opened := make([]*leveldb.DB, 0, 5)
 	openTable := func(name string) (*leveldb.DB, error) {
 		db, err := leveldb.OpenFile(filepath.Join(root, name+".leveldb"), nil)
 		if err != nil {
@@ -45,6 +48,11 @@ func Open(root string) (*Store, error) {
 
 	users, err := openTable("users")
 	if err != nil {
+		return nil, err
+	}
+	eventTypes, err := openTable("event_types")
+	if err != nil {
+		closeAll(opened)
 		return nil, err
 	}
 	bookings, err := openTable("bookings")
@@ -63,11 +71,11 @@ func Open(root string) (*Store, error) {
 		return nil, err
 	}
 
-	return &Store{users: users, bookings: bookings, sessions: sessions, oauthStates: oauthStates}, nil
+	return &Store{users: users, eventTypes: eventTypes, bookings: bookings, sessions: sessions, oauthStates: oauthStates}, nil
 }
 
 func (s *Store) Close() error {
-	return errors.Join(s.users.Close(), s.bookings.Close(), s.sessions.Close(), s.oauthStates.Close())
+	return errors.Join(s.users.Close(), s.eventTypes.Close(), s.bookings.Close(), s.sessions.Close(), s.oauthStates.Close())
 }
 
 func closeAll(databases []*leveldb.DB) {
@@ -232,23 +240,120 @@ func (s *Store) ConsumeOAuthState(state string, now time.Time) (model.OAuthState
 	return value, nil
 }
 
-func (s *Store) CreateBooking(key string, booking model.Booking) error {
+func (s *Store) CreateEventType(eventType model.EventType) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	encodedKey := []byte(key)
-	exists, err := s.bookings.Has(encodedKey, nil)
+	key := []byte(eventType.EventSlug)
+	exists, err := s.eventTypes.Has(key, nil)
 	if err != nil {
 		return err
 	}
 	if exists {
 		return ErrExists
 	}
-	return putJSON(s.bookings, encodedKey, booking)
+	return putJSON(s.eventTypes, key, eventType)
 }
 
-func (s *Store) GetBooking(key string) (model.Booking, error) {
+func (s *Store) PutEventType(eventType model.EventType) error {
+	return putJSON(s.eventTypes, []byte(eventType.EventSlug), eventType)
+}
+
+func (s *Store) GetEventType(slug string) (model.EventType, error) {
+	var eventType model.EventType
+	if err := getJSON(s.eventTypes, []byte(slug), &eventType); err != nil {
+		return model.EventType{}, err
+	}
+	return eventType, nil
+}
+
+func (s *Store) ListEventTypes() ([]model.EventType, error) {
+	iterator := s.eventTypes.NewIterator(nil, nil)
+	defer iterator.Release()
+	eventTypes := make([]model.EventType, 0)
+	for iterator.Next() {
+		var eventType model.EventType
+		if err := json.Unmarshal(iterator.Value(), &eventType); err != nil {
+			return nil, err
+		}
+		eventTypes = append(eventTypes, eventType)
+	}
+	if err := iterator.Error(); err != nil {
+		return nil, err
+	}
+	sort.Slice(eventTypes, func(i, j int) bool { return eventTypes[i].Name < eventTypes[j].Name })
+	return eventTypes, nil
+}
+
+func (s *Store) RemoveEventTypeRecipient(email string, updatedAt time.Time) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	normalized := normalizeEmail(email)
+	iterator := s.eventTypes.NewIterator(nil, nil)
+	defer iterator.Release()
+	batch := new(leveldb.Batch)
+	for iterator.Next() {
+		var eventType model.EventType
+		if err := json.Unmarshal(iterator.Value(), &eventType); err != nil {
+			return err
+		}
+		index := -1
+		for candidateIndex, candidate := range eventType.RecipientEmails {
+			if normalizeEmail(candidate) == normalized {
+				index = candidateIndex
+				break
+			}
+		}
+		if index < 0 {
+			continue
+		}
+		if len(eventType.RecipientEmails) == 1 {
+			return fmt.Errorf("%w: %s", ErrLastRecipient, eventType.EventSlug)
+		}
+		eventType.RecipientEmails = append(eventType.RecipientEmails[:index], eventType.RecipientEmails[index+1:]...)
+		eventType.UpdatedAt = updatedAt
+		encoded, err := json.Marshal(eventType)
+		if err != nil {
+			return err
+		}
+		batch.Put(append([]byte(nil), iterator.Key()...), encoded)
+	}
+	if err := iterator.Error(); err != nil {
+		return err
+	}
+	return s.eventTypes.Write(batch, nil)
+}
+
+func (s *Store) CreateBooking(booking model.Booking, inviteeLimit *int) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	iterator := s.bookings.NewIterator(nil, nil)
+	defer iterator.Release()
+	count := 0
+	for iterator.Next() {
+		var existing model.Booking
+		if err := json.Unmarshal(iterator.Value(), &existing); err != nil {
+			return err
+		}
+		if existing.EventSlug != booking.EventSlug || !existing.Time.Equal(booking.Time) {
+			continue
+		}
+		if normalizeEmail(existing.AttendeeEmail) == normalizeEmail(booking.AttendeeEmail) {
+			return ErrExists
+		}
+		count++
+	}
+	if err := iterator.Error(); err != nil {
+		return err
+	}
+	if inviteeLimit != nil && count >= *inviteeLimit {
+		return ErrCapacity
+	}
+	return putJSON(s.bookings, []byte(booking.ID), booking)
+}
+
+func (s *Store) GetBooking(id string) (model.Booking, error) {
 	var booking model.Booking
-	if err := getJSON(s.bookings, []byte(key), &booking); err != nil {
+	if err := getJSON(s.bookings, []byte(id), &booking); err != nil {
 		return model.Booking{}, err
 	}
 	return booking, nil
@@ -265,13 +370,17 @@ func (s *Store) ListBookings() ([]model.Booking, error) {
 		}
 		bookings = append(bookings, booking)
 	}
-	return bookings, iterator.Error()
+	if err := iterator.Error(); err != nil {
+		return nil, err
+	}
+	sort.Slice(bookings, func(i, j int) bool { return bookings[i].Time.Before(bookings[j].Time) })
+	return bookings, nil
 }
 
-func (s *Store) DeleteBooking(key string) error {
+func (s *Store) DeleteBooking(id string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	encodedKey := []byte(key)
+	encodedKey := []byte(id)
 	exists, err := s.bookings.Has(encodedKey, nil)
 	if err != nil {
 		return err

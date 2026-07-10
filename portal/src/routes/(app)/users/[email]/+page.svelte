@@ -2,7 +2,7 @@
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
 	import { onMount } from 'svelte';
-	import { api, appPath, avatarURL } from '$lib/api';
+	import { callApi, appPath, avatarURL } from '$lib/api';
 	import AvatarSelector from '$lib/components/AvatarSelector.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
 	import Input from '$lib/components/ui/Input.svelte';
@@ -24,7 +24,7 @@
 		const localTimezones = getLocalTimezones();
 		timezones = localTimezones.options;
 		try {
-			const response = await api<{ users: ManagedUser[] }>('/api/users');
+			const response = await callApi<{ users: ManagedUser[] }>('/api/users');
 			const user = response.users.find((candidate) => candidate.email === page.params.email);
 			if (!user) throw new Error('User not found');
 			email = user.email;
@@ -47,7 +47,7 @@
 			if (password) update.password = password;
 			const avatar = (await avatarSelector?.exportAvatar()) ?? '';
 			if (avatar) update.avatar = avatar;
-			await api(`/api/users/${encodeURIComponent(email)}`, {
+			await callApi(`/api/users/${encodeURIComponent(email)}`, {
 				method: 'PATCH',
 				body: JSON.stringify(update)
 			});
