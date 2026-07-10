@@ -5,6 +5,7 @@
 	import { callApi, appPath } from '$lib/api';
 	import type { SessionUser } from '$lib/types';
 	import Button from '$lib/components/ui/Button.svelte';
+	import ThemeToggle from '$lib/components/ThemeToggle.svelte';
 
 	let {
 		user,
@@ -32,6 +33,7 @@
 			<a class="text-lg font-bold tracking-tight" href={appPath('/')}>Let It Call</a>
 			<div class="flex items-center gap-4">
 				<span class="hidden text-sm sm:inline">{user.email}</span>
+				<ThemeToggle />
 				<Button variant="secondary" disabled={loggingOut} onclick={logout}>
 					{loggingOut ? 'Signing out…' : 'Sign out'}
 				</Button>
