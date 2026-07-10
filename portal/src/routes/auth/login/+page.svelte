@@ -13,7 +13,7 @@
 
 	onMount(async () => {
 		try {
-			await getSession();
+			await getSession(false);
 			await goto(appPath('/'), { replaceState: true });
 			return;
 		} catch {

@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
+	import { page } from '$app/state';
 	import { onMount } from 'svelte';
 	import { appPath, getSession } from '$lib/api';
 	import AppShell from '$lib/components/AppShell.svelte';
@@ -11,7 +12,7 @@
 
 	onMount(async () => {
 		try {
-			user = (await getSession()).user;
+			user = (await getSession(page.url.pathname !== appPath('/'))).user;
 		} catch (cause) {
 			if (cause instanceof Error && cause.message !== 'authentication required') {
 				error = cause.message;
