@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { onMount } from 'svelte';
-	import { getSession } from '$lib/api';
+	import { appPath, getSession } from '$lib/api';
 	import AppShell from '$lib/components/AppShell.svelte';
 	import type { SessionUser } from '$lib/types';
 
@@ -17,7 +17,7 @@
 				error = cause.message;
 				return;
 			}
-			await goto('/auth/login', { replaceState: true });
+			await goto(appPath('/auth/login'), { replaceState: true });
 		}
 	});
 </script>

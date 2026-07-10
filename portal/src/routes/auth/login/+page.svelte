@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { onMount } from 'svelte';
-	import { api, getPublicConfig, getSession } from '$lib/api';
+	import { api, appPath, getPublicConfig, getSession } from '$lib/api';
 	import Button from '$lib/components/ui/Button.svelte';
 	import Input from '$lib/components/ui/Input.svelte';
 
@@ -14,7 +14,7 @@
 	onMount(async () => {
 		try {
 			await getSession();
-			await goto('/', { replaceState: true });
+			await goto(appPath('/'), { replaceState: true });
 			return;
 		} catch {
 			// Anonymous visitors should remain on the login page.
@@ -37,7 +37,7 @@
 				method: 'POST',
 				body: JSON.stringify({ email, password })
 			});
-			await goto('/', { replaceState: true });
+			await goto(appPath('/'), { replaceState: true });
 		} catch (cause) {
 			error = cause instanceof Error ? cause.message : 'Unable to sign in';
 		} finally {
@@ -46,7 +46,7 @@
 	}
 
 	function googleLogin() {
-		window.location.assign('/api/auth/google/start');
+		window.location.assign(appPath('/api/auth/google/start'));
 	}
 </script>
 

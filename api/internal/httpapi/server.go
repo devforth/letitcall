@@ -1,6 +1,7 @@
 package httpapi
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -8,9 +9,9 @@ import (
 	"io"
 	"io/fs"
 	"log/slog"
+	"mime"
 	"net"
 	"net/http"
-	"net/url"
 	"path"
 	"strings"
 	"time"
@@ -24,7 +25,10 @@ import (
 	"golang.org/x/oauth2/google"
 )
 
-const sessionCookieName = "letitcall_session"
+const (
+	sessionCookieName     = "letitcall_session"
+	portalBasePlaceholder = "/__LETITCALL_BASE_PATH__"
+)
 
 type contextKey string
 
@@ -37,7 +41,6 @@ type Server struct {
 	tokenCipher *security.TokenCipher
 	limiter     *security.LoginLimiter
 	dummyHash   string
-	fileServer  http.Handler
 	now         func() time.Time
 }
 
@@ -50,15 +53,14 @@ func New(cfg config.Config, database *store.Store) (*Server, error) {
 		return nil, err
 	}
 	server := &Server{
-		cfg:        cfg,
-		store:      database,
-		limiter:    security.NewLoginLimiter(cfg.Login.PasswordMaxAttempts, cfg.Login.PasswordLockout),
-		dummyHash:  dummyHash,
-		fileServer: http.FileServerFS(web.Assets),
-		now:        time.Now,
+		cfg:       cfg,
+		store:     database,
+		limiter:   security.NewLoginLimiter(cfg.Login.PasswordMaxAttempts, cfg.Login.PasswordLockout),
+		dummyHash: dummyHash,
+		now:       time.Now,
 	}
 	if cfg.Login.Google.Enabled() {
-		key, err := config.DecodeGoogleTokenEncryptionKey(cfg.Login.Google.TokenEncryptionKey)
+		key, err := security.LoadGoogleTokenKey(cfg.Storage.LevelDBPath)
 		if err != nil {
 			return nil, err
 		}
@@ -69,7 +71,6 @@ func New(cfg config.Config, database *store.Store) (*Server, error) {
 		server.oauth = &oauth2.Config{
 			ClientID:     cfg.Login.Google.ClientID,
 			ClientSecret: cfg.Login.Google.ClientSecret,
-			RedirectURL:  cfg.Login.Google.RedirectURL,
 			Endpoint:     google.Endpoint,
 			Scopes: []string{
 				"openid",
@@ -88,7 +89,7 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /api/config/public", s.publicConfig)
 	mux.HandleFunc("POST /api/auth/login", s.login)
 	mux.HandleFunc("GET /api/auth/google/start", s.googleStart)
-	mux.HandleFunc("GET /api/auth/google/callback", s.googleCallback)
+	mux.HandleFunc("GET "+googleCallbackPath, s.googleCallback)
 	mux.Handle("GET /api/auth/session", s.requireAuth(http.HandlerFunc(s.session)))
 	mux.Handle("POST /api/auth/logout", s.requireAuth(http.HandlerFunc(s.logout)))
 	mux.Handle("GET /api/users", s.requireAuth(http.HandlerFunc(s.listUsers)))
@@ -99,7 +100,13 @@ func (s *Server) Handler() http.Handler {
 	mux.Handle("POST /api/bookings", s.requireAuth(http.HandlerFunc(s.createBooking)))
 	mux.Handle("DELETE /api/bookings/{time}", s.requireAuth(http.HandlerFunc(s.deleteBooking)))
 	mux.HandleFunc("/", s.servePortal)
-	return s.middleware(mux)
+	handler := s.middleware(mux)
+	if s.cfg.HTTP.BasePath == "" {
+		return handler
+	}
+	mounted := http.NewServeMux()
+	mounted.Handle(s.cfg.HTTP.BasePath+"/", http.StripPrefix(s.cfg.HTTP.BasePath, handler))
+	return mounted
 }
 
 func (s *Server) middleware(next http.Handler) http.Handler {
@@ -131,14 +138,14 @@ func (s *Server) requireAuth(next http.Handler) http.Handler {
 		}
 		session, err := s.store.GetSession(cookie.Value, s.now())
 		if err != nil {
-			clearCookie(w, s.cfg.Login.SessionCookieSecure)
+			s.clearCookie(w, r)
 			writeError(w, http.StatusUnauthorized, "authentication required")
 			return
 		}
 		user, err := s.store.GetUser(session.Email)
 		if err != nil {
 			_ = s.store.DeleteSession(cookie.Value)
-			clearCookie(w, s.cfg.Login.SessionCookieSecure)
+			s.clearCookie(w, r)
 			writeError(w, http.StatusUnauthorized, "authentication required")
 			return
 		}
@@ -156,20 +163,7 @@ func (s *Server) validOrigin(r *http.Request) bool {
 	if origin == "" {
 		return true
 	}
-	expected := s.cfg.HTTP.PublicURL
-	if expected == "" {
-		scheme := "http"
-		if r.TLS != nil {
-			scheme = "https"
-		}
-		expected = scheme + "://" + r.Host
-	}
-	parsed, err := url.Parse(expected)
-	if err != nil {
-		return false
-	}
-	expectedOrigin := parsed.Scheme + "://" + parsed.Host
-	return origin == expectedOrigin
+	return origin == requestOrigin(r)
 }
 
 func (s *Server) servePortal(w http.ResponseWriter, r *http.Request) {
@@ -184,19 +178,16 @@ func (s *Server) servePortal(w http.ResponseWriter, r *http.Request) {
 	if info, err := fs.Stat(web.Assets, assetPath); err != nil || info.IsDir() {
 		assetPath = "index.html"
 	}
-	clone := r.Clone(r.Context())
-	clone.URL = cloneURL(r.URL)
-	if assetPath == "index.html" {
-		clone.URL.Path = "/"
-	} else {
-		clone.URL.Path = "/" + assetPath
+	contents, err := fs.ReadFile(web.Assets, assetPath)
+	if err != nil {
+		internalError(w, err, "read portal asset")
+		return
 	}
-	s.fileServer.ServeHTTP(w, clone)
-}
-
-func cloneURL(original *url.URL) *url.URL {
-	cloned := *original
-	return &cloned
+	contents = bytes.ReplaceAll(contents, []byte(portalBasePlaceholder), []byte(s.cfg.HTTP.BasePath))
+	if contentType := mime.TypeByExtension(path.Ext(assetPath)); contentType != "" {
+		w.Header().Set("Content-Type", contentType)
+	}
+	_, _ = w.Write(contents)
 }
 
 func (s *Server) health(w http.ResponseWriter, _ *http.Request) {
@@ -250,32 +241,39 @@ func remoteIP(r *http.Request) string {
 	return r.RemoteAddr
 }
 
-func setSessionCookie(w http.ResponseWriter, value string, expires time.Time, maxAge int, secure bool) {
+func (s *Server) setSessionCookie(w http.ResponseWriter, r *http.Request, value string, expires time.Time, maxAge int) {
 	http.SetCookie(w, &http.Cookie{
 		Name:     sessionCookieName,
 		Value:    value,
-		Path:     "/",
+		Path:     s.cookiePath(),
 		Expires:  expires,
 		MaxAge:   max(1, maxAge),
 		HttpOnly: true,
-		Secure:   secure,
+		Secure:   requestScheme(r) == "https",
 		SameSite: http.SameSiteLaxMode,
 	})
 }
 
-func clearCookie(w http.ResponseWriter, secure bool) {
+func (s *Server) clearCookie(w http.ResponseWriter, r *http.Request) {
 	http.SetCookie(w, &http.Cookie{
 		Name:     sessionCookieName,
-		Path:     "/",
+		Path:     s.cookiePath(),
 		MaxAge:   -1,
 		Expires:  time.Unix(1, 0),
 		HttpOnly: true,
-		Secure:   secure,
+		Secure:   requestScheme(r) == "https",
 		SameSite: http.SameSiteLaxMode,
 	})
 }
 
-func (s *Server) createSession(w http.ResponseWriter, email string) error {
+func (s *Server) cookiePath() string {
+	if s.cfg.HTTP.BasePath == "" {
+		return "/"
+	}
+	return s.cfg.HTTP.BasePath
+}
+
+func (s *Server) createSession(w http.ResponseWriter, r *http.Request, email string) error {
 	token, err := security.RandomToken(32)
 	if err != nil {
 		return err
@@ -284,8 +282,22 @@ func (s *Server) createSession(w http.ResponseWriter, email string) error {
 	if err := s.store.PutSession(token, model.Session{Email: email, ExpiresAt: expires}); err != nil {
 		return err
 	}
-	setSessionCookie(w, token, expires, int(s.cfg.Login.SessionTTL.Seconds()), s.cfg.Login.SessionCookieSecure)
+	s.setSessionCookie(w, r, token, expires, int(s.cfg.Login.SessionTTL.Seconds()))
 	return nil
+}
+
+func requestOrigin(r *http.Request) string {
+	return requestScheme(r) + "://" + r.Host
+}
+
+func requestScheme(r *http.Request) string {
+	if forwarded := strings.TrimSpace(r.Header.Get("X-Forwarded-Proto")); forwarded != "" {
+		return forwarded
+	}
+	if r.TLS != nil {
+		return "https"
+	}
+	return "http"
 }
 
 func internalError(w http.ResponseWriter, err error, operation string) {

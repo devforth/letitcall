@@ -1,4 +1,9 @@
+import { base } from '$app/paths';
 import type { ApiError, PublicConfig, SessionUser } from '$lib/types';
+
+export function appPath(path: string): string {
+	return `${base}${path}`;
+}
 
 export async function api<T>(path: string, init?: RequestInit): Promise<T> {
 	const headers = new Headers(init?.headers);
@@ -6,7 +11,7 @@ export async function api<T>(path: string, init?: RequestInit): Promise<T> {
 		headers.set('content-type', 'application/json');
 	}
 
-	const response = await fetch(path, {
+	const response = await fetch(appPath(path), {
 		...init,
 		headers,
 		credentials: 'same-origin'

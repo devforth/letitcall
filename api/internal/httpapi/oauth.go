@@ -17,7 +17,10 @@ import (
 	"golang.org/x/oauth2"
 )
 
-const googleUserInfoURL = "https://openidconnect.googleapis.com/v1/userinfo"
+const (
+	googleUserInfoURL  = "https://openidconnect.googleapis.com/v1/userinfo"
+	googleCallbackPath = "/api/auth/google/callback"
+)
 
 func (s *Server) googleStart(w http.ResponseWriter, r *http.Request) {
 	if s.oauth == nil {
@@ -42,7 +45,8 @@ func (s *Server) googleStart(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	challenge := sha256.Sum256([]byte(verifier))
-	authorizationURL := s.oauth.AuthCodeURL(
+	oauthConfig := s.googleOAuthConfig(r)
+	authorizationURL := oauthConfig.AuthCodeURL(
 		state,
 		oauth2.AccessTypeOffline,
 		oauth2.SetAuthURLParam("prompt", "consent"),
@@ -72,12 +76,13 @@ func (s *Server) googleCallback(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "OAuth state is invalid or expired")
 		return
 	}
-	token, err := s.oauth.Exchange(r.Context(), code, oauth2.VerifierOption(storedState.CodeVerifier))
+	oauthConfig := s.googleOAuthConfig(r)
+	token, err := oauthConfig.Exchange(r.Context(), code, oauth2.VerifierOption(storedState.CodeVerifier))
 	if err != nil {
 		writeError(w, http.StatusBadGateway, "Google token exchange failed")
 		return
 	}
-	identity, err := fetchGoogleIdentity(r.Context(), s.oauth, token)
+	identity, err := fetchGoogleIdentity(r.Context(), oauthConfig, token)
 	if err != nil {
 		internalError(w, err, "fetch Google identity")
 		return
@@ -126,11 +131,17 @@ func (s *Server) googleCallback(w http.ResponseWriter, r *http.Request) {
 		internalError(w, err, "save Google connection")
 		return
 	}
-	if err := s.createSession(w, user.Email); err != nil {
+	if err := s.createSession(w, r, user.Email); err != nil {
 		internalError(w, err, "create OAuth session")
 		return
 	}
-	http.Redirect(w, r, "/", http.StatusSeeOther)
+	http.Redirect(w, r, s.cfg.HTTP.BasePath+"/", http.StatusSeeOther)
+}
+
+func (s *Server) googleOAuthConfig(r *http.Request) *oauth2.Config {
+	config := *s.oauth
+	config.RedirectURL = requestOrigin(r) + s.cfg.HTTP.BasePath + googleCallbackPath
+	return &config
 }
 
 type googleIdentity struct {

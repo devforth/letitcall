@@ -1,7 +1,9 @@
 package tests
 
 import (
-	"encoding/base64"
+	"bytes"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -30,23 +32,30 @@ func TestConfigUsesStrictEnvironmentNamesAndDefaults(t *testing.T) {
 func TestConfigRejectsPartialGoogleOAuthSettings(t *testing.T) {
 	clearConfigEnvironment(t)
 	t.Setenv(config.EnvGoogleClientID, "client-id-only")
-	if _, err := config.Load(); err == nil || !strings.Contains(err.Error(), "all LOGIN__OAUTH__GOOGLE settings") {
+	if _, err := config.Load(); err == nil || !strings.Contains(err.Error(), "client ID and client secret must be set together") {
 		t.Fatalf("expected partial Google config error, got %v", err)
 	}
 }
 
-func TestConfigAcceptsCompleteSecureGoogleOAuthSettings(t *testing.T) {
+func TestConfigLoadsBasePathAndGoogleOAuthSettings(t *testing.T) {
 	clearConfigEnvironment(t)
-	t.Setenv(config.EnvHTTPPublicURL, "https://calendar.example.com")
+	t.Setenv(config.EnvHTTPBasePath, "/calendar/")
 	t.Setenv(config.EnvGoogleClientID, "client-id")
 	t.Setenv(config.EnvGoogleClientSecret, "client-secret")
-	t.Setenv(config.EnvGoogleTokenEncryptionKey, base64.RawURLEncoding.EncodeToString(make([]byte, 32)))
 	cfg, err := config.Load()
 	if err != nil {
 		t.Fatal(err)
 	}
-	if cfg.Login.Google.RedirectURL != "https://calendar.example.com/api/auth/google/callback" {
-		t.Fatalf("unexpected derived redirect URL: %s", cfg.Login.Google.RedirectURL)
+	if cfg.HTTP.BasePath != "/calendar" || !cfg.Login.Google.Enabled() {
+		t.Fatalf("unexpected base path or Google settings: %#v", cfg)
+	}
+}
+
+func TestConfigRejectsBasePathWithoutLeadingSlash(t *testing.T) {
+	clearConfigEnvironment(t)
+	t.Setenv(config.EnvHTTPBasePath, "calendar")
+	if _, err := config.Load(); err == nil || !strings.Contains(err.Error(), "must start with /") {
+		t.Fatalf("expected invalid base path error, got %v", err)
 	}
 }
 
@@ -54,26 +63,41 @@ func clearConfigEnvironment(t *testing.T) {
 	t.Helper()
 	for _, name := range []string{
 		config.EnvHTTPPort,
-		config.EnvHTTPPublicURL,
-		config.EnvHTTPReadTimeout,
-		config.EnvHTTPWriteTimeout,
-		config.EnvHTTPIdleTimeout,
-		config.EnvHTTPShutdownTimeout,
+		config.EnvHTTPBasePath,
 		config.EnvStorageLevelDBPath,
 		config.EnvFirstUserEmail,
 		config.EnvFirstUserPassword,
 		config.EnvSessionTTL,
-		config.EnvSessionCookieSecure,
 		config.EnvPasswordMaxAttempts,
 		config.EnvPasswordLockout,
 		config.EnvGoogleClientID,
 		config.EnvGoogleClientSecret,
-		config.EnvGoogleRedirectURL,
-		config.EnvGoogleTokenEncryptionKey,
 	} {
 		t.Setenv(name, "")
 	}
 	t.Setenv(config.EnvStorageLevelDBPath, t.TempDir())
+}
+
+func TestGoogleTokenKeyIsGeneratedOnceInDataPath(t *testing.T) {
+	dataPath := t.TempDir()
+	first, err := security.LoadGoogleTokenKey(dataPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	second, err := security.LoadGoogleTokenKey(dataPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(first) != 32 || !bytes.Equal(first, second) {
+		t.Fatal("Google token key was not persisted")
+	}
+	info, err := os.Stat(filepath.Join(dataPath, security.GoogleTokenKeyFile))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if info.Mode().Perm() != 0o600 {
+		t.Fatalf("unexpected Google token key permissions: %o", info.Mode().Perm())
+	}
 }
 
 func TestFirstUserBootstrapSeedsOnlyAnEmptyUsersTable(t *testing.T) {

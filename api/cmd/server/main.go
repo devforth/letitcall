@@ -18,6 +18,13 @@ import (
 	"github.com/letitcall/letitcall/api/internal/store"
 )
 
+const (
+	readTimeout     = 10 * time.Second
+	writeTimeout    = 30 * time.Second
+	idleTimeout     = 60 * time.Second
+	shutdownTimeout = 10 * time.Second
+)
+
 func main() {
 	if err := run(); err != nil {
 		slog.Error("server stopped", "error", err)
@@ -47,10 +54,10 @@ func run() error {
 	server := &http.Server{
 		Addr:              fmt.Sprintf(":%d", cfg.HTTP.Port),
 		Handler:           api.Handler(),
-		ReadTimeout:       cfg.HTTP.ReadTimeout,
-		ReadHeaderTimeout: cfg.HTTP.ReadTimeout,
-		WriteTimeout:      cfg.HTTP.WriteTimeout,
-		IdleTimeout:       cfg.HTTP.IdleTimeout,
+		ReadTimeout:       readTimeout,
+		ReadHeaderTimeout: readTimeout,
+		WriteTimeout:      writeTimeout,
+		IdleTimeout:       idleTimeout,
 		MaxHeaderBytes:    1 << 20,
 	}
 
@@ -71,7 +78,7 @@ func run() error {
 	case <-signals.Done():
 	}
 
-	shutdownContext, cancel := context.WithTimeout(context.Background(), cfg.HTTP.ShutdownTimeout)
+	shutdownContext, cancel := context.WithTimeout(context.Background(), shutdownTimeout)
 	defer cancel()
 	if err := server.Shutdown(shutdownContext); err != nil {
 		return fmt.Errorf("graceful shutdown: %w", err)

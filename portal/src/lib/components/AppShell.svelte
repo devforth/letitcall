@@ -2,7 +2,7 @@
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
 	import type { Snippet } from 'svelte';
-	import { api } from '$lib/api';
+	import { api, appPath } from '$lib/api';
 	import type { SessionUser } from '$lib/types';
 	import Button from '$lib/components/ui/Button.svelte';
 
@@ -21,7 +21,7 @@
 		try {
 			await api('/api/auth/logout', { method: 'POST' });
 		} finally {
-			await goto('/auth/login', { replaceState: true });
+			await goto(appPath('/auth/login'), { replaceState: true });
 		}
 	}
 </script>
@@ -29,7 +29,7 @@
 <div class="min-h-screen bg-white text-black">
 	<header class="border-b border-black">
 		<div class="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-4 px-4 py-4 sm:px-6 lg:px-8">
-			<a class="text-lg font-bold tracking-tight" href="/">Let It Call</a>
+			<a class="text-lg font-bold tracking-tight" href={appPath('/')}>Let It Call</a>
 			<div class="flex items-center gap-4">
 				<span class="hidden text-sm sm:inline">{user.email}</span>
 				<Button variant="secondary" disabled={loggingOut} onclick={logout}>
@@ -44,14 +44,14 @@
 			<ul class="flex gap-2 md:grid">
 				<li>
 					<a
-						class={`block border border-black px-4 py-3 text-sm font-medium ${page.url.pathname === '/' ? 'bg-black text-white' : 'bg-white text-black'}`}
-						href="/">Dashboard</a
+						class={`block border border-black px-4 py-3 text-sm font-medium ${page.url.pathname === appPath('/') ? 'bg-black text-white' : 'bg-white text-black'}`}
+						href={appPath('/')}>Dashboard</a
 					>
 				</li>
 				<li>
 					<a
-						class={`block border border-black px-4 py-3 text-sm font-medium ${page.url.pathname.startsWith('/users') ? 'bg-black text-white' : 'bg-white text-black'}`}
-						href="/users">Users</a
+						class={`block border border-black px-4 py-3 text-sm font-medium ${page.url.pathname.startsWith(appPath('/users')) ? 'bg-black text-white' : 'bg-white text-black'}`}
+						href={appPath('/users')}>Users</a
 					>
 				</li>
 			</ul>
