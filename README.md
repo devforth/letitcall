@@ -16,7 +16,7 @@ In a second terminal, start the portal:
 ```sh
 cd portal
 pnpm install
-pnpm run dev -- --host 127.0.0.1 --port 41783 --strictPort
+pnpm run dev --host 127.0.0.1 --port 41783 --strictPort
 ```
 
 Open portal at `http://127.0.0.1:41783`. 
@@ -26,6 +26,8 @@ Default local login credentials is admin:admin.
 Opening the repository in VS Code automatically starts both development tasks on ports `41783` (portal) and `41784` (API).
 
 There is no signup route. When the users table is empty, the API creates its first user from `FIRSTUSER__CREDENTIALS__EMAIL` and `FIRSTUSER__CREDENTIALS__PASSWORD` from the `api/.env.local` file. Later users are created from Dashboard → Users.
+
+Shared event types are managed from Dashboard → Scheduling. Each event type has an immutable slug, one or more recipient users, local weekly working hours in the creator's IANA timezone, and a UTC booking contract. Public booking UI will use `/book/{event-slug}`; the public event-type data endpoint is available under `/api/public/event-types/{event-slug}`.
 
 ## Docker
 
@@ -56,6 +58,9 @@ All backend settings use structured uppercase environment variables:
 | `LOGIN__PASSWORD__LOCKOUT` | Sets how long a password login remains locked after reaching the failed-attempt limit. | `15m` |
 | `LOGIN__OAUTH__GOOGLE__CLIENT_ID` | Sets the Google OAuth client ID and enables Google login when the client secret is also set. | Not set |
 | `LOGIN__OAUTH__GOOGLE__CLIENT_SECRET` | Sets the Google OAuth client secret. Must be set together with the client ID. | Not set |
+| `MAILING__SENDING__MAILGUN__API_KEY` | Enables Mailgun booking notifications. Must be set with the Mailgun domain and sender. | Not set (email delivery is skipped) |
+| `MAILING__SENDING__MAILGUN__DOMAIN` | Sets the Mailgun sending domain. | Not set |
+| `MAILING__SENDING__MAILGUN__FROM` | Sets the Mailgun From address, such as `Let It Call <bookings@example.com>`. | Not set |
 
 To enable Google OAuth, set both Google settings and add this authorized redirect URI to the Google client:
 
@@ -66,6 +71,8 @@ https://your-host.example{HTTP__BASE__PATH}/api/auth/google/callback
 For example, a HTTP__BASE__PATH  of `/letitcall` produces `https://your-host.example/letitcall/api/auth/google/callback`. Omit the base path portion when the application is served at `/`. A TLS-terminating reverse proxy must preserve the request host and set `X-Forwarded-Proto: https` so the server forms the same redirect URI.
 
 The requested scopes include identity and permission to manage Google Calendar events. OAuth state uses PKCE. Google tokens are encrypted with a random key generated on first use and kept in `google-token.key` under `STORAGE__LEVELDB__PATH`; persist the data directory across restarts.
+
+When a booking is created, Mailgun delivery and Google Calendar delivery run in parallel. Email is sent to every event-type recipient when Mailgun is configured. A Google Calendar event is added separately to each recipient whose user account is Google-connected; recipients without a Google connection are silently skipped.
 
 ## Test and publish
 

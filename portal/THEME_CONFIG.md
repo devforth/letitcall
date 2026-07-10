@@ -76,9 +76,14 @@ border-color: rgb(var(--color-border));
 |----------|---------|
 | `--color-foreground` | Text and foreground elements |
 | `--color-background` | Page and element backgrounds |
+| `--color-text` | Standard text, matching the foreground color |
+| `--color-contrast-text` | Text contrasting with the standard text color |
 | `--color-border` | Borders and dividers |
 | `--color-muted-foreground` | Secondary text |
 | `--color-muted-background` | Subtle backgrounds |
+| `--color-primary` | Primary actions and highlights |
+| `--color-secondary` | Secondary actions and highlights |
+| `--color-secondary-hover` | Hover state for secondary actions |
 
 ## Styling with Tailwind
 

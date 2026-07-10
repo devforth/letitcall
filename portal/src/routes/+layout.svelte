@@ -2,6 +2,7 @@
 	import './layout.css';
 	import { theme } from '$lib/stores/theme';
 	import { onMount } from 'svelte';
+	import NotificationStack from '$lib/components/NotificationStack.svelte';
 
 	let { children } = $props();
 
@@ -28,3 +29,4 @@
 </svelte:head>
 
 {@render children()}
+<NotificationStack />

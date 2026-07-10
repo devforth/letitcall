@@ -13,87 +13,82 @@
 	class="toggle-switch"
 	class:dark={$theme === 'dark'}
 >
-	<div class="toggle-track">
-		<div class="toggle-thumb">
-			{#if $theme === 'light'}
-				<svg class="icon" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-					<path d="M12 18a6 6 0 100-12 6 6 0 000 12zM12 2v6m0 6v6M4.22 4.22l4.24 4.24m0 5.08l-4.24 4.24M19.78 4.22l-4.24 4.24m0 5.08l4.24 4.24" />
-				</svg>
-			{:else}
-				<svg class="icon" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-					<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
-				</svg>
-			{/if}
-		</div>
-	</div>
+	<svg class="sun-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+		<circle cx="12" cy="12" r="5" />
+		<line x1="12" y1="1" x2="12" y2="3" />
+		<line x1="12" y1="21" x2="12" y2="23" />
+		<line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
+		<line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
+		<line x1="1" y1="12" x2="3" y2="12" />
+		<line x1="21" y1="12" x2="23" y2="12" />
+		<line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
+		<line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
+	</svg>
+	<svg class="moon-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+		<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+	</svg>
 </button>
 
 <style>
 	.toggle-switch {
-		position: relative;
-		width: 56px;
-		height: 32px;
-		border: 2px solid rgba(255, 255, 255, 0.5);
-		border-radius: 16px;
-		cursor: pointer;
-		background: rgba(255, 255, 255, 0.1);
-		transition: all 0.3s ease;
-		padding: 0;
-		display: flex;
-		align-items: center;
-		backdrop-filter: blur(8px);
+		position: relative !important;
+		width: 68px !important;
+		height: 36px !important;
+		border: none !important;
+		border-radius: 20px !important;
+		background: #e0e0e0 !important;
+		cursor: pointer !important;
+		padding: 0 !important;
+		display: flex !important;
+		align-items: center !important;
+		justify-content: flex-start !important;
+		transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
 	}
 
 	.toggle-switch:hover {
-		background: rgba(255, 255, 255, 0.15);
-		border-color: rgba(255, 255, 255, 0.7);
+		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
 	}
 
 	.toggle-switch.dark {
-		background: rgba(255, 255, 255, 0.05);
-		border-color: rgba(255, 255, 255, 0.2);
+		background: #333 !important;
+		justify-content: flex-end !important;
 	}
 
 	.toggle-switch.dark:hover {
-		background: rgba(255, 255, 255, 0.1);
-		border-color: rgba(255, 255, 255, 0.3);
+		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
 	}
 
-	.toggle-track {
-		position: absolute;
-		width: 100%;
-		height: 100%;
-		border-radius: 16px;
-		display: flex;
-		align-items: center;
+	.sun-icon {
+		position: absolute !important;
+		left: 6px !important;
+		width: 20px !important;
+		height: 20px !important;
+		color: #333 !important;
+		transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+		flex-shrink: 0 !important;
 	}
 
-	.toggle-thumb {
-		position: absolute;
-		width: 28px;
-		height: 28px;
-		border-radius: 50%;
-		background: rgba(255, 255, 255, 0.9);
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		transition: transform 0.3s ease;
-		left: 2px;
-		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+	.toggle-switch.dark .sun-icon {
+		opacity: 0 !important;
+		transform: scale(0.5) translateX(-10px) !important;
 	}
 
-	.toggle-switch.dark .toggle-thumb {
-		transform: translateX(24px);
-		background: rgba(255, 255, 255, 0.8);
+	.moon-icon {
+		position: absolute !important;
+		right: 6px !important;
+		width: 20px !important;
+		height: 20px !important;
+		color: #333 !important;
+		opacity: 0 !important;
+		transform: scale(0.5) translateX(10px) !important;
+		transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+		flex-shrink: 0 !important;
 	}
 
-	.icon {
-		width: 16px;
-		height: 16px;
-		color: rgb(0, 153, 255);
-	}
-
-	.toggle-switch.dark .icon {
-		color: rgb(0, 201, 80);
+	.toggle-switch.dark .moon-icon {
+		opacity: 1 !important;
+		color: #eee !important;
+		transform: scale(1) translateX(0) !important;
 	}
 </style>

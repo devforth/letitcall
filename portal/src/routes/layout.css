@@ -1,3 +1,4 @@
+@config '../../tailwind.config.ts';
 @import 'tailwindcss';
 
 @layer base {
@@ -7,14 +8,19 @@
 		font-synthesis: none;
 
 		/* Light theme (default) */
-		--color-foreground: 0 0% 0%;
+		--color-foreground: 0 0 0;
 		--color-background: 255 255 255; /* White */
-		--color-border: 0 0% 87%;
-		--color-muted-foreground: 0 0% 40%;
-		--color-muted-background: 0 0% 96%;
+		--color-text: 100 100 100;
+		--color-contrast-text: 255 255 255;
+		--color-border: 222 222 222;
+		--color-muted-foreground: 102 102 102;
+		--color-muted-background: 245 245 245;
+		--color-primary: 0 201 80;
+		--color-secondary: 0 153 255;
+		--color-secondary-hover: 0 119 204;
 
 		color-scheme: light;
-		color: rgb(var(--color-foreground));
+		color: rgb(var(--color-text));
 		background: rgb(var(--color-background));
 	}
 
@@ -25,9 +31,9 @@
 		--color-border: 77 77 77;
 		--color-muted-foreground: 153 153 153;
 		--color-muted-background: 64 64 64;
+		--color-text: 220 220 220;
 
 		color-scheme: dark;
-		color: rgb(var(--color-foreground));
 		background: rgb(var(--color-background));
 	}
 
@@ -39,8 +45,6 @@
 		margin: 0;
 		min-width: 20rem;
 		min-height: 100vh;
-		background: rgb(var(--color-background));
-		color: rgb(var(--color-foreground));
 	}
 
 	button,
