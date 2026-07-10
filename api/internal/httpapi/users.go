@@ -28,6 +28,7 @@ func (s *Server) listUsers(w http.ResponseWriter, _ *http.Request) {
 
 type createUserRequest struct {
 	Email    string `json:"email"`
+	FullName string `json:"fullName"`
 	Password string `json:"password"`
 	Timezone string `json:"timezone"`
 	Avatar   string `json:"avatar"`
@@ -43,6 +44,7 @@ func (s *Server) createUser(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
+	user.FullName = strings.TrimSpace(request.FullName)
 	var avatar content.Avatar
 	if request.Avatar != "" {
 		avatar, err = s.avatars.Prepare(user.Email, request.Avatar)
@@ -70,6 +72,7 @@ func (s *Server) createUser(w http.ResponseWriter, r *http.Request) {
 }
 
 type updateUserRequest struct {
+	FullName *string `json:"fullName"`
 	Password *string `json:"password"`
 	Timezone *string `json:"timezone"`
 	Avatar   *string `json:"avatar"`
@@ -85,8 +88,8 @@ func (s *Server) updateUser(w http.ResponseWriter, r *http.Request) {
 	if err := decodeJSON(w, r, &request); err != nil {
 		return
 	}
-	if request.Password == nil && request.Timezone == nil && request.Avatar == nil {
-		writeError(w, http.StatusBadRequest, "password, timezone, or avatar is required")
+	if request.FullName == nil && request.Password == nil && request.Timezone == nil && request.Avatar == nil {
+		writeError(w, http.StatusBadRequest, "fullName, password, timezone, or avatar is required")
 		return
 	}
 	user, err := s.store.GetUser(email)
@@ -99,6 +102,9 @@ func (s *Server) updateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	previousAvatarFilename := user.AvatarPath
+	if request.FullName != nil {
+		user.FullName = strings.TrimSpace(*request.FullName)
+	}
 	if request.Password != nil {
 		hash, hashErr := security.HashPassword(*request.Password)
 		if hashErr != nil {

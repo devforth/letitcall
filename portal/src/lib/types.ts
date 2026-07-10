@@ -1,5 +1,6 @@
 export type SessionUser = {
 	email: string;
+	fullName: string;
 	timezone: string;
 	googleConnected: boolean;
 	avatarPath?: string;

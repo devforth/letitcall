@@ -19,11 +19,12 @@
 </script>
 
 <div class="overflow-x-auto border border-black">
-	<table class="w-full min-w-[44rem] border-collapse text-left text-sm">
+	<table class="w-full min-w-[50rem] border-collapse text-left text-sm">
 		<thead>
 			<tr class="border-b border-black">
 				<th class="px-4 py-3 font-semibold">Avatar</th>
 				<th class="px-4 py-3 font-semibold">Email</th>
+				<th class="px-4 py-3 font-semibold">Full name</th>
 				<th class="px-4 py-3 font-semibold">Is Google connected</th>
 				<th class="px-4 py-3 font-semibold">Timezone</th>
 				<th class="px-4 py-3 text-right font-semibold"><span class="sr-only">Actions</span></th>
@@ -44,6 +45,7 @@
 						{/if}
 					</td>
 					<td class="px-4 py-3 font-medium">{user.email}</td>
+					<td class="px-4 py-3">{user.fullName || '—'}</td>
 					<td class="px-4 py-3">{user.googleConnected ? 'Yes' : 'No'}</td>
 					<td class="px-4 py-3">{user.timezone}</td>
 					<td class="px-4 py-3">
@@ -61,7 +63,7 @@
 				</tr>
 			{:else}
 				<tr>
-					<td class="px-4 py-8 text-center" colspan="5">No users found.</td>
+					<td class="px-4 py-8 text-center" colspan="6">No users found.</td>
 				</tr>
 			{/each}
 		</tbody>

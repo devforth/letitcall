@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"image"
 	"image/jpeg"
@@ -244,14 +245,30 @@ func TestUserManagementAPIs(t *testing.T) {
 	}), http.StatusBadRequest)
 
 	createBody := map[string]string{
-		"email": "member@example.com", "password": "MemberPassword123!", "timezone": "Europe/London",
+		"email": "member@example.com", "fullName": "Ada Lovelace", "password": "MemberPassword123!", "timezone": "Europe/London",
 	}
 	created := expectStatus(t, f.request(http.MethodPost, "/api/users", createBody), http.StatusCreated)
-	if !strings.Contains(string(created), `"googleConnected":false`) {
+	if !strings.Contains(string(created), `"fullName":"Ada Lovelace"`) || !strings.Contains(string(created), `"googleConnected":false`) {
 		t.Fatalf("unexpected create response: %s", created)
 	}
+	storedUser, err := f.store.GetUser("member@example.com")
+	if err != nil || storedUser.FullName != "Ada Lovelace" {
+		t.Fatalf("full name was not stored in LevelDB: user=%#v err=%v", storedUser, err)
+	}
 	expectStatus(t, f.request(http.MethodPost, "/api/users", createBody), http.StatusConflict)
+	emailOnly := expectStatus(t, f.request(http.MethodPost, "/api/users", map[string]string{"email": "google-only@example.com"}), http.StatusCreated)
+	if !strings.Contains(string(emailOnly), `"fullName":""`) || !strings.Contains(string(emailOnly), `"timezone":"UTC"`) {
+		t.Fatalf("unexpected email-only user response: %s", emailOnly)
+	}
+	storedEmailOnly, err := f.store.GetUser("google-only@example.com")
+	if err != nil || storedEmailOnly.PasswordHash != "" || storedEmailOnly.Timezone != "UTC" {
+		t.Fatalf("email-only user was not stored correctly: user=%#v err=%v", storedEmailOnly, err)
+	}
 	expectStatus(t, f.request(http.MethodPatch, "/api/users/member@example.com", map[string]string{"timezone": "America/New_York"}), http.StatusOK)
+	profileUpdated := expectStatus(t, f.request(http.MethodPatch, "/api/users/member@example.com", map[string]string{"fullName": "Grace Hopper"}), http.StatusOK)
+	if !strings.Contains(string(profileUpdated), `"fullName":"Grace Hopper"`) {
+		t.Fatalf("unexpected profile update response: %s", profileUpdated)
+	}
 	updated := expectStatus(t, f.request(http.MethodPatch, "/api/users/member@example.com", map[string]string{"avatar": jpegDataURL(t, 512, 512)}), http.StatusOK)
 	firstAvatarFilename := avatarFilenameFromResponse(t, updated, "member__example.com")
 	if _, err := os.Stat(filepath.Join(f.dataPath, "content", "avatars", firstAvatarFilename)); err != nil {
@@ -417,7 +434,7 @@ func TestBookingDeliveryUsesMailgunAndConnectedGoogleCalendar(t *testing.T) {
 			APIKey: "mailgun-key", Domain: "mail.example.com", From: "Bookings <bookings@example.com>",
 		}
 	})
-	mockGoogleProvider(t, adminEmail, "", nil)
+	mockGoogleProvider(t, adminEmail, "", "", nil)
 	expectStatus(t, googleCallback(f), http.StatusSeeOther)
 	calendarRequests, mailgunRequests := mockBookingDelivery(t)
 	expectStatus(t, f.request(http.MethodPost, "/api/event-types", eventTypeBody("Delivery test", []string{adminEmail}, 1)), http.StatusCreated)
@@ -518,10 +535,47 @@ func TestGoogleOAuthAPIs(t *testing.T) {
 	expectStatus(t, enabled.request(http.MethodGet, "/api/auth/google/callback?state=invalid&code=invalid", nil), http.StatusBadRequest)
 }
 
+func TestGoogleOAuthImportsMissingFullName(t *testing.T) {
+	f := newFixture(t, true)
+	mockGoogleProvider(t, adminEmail, "Ada Lovelace", "", nil)
+	expectStatus(t, googleCallback(f), http.StatusSeeOther)
+	user, err := f.store.GetUser(adminEmail)
+	if err != nil || user.FullName != "Ada Lovelace" {
+		t.Fatalf("Google full name was not imported: user=%#v err=%v", user, err)
+	}
+}
+
+func TestGoogleOAuthKeepsExistingFullName(t *testing.T) {
+	f := newFixture(t, true)
+	user, err := f.store.GetUser(adminEmail)
+	if err != nil {
+		t.Fatal(err)
+	}
+	user.FullName = "Existing User"
+	if err := f.store.PutUser(user); err != nil {
+		t.Fatal(err)
+	}
+	mockGoogleProvider(t, adminEmail, "Google Profile", "", nil)
+	expectStatus(t, googleCallback(f), http.StatusSeeOther)
+	user, err = f.store.GetUser(adminEmail)
+	if err != nil || user.FullName != "Existing User" {
+		t.Fatalf("Google replaced an existing full name: user=%#v err=%v", user, err)
+	}
+}
+
+func TestGoogleOAuthRejectsUnknownUser(t *testing.T) {
+	f := newFixture(t, true)
+	mockGoogleProvider(t, "unknown@example.com", "Unknown User", "", nil)
+	expectStatus(t, googleCallback(f), http.StatusForbidden)
+	if _, err := f.store.GetUser("unknown@example.com"); !errors.Is(err, store.ErrNotFound) {
+		t.Fatalf("unknown Google user was created: %v", err)
+	}
+}
+
 func TestGoogleOAuthImportsMissingAvatar(t *testing.T) {
 	f := newFixtureAtBasePath(t, true, "/calendar")
 	pictureURL := "https://lh3.googleusercontent.com/profile.jpg"
-	avatarRequests := mockGoogleProvider(t, adminEmail, pictureURL, jpegBytes(t, 640, 320))
+	avatarRequests := mockGoogleProvider(t, adminEmail, "", pictureURL, jpegBytes(t, 640, 320))
 	expectStatus(t, googleCallback(f), http.StatusSeeOther)
 	if *avatarRequests != 1 {
 		t.Fatalf("expected one Google avatar request, got %d", *avatarRequests)
@@ -558,7 +612,7 @@ func TestGoogleOAuthKeepsExistingAvatar(t *testing.T) {
 		t.Fatal(err)
 	}
 	pictureURL := "https://lh3.googleusercontent.com/profile.jpg"
-	avatarRequests := mockGoogleProvider(t, adminEmail, pictureURL, jpegBytes(t, 320, 640))
+	avatarRequests := mockGoogleProvider(t, adminEmail, "", pictureURL, jpegBytes(t, 320, 640))
 	expectStatus(t, googleCallback(f), http.StatusSeeOther)
 	if *avatarRequests != 0 {
 		t.Fatalf("Google avatar was requested despite an existing avatar path")
@@ -660,7 +714,7 @@ func (roundTrip roundTripFunc) RoundTrip(request *http.Request) (*http.Response,
 	return roundTrip(request)
 }
 
-func mockGoogleProvider(t *testing.T, email, pictureURL string, picture []byte) *int {
+func mockGoogleProvider(t *testing.T, email, fullName, pictureURL string, picture []byte) *int {
 	t.Helper()
 	originalTransport := http.DefaultTransport
 	avatarRequests := 0
@@ -674,7 +728,7 @@ func mockGoogleProvider(t *testing.T, email, pictureURL string, picture []byte) 
 		case "https://openidconnect.googleapis.com/v1/userinfo":
 			contentType = "application/json"
 			body, _ = json.Marshal(map[string]any{
-				"email": email, "email_verified": true, "picture": pictureURL,
+				"email": email, "email_verified": true, "name": fullName, "picture": pictureURL,
 			})
 		case pictureURL:
 			avatarRequests++

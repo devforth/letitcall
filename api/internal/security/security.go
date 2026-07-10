@@ -64,13 +64,19 @@ func NewUser(email, password, timezone string, now time.Time) (model.User, error
 	if err != nil {
 		return model.User{}, err
 	}
-	normalizedTimezone, err := ValidateTimezone(timezone)
-	if err != nil {
-		return model.User{}, err
+	normalizedTimezone := "UTC"
+	if timezone != "" {
+		normalizedTimezone, err = ValidateTimezone(timezone)
+		if err != nil {
+			return model.User{}, err
+		}
 	}
-	passwordHash, err := HashPassword(password)
-	if err != nil {
-		return model.User{}, err
+	passwordHash := ""
+	if password != "" {
+		passwordHash, err = HashPassword(password)
+		if err != nil {
+			return model.User{}, err
+		}
 	}
 	return newUser(normalizedEmail, passwordHash, normalizedTimezone, now), nil
 }

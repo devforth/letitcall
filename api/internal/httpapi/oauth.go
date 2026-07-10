@@ -10,6 +10,7 @@ import (
 	"image"
 	"io"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/letitcall/letitcall/api/internal/content"
@@ -127,6 +128,9 @@ func (s *Server) googleCallback(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var googleAvatar content.Avatar
+	if user.FullName == "" {
+		user.FullName = strings.TrimSpace(identity.Name)
+	}
 	if user.AvatarPath == "" && identity.Picture != "" {
 		googleAvatar, err = fetchGoogleAvatar(r.Context(), identity.Picture, user.Email, s.avatars)
 		if err != nil {
@@ -164,6 +168,7 @@ func (s *Server) googleOAuthConfig(r *http.Request) *oauth2.Config {
 type googleIdentity struct {
 	Email         string `json:"email"`
 	EmailVerified bool   `json:"email_verified"`
+	Name          string `json:"name"`
 	Picture       string `json:"picture"`
 }
 

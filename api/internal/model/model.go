@@ -4,6 +4,7 @@ import "time"
 
 type User struct {
 	Email                string    `json:"email"`
+	FullName             string    `json:"fullName"`
 	PasswordHash         string    `json:"passwordHash"`
 	Timezone             string    `json:"timezone"`
 	AvatarPath           string    `json:"avatarPath,omitempty"`
@@ -15,6 +16,7 @@ type User struct {
 
 type PublicUser struct {
 	Email           string    `json:"email"`
+	FullName        string    `json:"fullName"`
 	Timezone        string    `json:"timezone"`
 	AvatarPath      string    `json:"avatarPath,omitempty"`
 	GoogleConnected bool      `json:"googleConnected"`
@@ -25,6 +27,7 @@ type PublicUser struct {
 func (u User) Public() PublicUser {
 	return PublicUser{
 		Email:           u.Email,
+		FullName:        u.FullName,
 		Timezone:        u.Timezone,
 		AvatarPath:      u.AvatarPath,
 		GoogleConnected: u.GoogleConnected,
