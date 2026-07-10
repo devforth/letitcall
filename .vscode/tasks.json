@@ -1,0 +1,80 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Dev: Svelte portal (41783)",
+			"type": "shell",
+			"command": "npm",
+			"args": [
+				"run",
+				"dev",
+				"--",
+				"--host",
+				"127.0.0.1",
+				"--port",
+				"41783",
+				"--strictPort"
+			],
+			"options": {
+				"cwd": "${workspaceFolder}/portal"
+			},
+			"isBackground": true,
+			"problemMatcher": {
+				"owner": "svelte-dev",
+				"pattern": {
+					"regexp": "^$"
+				},
+				"background": {
+					"activeOnStart": true,
+					"beginsPattern": "^\\s*>\\s+vite",
+					"endsPattern": "Local:.*41783"
+				}
+			},
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated",
+				"clear": true
+			},
+			"runOptions": {
+				"runOn": "folderOpen",
+				"instanceLimit": 1
+			}
+		},
+		{
+			"label": "Dev: Go API (41784)",
+			"type": "shell",
+			"command": "go",
+			"args": ["run", "./cmd/server"],
+			"options": {
+				"cwd": "${workspaceFolder}/api",
+				"env": {
+					"HTTP__PORT": "41784",
+					"STORAGE__LEVELDB__PATH": "./data",
+					"FIRSTUSER__CREDENTIALS__EMAIL": "developer@letitcall.local",
+					"FIRSTUSER__CREDENTIALS__PASSWORD": "LocalDevelopment123!"
+				}
+			},
+			"isBackground": true,
+			"problemMatcher": {
+				"owner": "go-dev",
+				"pattern": {
+					"regexp": "^$"
+				},
+				"background": {
+					"activeOnStart": true,
+					"beginsPattern": "a^",
+					"endsPattern": "HTTP server listening.*41784"
+				}
+			},
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated",
+				"clear": true
+			},
+			"runOptions": {
+				"runOn": "folderOpen",
+				"instanceLimit": 1
+			}
+		}
+	]
+}

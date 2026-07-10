@@ -1,0 +1,128 @@
+<script lang="ts">
+	import { onMount } from 'svelte';
+	import { api, getSession } from '$lib/api';
+	import UserTable from '$lib/components/UserTable.svelte';
+	import Button from '$lib/components/ui/Button.svelte';
+	import Input from '$lib/components/ui/Input.svelte';
+	import SearchableSelect from '$lib/components/ui/SearchableSelect.svelte';
+	import type { ManagedUser } from '$lib/types';
+
+	let users = $state<ManagedUser[]>([]);
+	let currentEmail = $state('');
+	let email = $state('');
+	let password = $state('');
+	let timezone = $state('UTC');
+	let timezones = $state<string[]>(['UTC']);
+	let showForm = $state(false);
+	let loading = $state(true);
+	let saving = $state(false);
+	let deletingEmail = $state('');
+	let error = $state('');
+
+	onMount(async () => {
+		const browserTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+		timezone = browserTimezone;
+		try {
+			const timezoneIntl = Intl as typeof Intl & { supportedValuesOf?: (key: string) => string[] };
+			timezones = timezoneIntl.supportedValuesOf?.('timeZone') ?? [browserTimezone, 'UTC'];
+			if (!timezones.includes(browserTimezone)) timezones = [browserTimezone, ...timezones];
+		} catch {
+			timezones = [browserTimezone, 'UTC'];
+		}
+
+		try {
+			const [session, response] = await Promise.all([
+				getSession(),
+				api<{ users: ManagedUser[] }>('/api/users')
+			]);
+			currentEmail = session.user.email;
+			users = response.users;
+		} catch (cause) {
+			error = cause instanceof Error ? cause.message : 'Unable to load users';
+		} finally {
+			loading = false;
+		}
+	});
+
+	async function createUser(event: SubmitEvent) {
+		event.preventDefault();
+		saving = true;
+		error = '';
+		try {
+			const response = await api<{ user: ManagedUser }>('/api/users', {
+				method: 'POST',
+				body: JSON.stringify({ email, password, timezone })
+			});
+			users = [...users, response.user].sort((a, b) => a.email.localeCompare(b.email));
+			email = '';
+			password = '';
+			timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+			showForm = false;
+		} catch (cause) {
+			error = cause instanceof Error ? cause.message : 'Unable to create user';
+		} finally {
+			saving = false;
+		}
+	}
+
+	async function deleteUser(emailToDelete: string) {
+		if (!window.confirm(`Delete ${emailToDelete}?`)) return;
+		deletingEmail = emailToDelete;
+		error = '';
+		try {
+			await api(`/api/users/${encodeURIComponent(emailToDelete)}`, { method: 'DELETE' });
+			users = users.filter((user) => user.email !== emailToDelete);
+		} catch (cause) {
+			error = cause instanceof Error ? cause.message : 'Unable to delete user';
+		} finally {
+			deletingEmail = '';
+		}
+	}
+</script>
+
+<svelte:head><title>Users · Let It Call</title></svelte:head>
+
+<section aria-labelledby="users-title">
+	<div class="mb-6 flex flex-wrap items-center justify-between gap-4">
+		<div>
+			<h1 id="users-title" class="text-2xl font-semibold tracking-tight">Users</h1>
+			<p class="mt-2 text-sm">Manage who can sign in and schedule events.</p>
+		</div>
+		<Button onclick={() => (showForm = !showForm)}>{showForm ? 'Cancel' : 'Add user'}</Button>
+	</div>
+
+	{#if error}
+		<p class="mb-5 border border-black p-3 text-sm" role="alert">{error}</p>
+	{/if}
+
+	{#if showForm}
+		<form class="mb-8 grid gap-5 border border-black p-5 lg:grid-cols-3" onsubmit={createUser}>
+			<Input id="new-email" label="Email" type="email" bind:value={email} required autocomplete="off" />
+			<Input
+				id="new-password"
+				label="Temporary password"
+				type="password"
+				bind:value={password}
+				required
+				minlength={12}
+				autocomplete="new-password"
+			/>
+			<SearchableSelect
+				id="new-timezone"
+				label="Timezone"
+				options={timezones}
+				bind:value={timezone}
+				required
+			/>
+			<div class="flex items-end lg:col-span-3">
+				<Button type="submit" disabled={saving}>{saving ? 'Creating…' : 'Create user'}</Button>
+			</div>
+		</form>
+	{/if}
+
+	{#if loading}
+		<p class="border border-black p-6 text-sm">Loading users…</p>
+	{:else}
+		<UserTable {users} {currentEmail} {deletingEmail} ondelete={deleteUser} />
+	{/if}
+</section>
