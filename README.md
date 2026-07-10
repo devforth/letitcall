@@ -95,3 +95,4 @@ cd ../portal && pnpm run check && pnpm run build
 # Set VERSION and PACKAGE_NAME in publish.sh first.
 ./publish.sh
 ```
+
