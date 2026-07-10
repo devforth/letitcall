@@ -8,7 +8,7 @@
 
 		/* Light theme (default) */
 		--color-foreground: 0 0% 0%;
-		--color-background: 0 0% 100%;
+		--color-background: 255 255 255; /* White */
 		--color-border: 0 0% 87%;
 		--color-muted-foreground: 0 0% 40%;
 		--color-muted-background: 0 0% 96%;
@@ -20,11 +20,11 @@
 
 	html.dark {
 		/* Dark theme */
-		--color-foreground: 0 0% 100%;
-		--color-background: 0 0% 8%;
-		--color-border: 0 0% 20%;
-		--color-muted-foreground: 0 0% 60%;
-		--color-muted-background: 0 0% 15%;
+		--color-foreground: 255 255 255;
+		--color-background: 51 51 51;
+		--color-border: 77 77 77;
+		--color-muted-foreground: 153 153 153;
+		--color-muted-background: 64 64 64;
 
 		color-scheme: dark;
 		color: rgb(var(--color-foreground));
