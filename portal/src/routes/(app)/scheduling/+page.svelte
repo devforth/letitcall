@@ -32,7 +32,8 @@
 		return users.find((candidate) => candidate.email === email);
 	}
 
-	async function deleteEventType(eventType: EventType) {
+	async function deleteEventType() {
+		const eventType = eventTypeToDelete!;
 		deletingSlug = eventType.eventSlug;
 		try {
 			await callApi(`/api/event-types/${encodeURIComponent(eventType.eventSlug)}`, { method: 'DELETE' });
@@ -112,7 +113,7 @@
 		confirmLabel="Delete event type"
 		confirmingLabel="Deleting…"
 		confirming={deletingSlug === eventTypeToDelete.eventSlug}
-		onconfirm={() => deleteEventType(eventTypeToDelete)}
+		onconfirm={deleteEventType}
 		oncancel={() => (eventTypeToDelete = null)}
 	/>
 {/if}
