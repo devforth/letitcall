@@ -19,6 +19,8 @@ npm install
 npm run dev -- --host 127.0.0.1 --port 41783 --strictPort
 ```
 
+Default local login credentials is admin:admin.
+
 Opening the repository in VS Code automatically starts both development tasks on ports `41783` (portal) and `41784` (API). The automatic API task loads the committed `api/.env.local` settings through the pinned `godotenv` Go tool.
 
 There is no signup route. When the users table is empty, the API creates its first user from `FIRSTUSER__CREDENTIALS__EMAIL` and `FIRSTUSER__CREDENTIALS__PASSWORD`. Later users are created from Dashboard → Users.
@@ -68,5 +70,7 @@ cd ../portal && npm run check && npm run build
 `publish.sh` creates and pushes multi-platform version and `latest` tags in one Buildx invocation:
 
 ```sh
-./publish.sh 0.1.0 ghcr.io/example/letitcall
+./publish.sh
 ```
+
+Set `VERSION` and `PACKAGE_NAME` inside the script before publishing to Docker Hub.
