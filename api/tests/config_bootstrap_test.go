@@ -8,6 +8,7 @@ import (
 
 	"github.com/letitcall/letitcall/api/internal/bootstrap"
 	"github.com/letitcall/letitcall/api/internal/config"
+	"github.com/letitcall/letitcall/api/internal/security"
 	"github.com/letitcall/letitcall/api/internal/store"
 )
 
@@ -81,9 +82,13 @@ func TestFirstUserBootstrapSeedsOnlyAnEmptyUsersTable(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer database.Close()
-	credentials := config.FirstUser{Email: "owner@example.com", Password: "OwnerPassword123!"}
+	credentials := config.FirstUser{Email: "admin", Password: "admin"}
 	if err := bootstrap.EnsureFirstUser(database, credentials, time.Now()); err != nil {
 		t.Fatal(err)
+	}
+	user, err := database.GetUser("admin")
+	if err != nil || !security.CheckPassword(user.PasswordHash, "admin") {
+		t.Fatalf("configured first-user credentials were not stored: user=%#v err=%v", user, err)
 	}
 	if err := bootstrap.EnsureFirstUser(database, config.FirstUser{}, time.Now()); err != nil {
 		t.Fatalf("existing users should not require bootstrap credentials: %v", err)

@@ -65,7 +65,7 @@
 		{/if}
 
 		<form class="grid gap-5" onsubmit={login}>
-			<Input id="email" label="Email" type="email" bind:value={email} required autocomplete="email" />
+			<Input id="email" label="Email or username" bind:value={email} required autocomplete="username" />
 			<Input
 				id="password"
 				label="Password"

@@ -168,6 +168,21 @@ func TestAuthenticationAPIs(t *testing.T) {
 	expectStatus(t, f.request(http.MethodGet, "/api/auth/session", nil), http.StatusUnauthorized)
 }
 
+func TestAuthenticationAllowsConfiguredFirstUserIdentifier(t *testing.T) {
+	f := newFixture(t, false)
+	if err := f.store.DeleteUser(adminEmail); err != nil {
+		t.Fatal(err)
+	}
+	user, err := security.NewFirstUser("admin", "admin", time.Now())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := f.store.CreateUser(user); err != nil {
+		t.Fatal(err)
+	}
+	expectStatus(t, f.login("admin", "admin"), http.StatusOK)
+}
+
 func TestAuthenticationRejectsInvalidMediaTypeAndOrigin(t *testing.T) {
 	f := newFixture(t, false)
 	request, err := http.NewRequest(http.MethodPost, f.server.URL+"/api/auth/login", strings.NewReader(`{}`))
@@ -193,6 +208,12 @@ func TestUserManagementAPIs(t *testing.T) {
 	if !strings.Contains(string(users), adminEmail) || strings.Contains(string(users), "passwordHash") {
 		t.Fatalf("unexpected users response: %s", users)
 	}
+	expectStatus(t, f.request(http.MethodPost, "/api/users", map[string]string{
+		"email": "member", "password": "MemberPassword123!", "timezone": "UTC",
+	}), http.StatusBadRequest)
+	expectStatus(t, f.request(http.MethodPost, "/api/users", map[string]string{
+		"email": "member@example.com", "password": "short", "timezone": "UTC",
+	}), http.StatusBadRequest)
 
 	createBody := map[string]string{
 		"email": "member@example.com", "password": "MemberPassword123!", "timezone": "Europe/London",

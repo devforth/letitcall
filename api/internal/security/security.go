@@ -44,6 +44,10 @@ func HashPassword(password string) (string, error) {
 	if len([]byte(password)) > 72 {
 		return "", errors.New("password must be at most 72 bytes")
 	}
+	return hashPassword(password)
+}
+
+func hashPassword(password string) (string, error) {
 	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
 		return "", fmt.Errorf("hash password: %w", err)
@@ -68,14 +72,26 @@ func NewUser(email, password, timezone string, now time.Time) (model.User, error
 	if err != nil {
 		return model.User{}, err
 	}
+	return newUser(normalizedEmail, passwordHash, normalizedTimezone, now), nil
+}
+
+func NewFirstUser(identifier, password string, now time.Time) (model.User, error) {
+	passwordHash, err := hashPassword(password)
+	if err != nil {
+		return model.User{}, err
+	}
+	return newUser(strings.ToLower(strings.TrimSpace(identifier)), passwordHash, "UTC", now), nil
+}
+
+func newUser(email, passwordHash, timezone string, now time.Time) model.User {
 	now = now.UTC().Truncate(time.Second)
 	return model.User{
-		Email:        normalizedEmail,
+		Email:        email,
 		PasswordHash: passwordHash,
-		Timezone:     normalizedTimezone,
+		Timezone:     timezone,
 		CreatedAt:    now,
 		UpdatedAt:    now,
-	}, nil
+	}
 }
 
 func RandomToken(bytes int) (string, error) {

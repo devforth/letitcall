@@ -23,10 +23,7 @@ func (s *Server) login(w http.ResponseWriter, r *http.Request) {
 	if err := decodeJSON(w, r, &request); err != nil {
 		return
 	}
-	normalizedEmail, emailErr := security.NormalizeEmail(request.Email)
-	if emailErr != nil {
-		normalizedEmail = strings.ToLower(strings.TrimSpace(request.Email))
-	}
+	normalizedEmail := strings.ToLower(strings.TrimSpace(request.Email))
 	limitKey := remoteIP(r) + "|" + normalizedEmail
 	now := s.now()
 	if !s.limiter.Allowed(limitKey, now) {
@@ -42,7 +39,7 @@ func (s *Server) login(w http.ResponseWriter, r *http.Request) {
 		internalError(w, err, "load user for login")
 		return
 	}
-	if emailErr != nil || err != nil || !security.CheckPassword(hash, request.Password) {
+	if err != nil || !security.CheckPassword(hash, request.Password) {
 		s.limiter.Failure(limitKey, now)
 		writeError(w, http.StatusUnauthorized, "invalid email or password")
 		return
