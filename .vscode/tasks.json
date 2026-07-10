@@ -43,15 +43,12 @@
 		{
 			"label": "Dev: Go API (41784)",
 			"type": "shell",
-			"command": "go",
-			"args": ["run", "./cmd/server"],
+			"command": "dotenvx",
+			"args": ["run", "-f", ".env.local", "--", "go", "run", "./cmd/server"],
 			"options": {
 				"cwd": "${workspaceFolder}/api",
 				"env": {
-					"HTTP__PORT": "41784",
-					"STORAGE__LEVELDB__PATH": "./data",
-					"FIRSTUSER__CREDENTIALS__EMAIL": "developer@letitcall.local",
-					"FIRSTUSER__CREDENTIALS__PASSWORD": "LocalDevelopment123!"
+					"HTTP__PORT": "41784"
 				}
 			},
 			"isBackground": true,
