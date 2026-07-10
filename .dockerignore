@@ -1,0 +1,8 @@
+.git
+.agents
+.codex
+api/data
+portal/.svelte-kit
+portal/build
+portal/node_modules
+**/.DS_Store
