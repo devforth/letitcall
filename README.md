@@ -8,7 +8,7 @@ Start the API on the portal's development-proxy port:
 
 ```sh
 cd api
-dotenvx run -f .env.local -- go run ./cmd/server
+go tool godotenv -f .env.local go run ./cmd/server
 ```
 
 In a second terminal, start the portal:
@@ -19,7 +19,7 @@ npm install
 npm run dev -- --host 127.0.0.1 --port 41783 --strictPort
 ```
 
-Opening the repository in VS Code automatically starts both development tasks on ports `41783` (portal) and `41784` (API). The automatic API task loads the committed `api/.env.local` settings through dotenvx.
+Opening the repository in VS Code automatically starts both development tasks on ports `41783` (portal) and `41784` (API). The automatic API task loads the committed `api/.env.local` settings through the pinned `godotenv` Go tool.
 
 There is no signup route. When the users table is empty, the API creates its first user from `FIRSTUSER__CREDENTIALS__EMAIL` and `FIRSTUSER__CREDENTIALS__PASSWORD`. Later users are created from Dashboard → Users.
 

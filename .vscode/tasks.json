@@ -43,8 +43,8 @@
 		{
 			"label": "Dev: Go API (41784)",
 			"type": "shell",
-			"command": "dotenvx",
-			"args": ["run", "-f", ".env.local", "--", "go", "run", "./cmd/server"],
+			"command": "go",
+			"args": ["tool", "godotenv", "-f", ".env.local", "go", "run", "./cmd/server"],
 			"options": {
 				"cwd": "${workspaceFolder}/api"
 			},
