@@ -435,7 +435,7 @@ func TestBookingDeliveryUsesMailgunAndConnectedGoogleCalendar(t *testing.T) {
 		}
 	})
 	mockGoogleProvider(t, adminEmail, "", "", nil)
-	expectStatus(t, googleCallback(f), http.StatusSeeOther)
+	expectStatus(t, googleCallback(f), http.StatusOK)
 	calendarRequests, mailgunRequests := mockBookingDelivery(t)
 	expectStatus(t, f.request(http.MethodPost, "/api/event-types", eventTypeBody("Delivery test", []string{adminEmail}, 1)), http.StatusCreated)
 	candidate := time.Now().UTC().AddDate(0, 0, 2)
@@ -509,7 +509,7 @@ func TestDeletingFinalEventTypeRecipientIsRejected(t *testing.T) {
 func TestGoogleOAuthAPIs(t *testing.T) {
 	disabled := newFixture(t, false)
 	expectStatus(t, disabled.request(http.MethodGet, "/api/auth/google/start", nil), http.StatusNotFound)
-	expectStatus(t, disabled.request(http.MethodGet, "/api/auth/google/callback", nil), http.StatusNotFound)
+	expectStatus(t, disabled.request(http.MethodPost, "/api/auth/google/callback", nil), http.StatusNotFound)
 
 	enabled := newFixtureAtBasePath(t, true, "/calendar")
 	configBody := expectStatus(t, enabled.request(http.MethodGet, "/api/config/public", nil), http.StatusOK)
@@ -529,16 +529,17 @@ func TestGoogleOAuthAPIs(t *testing.T) {
 	if !strings.Contains(query.Get("scope"), "calendar.events") {
 		t.Fatalf("OAuth redirect is missing calendar scope: %s", query.Get("scope"))
 	}
-	if query.Get("redirect_uri") != enabled.server.URL+"/calendar/api/auth/google/callback" {
+	if query.Get("redirect_uri") != enabled.server.URL+"/calendar/auth/google/callback" {
 		t.Fatalf("unexpected OAuth redirect URI: %s", query.Get("redirect_uri"))
 	}
-	expectStatus(t, enabled.request(http.MethodGet, "/api/auth/google/callback?state=invalid&code=invalid", nil), http.StatusBadRequest)
+	expectStatus(t, enabled.request(http.MethodPost, "/api/auth/google/callback", map[string]string{"error": "access_denied"}), http.StatusBadRequest)
+	expectStatus(t, enabled.request(http.MethodPost, "/api/auth/google/callback", map[string]string{"state": "invalid", "code": "invalid"}), http.StatusBadRequest)
 }
 
 func TestGoogleOAuthImportsMissingFullName(t *testing.T) {
 	f := newFixture(t, true)
 	mockGoogleProvider(t, adminEmail, "Ada Lovelace", "", nil)
-	expectStatus(t, googleCallback(f), http.StatusSeeOther)
+	expectStatus(t, googleCallback(f), http.StatusOK)
 	user, err := f.store.GetUser(adminEmail)
 	if err != nil || user.FullName != "Ada Lovelace" {
 		t.Fatalf("Google full name was not imported: user=%#v err=%v", user, err)
@@ -556,7 +557,7 @@ func TestGoogleOAuthKeepsExistingFullName(t *testing.T) {
 		t.Fatal(err)
 	}
 	mockGoogleProvider(t, adminEmail, "Google Profile", "", nil)
-	expectStatus(t, googleCallback(f), http.StatusSeeOther)
+	expectStatus(t, googleCallback(f), http.StatusOK)
 	user, err = f.store.GetUser(adminEmail)
 	if err != nil || user.FullName != "Existing User" {
 		t.Fatalf("Google replaced an existing full name: user=%#v err=%v", user, err)
@@ -566,7 +567,10 @@ func TestGoogleOAuthKeepsExistingFullName(t *testing.T) {
 func TestGoogleOAuthRejectsUnknownUser(t *testing.T) {
 	f := newFixture(t, true)
 	mockGoogleProvider(t, "unknown@example.com", "Unknown User", "", nil)
-	expectStatus(t, googleCallback(f), http.StatusForbidden)
+	body := expectStatus(t, googleCallback(f), http.StatusForbidden)
+	if !strings.Contains(string(body), "Ask an administrator to add your email") {
+		t.Fatalf("unexpected unknown-user error: %s", body)
+	}
 	if _, err := f.store.GetUser("unknown@example.com"); !errors.Is(err, store.ErrNotFound) {
 		t.Fatalf("unknown Google user was created: %v", err)
 	}
@@ -576,7 +580,7 @@ func TestGoogleOAuthImportsMissingAvatar(t *testing.T) {
 	f := newFixtureAtBasePath(t, true, "/calendar")
 	pictureURL := "https://lh3.googleusercontent.com/profile.jpg"
 	avatarRequests := mockGoogleProvider(t, adminEmail, "", pictureURL, jpegBytes(t, 640, 320))
-	expectStatus(t, googleCallback(f), http.StatusSeeOther)
+	expectStatus(t, googleCallback(f), http.StatusOK)
 	if *avatarRequests != 1 {
 		t.Fatalf("expected one Google avatar request, got %d", *avatarRequests)
 	}
@@ -613,7 +617,7 @@ func TestGoogleOAuthKeepsExistingAvatar(t *testing.T) {
 	}
 	pictureURL := "https://lh3.googleusercontent.com/profile.jpg"
 	avatarRequests := mockGoogleProvider(t, adminEmail, "", pictureURL, jpegBytes(t, 320, 640))
-	expectStatus(t, googleCallback(f), http.StatusSeeOther)
+	expectStatus(t, googleCallback(f), http.StatusOK)
 	if *avatarRequests != 0 {
 		t.Fatalf("Google avatar was requested despite an existing avatar path")
 	}
@@ -705,7 +709,10 @@ func googleCallback(f *fixture) *http.Response {
 	if err != nil {
 		f.t.Fatal(err)
 	}
-	return f.request(http.MethodGet, "/api/auth/google/callback?state="+url.QueryEscape(location.Query().Get("state"))+"&code=test-code", nil)
+	return f.request(http.MethodPost, "/api/auth/google/callback", map[string]string{
+		"state": location.Query().Get("state"),
+		"code":  "test-code",
+	})
 }
 
 type roundTripFunc func(*http.Request) (*http.Response, error)

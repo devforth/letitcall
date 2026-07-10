@@ -1,5 +1,7 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
+	import googleIcon from '@iconify-icons/logos/google-icon';
+	import Icon from '@iconify/svelte';
 	import { onMount } from 'svelte';
 	import { callApi, appPath, getPublicConfig, getSession } from '$lib/api';
 	import Button from '$lib/components/ui/Button.svelte';
@@ -86,7 +88,10 @@
 				<div class="h-px flex-1 bg-black"></div>
 			</div>
 			<Button variant="secondary" fullWidth onclick={googleLogin}>
-				Continue with Google and allow calendar access
+				<span class="flex items-center gap-2">
+					<Icon icon={googleIcon} width="20" height="20" />
+					Continue with Google and allow calendar access
+				</span>
 			</Button>
 		{/if}
 	</section>

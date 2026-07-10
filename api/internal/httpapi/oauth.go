@@ -21,9 +21,16 @@ import (
 )
 
 const (
-	googleUserInfoURL  = "https://openidconnect.googleapis.com/v1/userinfo"
-	googleCallbackPath = "/api/auth/google/callback"
+	googleUserInfoURL        = "https://openidconnect.googleapis.com/v1/userinfo"
+	googlePortalCallbackPath = "/auth/google/callback"
+	googleAPICallbackPath    = "/api/auth/google/callback"
 )
+
+type googleCallbackRequest struct {
+	State string `json:"state"`
+	Code  string `json:"code"`
+	Error string `json:"error"`
+}
 
 func (s *Server) googleStart(w http.ResponseWriter, r *http.Request) {
 	if s.oauth == nil {
@@ -64,12 +71,20 @@ func (s *Server) googleCallback(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, "Google login is not enabled")
 		return
 	}
-	if providerError := r.URL.Query().Get("error"); providerError != "" {
+	if !s.validOrigin(r) {
+		writeError(w, http.StatusForbidden, "request origin is not allowed")
+		return
+	}
+	var request googleCallbackRequest
+	if err := decodeJSON(w, r, &request); err != nil {
+		return
+	}
+	if request.Error != "" {
 		writeError(w, http.StatusBadRequest, "Google authorization was not completed")
 		return
 	}
-	state := r.URL.Query().Get("state")
-	code := r.URL.Query().Get("code")
+	state := request.State
+	code := request.Code
 	if state == "" || code == "" {
 		writeError(w, http.StatusBadRequest, "OAuth state and code are required")
 		return
@@ -101,7 +116,7 @@ func (s *Server) googleCallback(w http.ResponseWriter, r *http.Request) {
 	}
 	user, err := s.store.GetUser(email)
 	if errors.Is(err, store.ErrNotFound) {
-		writeError(w, http.StatusForbidden, "this Google account is not an existing user")
+		writeError(w, http.StatusForbidden, "This Google account does not belong to an existing user. Ask an administrator to add your email before signing in.")
 		return
 	}
 	if err != nil {
@@ -156,12 +171,12 @@ func (s *Server) googleCallback(w http.ResponseWriter, r *http.Request) {
 		internalError(w, err, "create OAuth session")
 		return
 	}
-	http.Redirect(w, r, s.cfg.HTTP.BasePath+"/", http.StatusSeeOther)
+	writeJSON(w, http.StatusOK, map[string]any{"user": user.Public()})
 }
 
 func (s *Server) googleOAuthConfig(r *http.Request) *oauth2.Config {
 	config := *s.oauth
-	config.RedirectURL = requestOrigin(r) + s.cfg.HTTP.BasePath + googleCallbackPath
+	config.RedirectURL = requestOrigin(r) + s.cfg.HTTP.BasePath + googlePortalCallbackPath
 	return &config
 }
 

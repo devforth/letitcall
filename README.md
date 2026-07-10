@@ -40,10 +40,10 @@ All backend settings use structured uppercase environment variables:
 To enable Google OAuth, set both Google settings and add this authorized redirect URI to the Google client:
 
 ```text
-https://your-host.example{HTTP__BASE__PATH}/api/auth/google/callback
+https://your-host.example{HTTP__BASE__PATH}/auth/google/callback
 ```
 
-For example, a HTTP__BASE__PATH  of `/letitcall` produces `https://your-host.example/letitcall/api/auth/google/callback`. Omit the base path portion when the application is served at `/`. A TLS-terminating reverse proxy must preserve the request host and set `X-Forwarded-Proto: https` so the server forms the same redirect URI.
+For example, a HTTP__BASE__PATH of `/letitcall` produces `https://your-host.example/letitcall/auth/google/callback`. Omit the base path portion when the application is served at `/`. A TLS-terminating reverse proxy must preserve the request host and set `X-Forwarded-Proto: https` so the server forms the same redirect URI.
 
 The requested scopes include identity and permission to manage Google Calendar events. OAuth state uses PKCE. Google tokens are encrypted with a random key generated on first use and kept in `google-token.key` under `STORAGE__LEVELDB__PATH`; persist the data directory across restarts.
 
@@ -56,7 +56,7 @@ VS Code starts the portal on `41783` and API on `41784`. To run manually:
 ```sh
 # Terminal 1
 cd api
-go tool godotenv -f .env.local go run ./cmd/server
+go run ./cmd/server
 
 # Terminal 2
 cd portal
@@ -71,7 +71,7 @@ Open `http://127.0.0.1:41783`; default login is `admin` / `admin`. There is no s
 Create a Web OAuth client, enable Google Calendar API, add the Google account as an OAuth test user, and register:
 
 ```text
-http://127.0.0.1:41783/api/auth/google/callback
+http://127.0.0.1:41783/auth/google/callback
 ```
 
 ```dotenv

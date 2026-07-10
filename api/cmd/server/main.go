@@ -33,6 +33,9 @@ func main() {
 }
 
 func run() error {
+	if err := config.LoadDotEnv(); err != nil {
+		return fmt.Errorf("load environment files: %w", err)
+	}
 	cfg, err := config.Load()
 	if err != nil {
 		return fmt.Errorf("load configuration: %w", err)
