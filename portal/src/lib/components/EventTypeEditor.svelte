@@ -21,6 +21,7 @@
 	let inviteeLimit = $state('');
 	let timezone = $state('UTC');
 	let recipientEmails = $state<string[]>([]);
+	let recipientsError = $state('');
 	let schedule = $state<ScheduleDay[]>(defaultSchedule());
 	let currentTime = $state('');
 	let loading = $state(true);
@@ -87,6 +88,12 @@
 
 	async function save(event: SubmitEvent) {
 		event.preventDefault();
+		if (recipientEmails.length === 0) {
+			recipientsError = 'Select at least one recipient.';
+			const form = event.currentTarget as HTMLFormElement;
+			form.querySelector<HTMLElement>('#recipients')?.focus();
+			return;
+		}
 		saving = true;
 		try {
 			const body = {
@@ -190,7 +197,12 @@
 			<Input id="timezone" label="Schedule timezone (read-only)" value={`${timezone} — ${currentTime}`} readonly />
 		</section>
 
-		<UserMultiSelect {users} bind:selected={recipientEmails} />
+		<UserMultiSelect
+			{users}
+			bind:selected={recipientEmails}
+			error={recipientsError}
+			onchange={() => (recipientsError = '')}
+		/>
 		<ScheduleEditor bind:schedule />
 	</form>
 {/if}

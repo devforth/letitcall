@@ -4,20 +4,30 @@
 
 	let {
 		users,
-		selected = $bindable([])
+		selected = $bindable([]),
+		error = '',
+		onchange
 	}: {
 		users: ManagedUser[];
 		selected?: string[];
+		error?: string;
+		onchange?: () => void;
 	} = $props();
 
 	function toggle(email: string, checked: boolean) {
 		selected = checked ? [...selected, email].sort() : selected.filter((value) => value !== email);
+		onchange?.();
 	}
 </script>
 
-<fieldset class="border border-black p-4">
+<fieldset
+	id="recipients"
+	tabindex="-1"
+	aria-describedby={error ? 'recipients-error' : 'recipients-description'}
+	class="border border-black p-4 outline-none focus:ring-2 focus:ring-black focus:ring-offset-2"
+>
 	<legend class="px-2 text-sm font-medium">Recipients</legend>
-	<p class="mb-3 text-xs">Choose at least one user. Each selected user receives booking email.</p>
+	<p id="recipients-description" class="mb-3 text-xs">Choose at least one user. Each selected user receives booking email.</p>
 	<div class="grid gap-2 sm:grid-cols-2">
 		{#each users as user (user.email)}
 			<label class="flex min-h-14 cursor-pointer items-center gap-3 border border-black p-3">
@@ -39,4 +49,7 @@
 			</label>
 		{/each}
 	</div>
+	{#if error}
+		<p id="recipients-error" class="mt-3 text-xs" role="alert">{error}</p>
+	{/if}
 </fieldset>
