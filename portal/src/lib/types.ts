@@ -56,7 +56,7 @@ export type PublicEventType = Pick<
 	| 'timezone'
 	| 'schedule'
 > & {
-	hosts: { email: string; avatarPath?: string }[];
+	hosts: { email: string; fullName: string; avatarPath?: string }[];
 	unavailableTimes: string[];
 };
 

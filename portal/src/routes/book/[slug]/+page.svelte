@@ -145,7 +145,7 @@
 						{/if}
 					{/each}
 				</div>
-				<p class="mt-6 text-sm font-medium">{eventType.hosts.map((host) => host.email).join(', ')}</p>
+				<p class="mt-6 text-sm font-medium">{eventType.hosts.map((host) => host.fullName).join(', ')}</p>
 				<h1 class="mt-2 text-3xl font-semibold tracking-tight">{eventType.name}</h1>
 				<p class="mt-7 flex items-center gap-2 text-sm font-medium">
 					<Icon icon={clockIcon} width="22" height="22" />

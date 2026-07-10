@@ -453,7 +453,7 @@ func TestEventTypeAPIs(t *testing.T) {
 	expectStatus(t, f.request(http.MethodGet, "/api/event-types", nil), http.StatusUnauthorized)
 	expectStatus(t, f.login(adminEmail, adminPassword), http.StatusOK)
 	expectStatus(t, f.request(http.MethodPost, "/api/users", map[string]string{
-		"email": "member@example.com", "password": "MemberPassword123!", "timezone": "Europe/Kyiv",
+		"email": "member@example.com", "fullName": "Ada Lovelace", "password": "MemberPassword123!", "timezone": "Europe/Kyiv",
 	}), http.StatusCreated)
 	created := expectStatus(t, f.request(http.MethodPost, "/api/event-types", eventTypeBody("Team Consultation!", []string{adminEmail}, 3)), http.StatusCreated)
 	if !strings.Contains(string(created), `"eventSlug":"team-consultation"`) {
@@ -470,7 +470,7 @@ func TestEventTypeAPIs(t *testing.T) {
 		t.Fatalf("event type missing from list: %s", listed)
 	}
 	public := expectStatus(t, f.request(http.MethodGet, "/api/public/event-types/team-consultation", nil), http.StatusOK)
-	if !strings.Contains(string(public), `"hosts"`) || !strings.Contains(string(public), "member@example.com") {
+	if !strings.Contains(string(public), `"hosts"`) || !strings.Contains(string(public), `"fullName":"Ada Lovelace"`) {
 		t.Fatalf("public event type did not include hosts: %s", public)
 	}
 	invalid := eventTypeBody("No recipients", nil, 1)

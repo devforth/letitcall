@@ -68,7 +68,9 @@ Open `http://127.0.0.1:41783`; default login is `admin` / `admin`. There is no s
 
 ### Google OAuth test credentials
 
-Create a Web OAuth client, enable Google Calendar API, add the Google account as an OAuth test user, and register:
+Create a Web OAuth client, add the Google account as an OAuth test user, and register:
+
+Enable the [Google Calendar API](https://console.cloud.google.com/apis/library/calendar-json.googleapis.com) for your Google Cloud Console project after creating the OAuth credentials.
 
 ```text
 http://127.0.0.1:41783/auth/google/callback

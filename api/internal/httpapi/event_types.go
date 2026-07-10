@@ -135,6 +135,7 @@ func (s *Server) getPublicEventType(w http.ResponseWriter, r *http.Request) {
 	}
 	type host struct {
 		Email      string `json:"email"`
+		FullName   string `json:"fullName"`
 		AvatarPath string `json:"avatarPath,omitempty"`
 	}
 	hosts := make([]host, 0, len(eventType.RecipientEmails))
@@ -144,7 +145,7 @@ func (s *Server) getPublicEventType(w http.ResponseWriter, r *http.Request) {
 			internalError(w, err, "load public event type host")
 			return
 		}
-		hosts = append(hosts, host{Email: user.Email, AvatarPath: user.AvatarPath})
+		hosts = append(hosts, host{Email: user.Email, FullName: user.FullName, AvatarPath: user.AvatarPath})
 	}
 	unavailableTimes := make([]string, 0)
 	if eventType.InviteeLimit != nil {
