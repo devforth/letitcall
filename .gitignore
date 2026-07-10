@@ -1,4 +1,4 @@
-api/data/
+.data/
 portal/build/
 portal/node_modules/
 portal/.svelte-kit/

@@ -1,6 +1,7 @@
 - Keep the portal UI in a mock black-and-white style without additional color styling; use alignment and spacing, and implement elements such as buttons, inputs, checkboxes, dropdowns, and calendars as reusable components.
 - Every backend API must have tests in `api/tests`.
 - Every backend setting must be configurable through a strictly structured uppercase environment variable in the `SECTION__SETTING__PROVIDER` form, such as `LOGIN__OAUTH__GOOGLE__CLIENT_ID` or `MAILING__SENDING__MAILGUN__API_KEY`.
+- Do not add configuration settings unless the user explicitly requests them; implement behavior directly when no operator choice is needed.
 
 
 
