@@ -1,5 +1,4 @@
 .data/
-.env
 api/.env
 portal/build/
 portal/node_modules/

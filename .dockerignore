@@ -1,5 +1,5 @@
 .git
-.env
+api/.env
 .agents
 .codex
 .data
