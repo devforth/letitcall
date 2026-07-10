@@ -458,6 +458,10 @@ func TestEventTypeAPIs(t *testing.T) {
 	}
 	invalid := eventTypeBody("No recipients", nil, 1)
 	expectStatus(t, f.request(http.MethodPost, "/api/event-types", invalid), http.StatusBadRequest)
+	expectStatus(t, f.request(http.MethodDelete, "/api/event-types/team-consultation", nil), http.StatusNoContent)
+	expectStatus(t, f.request(http.MethodGet, "/api/event-types/team-consultation", nil), http.StatusNotFound)
+	expectStatus(t, f.request(http.MethodGet, "/api/public/event-types/team-consultation", nil), http.StatusNotFound)
+	expectStatus(t, f.request(http.MethodDelete, "/api/event-types/team-consultation", nil), http.StatusNotFound)
 }
 
 func TestDeletingUserUpdatesEventTypeRecipients(t *testing.T) {

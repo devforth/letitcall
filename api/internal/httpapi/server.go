@@ -113,6 +113,7 @@ func (s *Server) Handler() http.Handler {
 	mux.Handle("POST /api/event-types", s.requireAuth(http.HandlerFunc(s.createEventType)))
 	mux.Handle("GET /api/event-types/{slug}", s.requireAuth(http.HandlerFunc(s.getEventType)))
 	mux.Handle("PUT /api/event-types/{slug}", s.requireAuth(http.HandlerFunc(s.updateEventType)))
+	mux.Handle("DELETE /api/event-types/{slug}", s.requireAuth(http.HandlerFunc(s.deleteEventType)))
 	mux.HandleFunc("GET /api/public/event-types/{slug}", s.getPublicEventType)
 	mux.HandleFunc("GET /content/avatars/{filename}", s.serveAvatar)
 	mux.HandleFunc("/content/", http.NotFound)

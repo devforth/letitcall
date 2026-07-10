@@ -266,6 +266,10 @@ func (s *Store) GetEventType(slug string) (model.EventType, error) {
 	return eventType, nil
 }
 
+func (s *Store) DeleteEventType(slug string) error {
+	return s.eventTypes.Delete([]byte(slug), nil)
+}
+
 func (s *Store) ListEventTypes() ([]model.EventType, error) {
 	iterator := s.eventTypes.NewIterator(nil, nil)
 	defer iterator.Release()

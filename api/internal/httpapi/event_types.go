@@ -107,6 +107,22 @@ func (s *Server) updateEventType(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]any{"eventType": eventType})
 }
 
+func (s *Server) deleteEventType(w http.ResponseWriter, r *http.Request) {
+	slug := r.PathValue("slug")
+	if _, err := s.store.GetEventType(slug); errors.Is(err, store.ErrNotFound) {
+		writeError(w, http.StatusNotFound, "event type not found")
+		return
+	} else if err != nil {
+		internalError(w, err, "load event type for deletion")
+		return
+	}
+	if err := s.store.DeleteEventType(slug); err != nil {
+		internalError(w, err, "delete event type")
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
+}
+
 func (s *Server) getPublicEventType(w http.ResponseWriter, r *http.Request) {
 	eventType, err := s.store.GetEventType(r.PathValue("slug"))
 	if errors.Is(err, store.ErrNotFound) {
