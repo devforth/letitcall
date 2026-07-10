@@ -5,6 +5,7 @@
 - After changing Go API code, automatically restart the VS Code task `Dev: Go API (41784)` before testing the running application so it uses the newly compiled backend; do not wait for the user to restart it.
 - Every instant in REST API contracts and LevelDB must use UTC with second precision. Convert UTC instants to local time only in the frontend or in delivery modules such as email rendering. Weekly availability is a wall-clock recurrence rule, not an instant: store it with its IANA timezone and convert generated booking instants to UTC.
 - Every backend API error response must be a JSON object with the single `error` string field. Svelte callers must use the shared `callApi` function so API errors are shown through the global notification stack.
+- For portal icons, use Iconify's official Svelte integration and look for an existing Tabler icon first. Prefer offline icon data so the portal's same-origin Content Security Policy is preserved.
 
 
 
