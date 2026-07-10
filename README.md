@@ -16,7 +16,7 @@ In a second terminal, start the portal:
 ```sh
 cd portal
 pnpm install
-pnpm run dev -- --host 127.0.0.1 --port 41783 --strictPort
+pnpm run dev --host 127.0.0.1 --port 41783 --strictPort
 ```
 
 Open portal at `http://127.0.0.1:41783`. 
