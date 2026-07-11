@@ -13,15 +13,15 @@ import (
 
 	"github.com/letitcall/letitcall/api/internal/model"
 	"github.com/syndtr/goleveldb/leveldb"
-	"github.com/syndtr/goleveldb/leveldb/util"
 )
 
 var (
-	ErrNotFound      = errors.New("not found")
-	ErrExists        = errors.New("already exists")
-	ErrCapacity      = errors.New("capacity reached")
-	ErrCanceled      = errors.New("booking is canceled")
-	ErrLastRecipient = errors.New("user is the final event type recipient")
+	ErrNotFound         = errors.New("not found")
+	ErrExists           = errors.New("already exists")
+	ErrCapacity         = errors.New("capacity reached")
+	ErrBusy             = errors.New("busy")
+	ErrCanceled         = errors.New("booking is canceled")
+	ErrLastRequiredHost = errors.New("user is the final required event type host")
 )
 
 type Store struct {
@@ -31,6 +31,7 @@ type Store struct {
 	secretLinks *leveldb.DB
 	sessions    *leveldb.DB
 	oauthStates *leveldb.DB
+	googleBusy  *leveldb.DB
 	mu          sync.Mutex
 }
 
@@ -39,7 +40,7 @@ func Open(root string) (*Store, error) {
 		return nil, fmt.Errorf("create LevelDB root: %w", err)
 	}
 
-	opened := make([]*leveldb.DB, 0, 6)
+	opened := make([]*leveldb.DB, 0, 7)
 	openTable := func(name string) (*leveldb.DB, error) {
 		db, err := leveldb.OpenFile(filepath.Join(root, name+".leveldb"), nil)
 		if err != nil {
@@ -78,12 +79,17 @@ func Open(root string) (*Store, error) {
 		closeAll(opened)
 		return nil, err
 	}
+	googleBusy, err := openTable("google_busy")
+	if err != nil {
+		closeAll(opened)
+		return nil, err
+	}
 
-	return &Store{users: users, eventTypes: eventTypes, bookings: bookings, secretLinks: secretLinks, sessions: sessions, oauthStates: oauthStates}, nil
+	return &Store{users: users, eventTypes: eventTypes, bookings: bookings, secretLinks: secretLinks, sessions: sessions, oauthStates: oauthStates, googleBusy: googleBusy}, nil
 }
 
 func (s *Store) Close() error {
-	return errors.Join(s.users.Close(), s.eventTypes.Close(), s.bookings.Close(), s.secretLinks.Close(), s.sessions.Close(), s.oauthStates.Close())
+	return errors.Join(s.users.Close(), s.eventTypes.Close(), s.bookings.Close(), s.secretLinks.Close(), s.sessions.Close(), s.oauthStates.Close(), s.googleBusy.Close())
 }
 
 func closeAll(databases []*leveldb.DB) {
@@ -296,7 +302,7 @@ func (s *Store) ListEventTypes() ([]model.EventType, error) {
 	return eventTypes, nil
 }
 
-func (s *Store) RemoveEventTypeRecipient(email string, updatedAt time.Time) error {
+func (s *Store) RemoveEventTypeHost(email string, updatedAt time.Time) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	normalized := normalizeEmail(email)
@@ -308,20 +314,20 @@ func (s *Store) RemoveEventTypeRecipient(email string, updatedAt time.Time) erro
 		if err := json.Unmarshal(iterator.Value(), &eventType); err != nil {
 			return err
 		}
-		index := -1
-		for candidateIndex, candidate := range eventType.RecipientEmails {
-			if normalizeEmail(candidate) == normalized {
-				index = candidateIndex
-				break
-			}
-		}
-		if index < 0 {
+		requiredIndex := emailIndex(eventType.RequiredHostEmails, normalized)
+		optionalIndex := emailIndex(eventType.OptionalHostEmails, normalized)
+		if requiredIndex < 0 && optionalIndex < 0 {
 			continue
 		}
-		if len(eventType.RecipientEmails) == 1 {
-			return fmt.Errorf("%w: %s", ErrLastRecipient, eventType.EventSlug)
+		if requiredIndex >= 0 && len(eventType.RequiredHostEmails) == 1 {
+			return fmt.Errorf("%w: %s", ErrLastRequiredHost, eventType.EventSlug)
 		}
-		eventType.RecipientEmails = append(eventType.RecipientEmails[:index], eventType.RecipientEmails[index+1:]...)
+		if requiredIndex >= 0 {
+			eventType.RequiredHostEmails = append(eventType.RequiredHostEmails[:requiredIndex], eventType.RequiredHostEmails[requiredIndex+1:]...)
+		}
+		if optionalIndex >= 0 {
+			eventType.OptionalHostEmails = append(eventType.OptionalHostEmails[:optionalIndex], eventType.OptionalHostEmails[optionalIndex+1:]...)
+		}
 		eventType.UpdatedAt = updatedAt
 		encoded, err := json.Marshal(eventType)
 		if err != nil {
@@ -335,21 +341,24 @@ func (s *Store) RemoveEventTypeRecipient(email string, updatedAt time.Time) erro
 	return s.eventTypes.Write(batch, nil)
 }
 
-func (s *Store) CreateBooking(slotKey string, booking model.Booking, inviteeLimit *int) error {
-	return s.createBooking(slotKey, booking, inviteeLimit, "")
+func (s *Store) CreateBooking(slotKey string, booking model.Booking, requiredHostEmails []string, inviteeLimit *int) error {
+	return s.createBooking(slotKey, booking, requiredHostEmails, inviteeLimit, "")
 }
 
-func (s *Store) CreateBookingWithSecret(slotKey string, booking model.Booking, inviteeLimit *int, secretToken string) error {
-	return s.createBooking(slotKey, booking, inviteeLimit, secretToken)
+func (s *Store) CreateBookingWithSecret(slotKey string, booking model.Booking, requiredHostEmails []string, inviteeLimit *int, secretToken string) error {
+	return s.createBooking(slotKey, booking, requiredHostEmails, inviteeLimit, secretToken)
 }
 
 type secretLink struct {
 	BookingID string `json:"bookingId"`
 }
 
-func (s *Store) createBooking(slotKey string, booking model.Booking, inviteeLimit *int, secretToken string) error {
+func (s *Store) createBooking(slotKey string, booking model.Booking, requiredHostEmails []string, inviteeLimit *int, secretToken string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	if err := s.checkBookingConflicts(booking, requiredHostEmails); err != nil {
+		return err
+	}
 	key := []byte(slotKey)
 	bookings := make([]model.Booking, 0)
 	encoded, err := s.bookings.Get(key, nil)
@@ -370,6 +379,9 @@ func (s *Store) createBooking(slotKey string, booking model.Booking, inviteeLimi
 		if existing.CanceledAt == nil {
 			occupied += 1 + len(existing.GuestEmails)
 		}
+	}
+	if inviteeLimit == nil && occupied > 0 {
+		return ErrCapacity
 	}
 	if inviteeLimit != nil && occupied+1+len(booking.GuestEmails) > *inviteeLimit {
 		return ErrCapacity
@@ -398,6 +410,56 @@ func (s *Store) createBooking(slotKey string, booking model.Booking, inviteeLimi
 		return err
 	}
 	return nil
+}
+
+func (s *Store) checkBookingConflicts(booking model.Booking, requiredHostEmails []string) error {
+	required := make(map[string]bool, len(requiredHostEmails))
+	for _, email := range requiredHostEmails {
+		required[normalizeEmail(email)] = true
+	}
+	iterator := s.bookings.NewIterator(nil, nil)
+	defer iterator.Release()
+	for iterator.Next() {
+		var bookings []model.Booking
+		if err := json.Unmarshal(iterator.Value(), &bookings); err != nil {
+			return err
+		}
+		for _, existing := range bookings {
+			if existing.CanceledAt != nil || !booking.Time.Before(existing.EndTime) || !booking.EndTime.After(existing.Time) {
+				continue
+			}
+			if existing.EventSlug == booking.EventSlug && existing.Time.Equal(booking.Time) && existing.EndTime.Equal(booking.EndTime) {
+				continue
+			}
+			for _, email := range existing.RecipientEmails {
+				if required[normalizeEmail(email)] {
+					return ErrBusy
+				}
+			}
+		}
+	}
+	return iterator.Error()
+}
+
+func (s *Store) PutGoogleBusy(email string, cache model.GoogleBusyCache) error {
+	return putJSON(s.googleBusy, []byte(normalizeEmail(email)), cache)
+}
+
+func (s *Store) GetGoogleBusy(email string) (model.GoogleBusyCache, error) {
+	var cache model.GoogleBusyCache
+	if err := getJSON(s.googleBusy, []byte(normalizeEmail(email)), &cache); err != nil {
+		return model.GoogleBusyCache{}, err
+	}
+	return cache, nil
+}
+
+func emailIndex(values []string, normalized string) int {
+	for index, value := range values {
+		if normalizeEmail(value) == normalized {
+			return index
+		}
+	}
+	return -1
 }
 
 func (s *Store) GetBookingBySecret(secretToken string) (model.Booking, error) {
@@ -491,52 +553,6 @@ func (s *Store) ListBookings() ([]model.Booking, error) {
 	}
 	sort.Slice(bookings, func(i, j int) bool { return bookings[i].Time.Before(bookings[j].Time) })
 	return bookings, nil
-}
-
-type ActiveBookingSlot struct {
-	Start    time.Time
-	End      time.Time
-	Invitees int
-}
-
-func (s *Store) ListActiveBookingSlots(eventSlug string) ([]ActiveBookingSlot, error) {
-	const instantLength = len("2006-01-02T15:04:05Z")
-	const slotKeySuffixLength = instantLength*2 + 1
-	iterator := s.bookings.NewIterator(util.BytesPrefix([]byte(eventSlug)), nil)
-	defer iterator.Release()
-	slots := make([]ActiveBookingSlot, 0)
-	for iterator.Next() {
-		suffix := string(iterator.Key()[len(eventSlug):])
-		if len(suffix) != slotKeySuffixLength {
-			continue
-		}
-		start, err := time.Parse(time.RFC3339, suffix[:instantLength])
-		if err != nil {
-			return nil, err
-		}
-		end, err := time.Parse(time.RFC3339, suffix[instantLength+1:])
-		if err != nil {
-			return nil, err
-		}
-		var bookings []model.Booking
-		if err := json.Unmarshal(iterator.Value(), &bookings); err != nil {
-			return nil, err
-		}
-		invitees := 0
-		for _, booking := range bookings {
-			if booking.CanceledAt == nil {
-				invitees += 1 + len(booking.GuestEmails)
-			}
-		}
-		if invitees > 0 {
-			slots = append(slots, ActiveBookingSlot{Start: start, End: end, Invitees: invitees})
-		}
-	}
-	if err := iterator.Error(); err != nil {
-		return nil, err
-	}
-	sort.Slice(slots, func(i, j int) bool { return slots[i].Start.Before(slots[j].Start) })
-	return slots, nil
 }
 
 func (s *Store) DeleteBooking(id string) error {

@@ -7,7 +7,7 @@
 	import NumberInput from '$lib/components/ui/NumberInput.svelte';
 	import Select from '$lib/components/ui/Select.svelte';
 	import ScheduleEditor from '$lib/components/ScheduleEditor.svelte';
-	import UserMultiSelect from '$lib/components/UserMultiSelect.svelte';
+	import HostSelector from '$lib/components/HostSelector.svelte';
 	import type { EventType, ManagedUser, ScheduleDay } from '$lib/types';
 
 	let { slug = '' }: { slug?: string } = $props();
@@ -16,12 +16,12 @@
 	let name = $state('');
 	let durationChoice = $state('30');
 	let customDuration = $state('30');
-	let bookingWindowMode = $state('limited');
 	let bookingWindowDays = $state('60');
 	let inviteeLimit = $state('');
 	let timezone = $state('UTC');
-	let recipientEmails = $state<string[]>([]);
-	let recipientsError = $state('');
+	let requiredHostEmails = $state<string[]>([]);
+	let optionalHostEmails = $state<string[]>([]);
+	let hostsError = $state('');
 	let schedule = $state<ScheduleDay[]>(defaultSchedule());
 	let currentTime = $state('');
 	let loading = $state(true);
@@ -44,7 +44,7 @@
 				applyEventType(response.eventType);
 			} else {
 				timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
-				recipientEmails = [sessionResponse.user.email];
+				requiredHostEmails = [sessionResponse.user.email];
 			}
 			updateCurrentTime();
 			clock = window.setInterval(updateCurrentTime, 1000);
@@ -65,11 +65,11 @@
 			? String(eventType.durationMinutes)
 			: 'custom';
 		customDuration = String(eventType.durationMinutes);
-		bookingWindowMode = eventType.bookingWindowDays === null ? 'unlimited' : 'limited';
-		bookingWindowDays = String(eventType.bookingWindowDays ?? 60);
+		bookingWindowDays = String(eventType.bookingWindowDays);
 		inviteeLimit = eventType.inviteeLimit === null ? '' : String(eventType.inviteeLimit);
 		timezone = eventType.timezone;
-		recipientEmails = [...eventType.recipientEmails];
+		requiredHostEmails = [...eventType.requiredHostEmails];
+		optionalHostEmails = [...eventType.optionalHostEmails];
 		schedule = eventType.schedule.map((day) => ({
 			...day,
 			start: day.start ?? '',
@@ -88,10 +88,10 @@
 
 	async function save(event: SubmitEvent) {
 		event.preventDefault();
-		if (recipientEmails.length === 0) {
-			recipientsError = 'Select at least one recipient.';
+		if (requiredHostEmails.length === 0) {
+			hostsError = 'Select at least one required host.';
 			const form = event.currentTarget as HTMLFormElement;
-			form.querySelector<HTMLElement>('#recipients')?.focus();
+			form.querySelector<HTMLElement>('#hosts')?.focus();
 			return;
 		}
 		saving = true;
@@ -99,11 +99,11 @@
 			const body = {
 				name,
 				durationMinutes: Number(durationChoice === 'custom' ? customDuration : durationChoice),
-				bookingWindowDays:
-					bookingWindowMode === 'unlimited' ? null : Number(bookingWindowDays),
+				bookingWindowDays: Number(bookingWindowDays),
 				inviteeLimit: inviteeLimit === '' ? null : Number(inviteeLimit),
 				timezone,
-				recipientEmails,
+				requiredHostEmails,
+				optionalHostEmails,
 				schedule: schedule.map((day) =>
 					day.enabled
 						? day
@@ -181,27 +181,17 @@
 			{#if durationChoice === 'custom'}
 				<NumberInput id="custom-duration" label="Custom duration in minutes" bind:value={customDuration} max={1440} required />
 			{/if}
-			<Select
-				id="booking-window-mode"
-				label="How far ahead can invitees book?"
-				bind:value={bookingWindowMode}
-				options={[
-					{ value: 'limited', label: 'Limit calendar days' },
-					{ value: 'unlimited', label: 'No limit' }
-				]}
-			/>
-			{#if bookingWindowMode === 'limited'}
-				<NumberInput id="booking-window" label="Calendar days" bind:value={bookingWindowDays} required />
-			{/if}
-			<NumberInput id="invitee-limit" label="Invitees limit (empty means no limit)" bind:value={inviteeLimit} placeholder="No limit" />
+			<NumberInput id="booking-window" label="How many calendar days ahead can invitees book?" bind:value={bookingWindowDays} required />
+			<NumberInput id="invitee-limit" label="Invitees limit (empty means one booking)" bind:value={inviteeLimit} placeholder="One booking" />
 			<Input id="timezone" label="Schedule timezone (read-only)" value={`${timezone} — ${currentTime}`} readonly />
 		</section>
 
-		<UserMultiSelect
+		<HostSelector
 			{users}
-			bind:selected={recipientEmails}
-			error={recipientsError}
-			onchange={() => (recipientsError = '')}
+			bind:required={requiredHostEmails}
+			bind:optional={optionalHostEmails}
+			error={hostsError}
+			onchange={() => (hostsError = '')}
 		/>
 		<ScheduleEditor bind:schedule />
 	</form>

@@ -72,17 +72,33 @@ type BookingActor struct {
 }
 
 type EventType struct {
-	EventSlug         string        `json:"eventSlug"`
-	Name              string        `json:"name"`
-	DurationMinutes   int           `json:"durationMinutes"`
-	BookingWindowDays *int          `json:"bookingWindowDays"`
-	InviteeLimit      *int          `json:"inviteeLimit"`
-	Timezone          string        `json:"timezone"`
-	RecipientEmails   []string      `json:"recipientEmails"`
-	Schedule          []ScheduleDay `json:"schedule"`
-	CreatedBy         string        `json:"createdBy"`
-	CreatedAt         time.Time     `json:"createdAt"`
-	UpdatedAt         time.Time     `json:"updatedAt"`
+	EventSlug          string        `json:"eventSlug"`
+	Name               string        `json:"name"`
+	DurationMinutes    int           `json:"durationMinutes"`
+	BookingWindowDays  int           `json:"bookingWindowDays"`
+	InviteeLimit       *int          `json:"inviteeLimit"`
+	Timezone           string        `json:"timezone"`
+	RequiredHostEmails []string      `json:"requiredHostEmails"`
+	OptionalHostEmails []string      `json:"optionalHostEmails"`
+	Schedule           []ScheduleDay `json:"schedule"`
+	CreatedBy          string        `json:"createdBy"`
+	CreatedAt          time.Time     `json:"createdAt"`
+	UpdatedAt          time.Time     `json:"updatedAt"`
+}
+
+func (e EventType) HostEmails() []string {
+	return append(append([]string(nil), e.RequiredHostEmails...), e.OptionalHostEmails...)
+}
+
+type GoogleBusyPeriod struct {
+	EventID string    `json:"eventId"`
+	Start   time.Time `json:"start"`
+	End     time.Time `json:"end"`
+}
+
+type GoogleBusyCache struct {
+	Periods  []GoogleBusyPeriod `json:"periods"`
+	SyncedAt time.Time          `json:"syncedAt"`
 }
 
 type ScheduleDay struct {

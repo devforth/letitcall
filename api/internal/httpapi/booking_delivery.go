@@ -17,7 +17,7 @@ import (
 )
 
 func (s *Server) deliverBooking(ctx context.Context, eventType model.EventType, booking model.Booking, secretToken string) {
-	recipients, err := s.bookingRecipients(eventType.RecipientEmails)
+	recipients, err := s.bookingRecipients(eventType.HostEmails())
 	if err != nil {
 		slog.Error("load booking recipients", "error", err, "booking", booking.ID)
 		return

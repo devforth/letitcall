@@ -17,13 +17,14 @@ import (
 var weekdays = []string{"monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"}
 
 type eventTypeRequest struct {
-	Name              string              `json:"name"`
-	DurationMinutes   int                 `json:"durationMinutes"`
-	BookingWindowDays *int                `json:"bookingWindowDays"`
-	InviteeLimit      *int                `json:"inviteeLimit"`
-	Timezone          string              `json:"timezone"`
-	RecipientEmails   []string            `json:"recipientEmails"`
-	Schedule          []model.ScheduleDay `json:"schedule"`
+	Name               string              `json:"name"`
+	DurationMinutes    int                 `json:"durationMinutes"`
+	BookingWindowDays  int                 `json:"bookingWindowDays"`
+	InviteeLimit       *int                `json:"inviteeLimit"`
+	Timezone           string              `json:"timezone"`
+	RequiredHostEmails []string            `json:"requiredHostEmails"`
+	OptionalHostEmails []string            `json:"optionalHostEmails"`
+	Schedule           []model.ScheduleDay `json:"schedule"`
 }
 
 func (s *Server) listEventTypes(w http.ResponseWriter, _ *http.Request) {
@@ -138,28 +139,28 @@ func (s *Server) getPublicEventType(w http.ResponseWriter, r *http.Request) {
 		FullName   string `json:"fullName"`
 		AvatarPath string `json:"avatarPath,omitempty"`
 	}
-	hosts := make([]host, 0, len(eventType.RecipientEmails))
-	for _, email := range eventType.RecipientEmails {
+	requiredHosts := make([]host, 0, len(eventType.RequiredHostEmails))
+	for _, email := range eventType.RequiredHostEmails {
 		user, err := s.store.GetUser(email)
 		if err != nil {
 			internalError(w, err, "load public event type host")
 			return
 		}
-		hosts = append(hosts, host{Email: user.Email, FullName: user.FullName, AvatarPath: user.AvatarPath})
+		requiredHosts = append(requiredHosts, host{Email: user.Email, FullName: user.FullName, AvatarPath: user.AvatarPath})
 	}
-	unavailableTimes := make([]string, 0)
-	remainingInvitees := make(map[string]int)
-	bookingSlots, err := s.store.ListActiveBookingSlots(eventType.EventSlug)
-	if err != nil {
-		internalError(w, err, "list public event type booking slots")
-		return
-	}
-	for _, slot := range bookingSlots {
-		bookingTime := slot.Start.Format(time.RFC3339)
-		unavailableTimes = append(unavailableTimes, bookingTime)
-		if eventType.InviteeLimit != nil {
-			remainingInvitees[bookingTime] = max(0, *eventType.InviteeLimit-slot.Invitees)
+	optionalHosts := make([]host, 0, len(eventType.OptionalHostEmails))
+	for _, email := range eventType.OptionalHostEmails {
+		user, err := s.store.GetUser(email)
+		if err != nil {
+			internalError(w, err, "load public event type optional host")
+			return
 		}
+		optionalHosts = append(optionalHosts, host{Email: user.Email, FullName: user.FullName, AvatarPath: user.AvatarPath})
+	}
+	busyRanges, remainingInvitees, err := s.publicAvailability(eventType)
+	if err != nil {
+		internalError(w, err, "calculate public event type availability")
+		return
 	}
 	writeJSON(w, http.StatusOK, map[string]any{
 		"eventType": map[string]any{
@@ -170,8 +171,9 @@ func (s *Server) getPublicEventType(w http.ResponseWriter, r *http.Request) {
 			"inviteeLimit":      eventType.InviteeLimit,
 			"timezone":          eventType.Timezone,
 			"schedule":          eventType.Schedule,
-			"hosts":             hosts,
-			"unavailableTimes":  unavailableTimes,
+			"requiredHosts":     requiredHosts,
+			"optionalHosts":     optionalHosts,
+			"busyRanges":        busyRanges,
 			"remainingInvitees": remainingInvitees,
 		},
 	})
@@ -185,8 +187,8 @@ func (s *Server) eventTypeFromRequest(request eventTypeRequest) (model.EventType
 	if request.DurationMinutes < 1 || request.DurationMinutes > 1440 {
 		return model.EventType{}, errors.New("durationMinutes must be between 1 and 1440")
 	}
-	if request.BookingWindowDays != nil && *request.BookingWindowDays < 1 {
-		return model.EventType{}, errors.New("bookingWindowDays must be a positive integer or null")
+	if request.BookingWindowDays < 1 {
+		return model.EventType{}, errors.New("bookingWindowDays must be a positive integer")
 	}
 	if request.InviteeLimit != nil && *request.InviteeLimit < 1 {
 		return model.EventType{}, errors.New("inviteeLimit must be a positive integer or null")
@@ -195,7 +197,7 @@ func (s *Server) eventTypeFromRequest(request eventTypeRequest) (model.EventType
 	if _, err := time.LoadLocation(timezone); err != nil {
 		return model.EventType{}, errors.New("timezone must be a valid IANA timezone")
 	}
-	recipients, err := s.validateRecipients(request.RecipientEmails)
+	requiredHosts, optionalHosts, err := s.validateHosts(request.RequiredHostEmails, request.OptionalHostEmails)
 	if err != nil {
 		return model.EventType{}, err
 	}
@@ -204,40 +206,52 @@ func (s *Server) eventTypeFromRequest(request eventTypeRequest) (model.EventType
 		return model.EventType{}, err
 	}
 	return model.EventType{
-		Name:              name,
-		DurationMinutes:   request.DurationMinutes,
-		BookingWindowDays: request.BookingWindowDays,
-		InviteeLimit:      request.InviteeLimit,
-		Timezone:          timezone,
-		RecipientEmails:   recipients,
-		Schedule:          schedule,
+		Name:               name,
+		DurationMinutes:    request.DurationMinutes,
+		BookingWindowDays:  request.BookingWindowDays,
+		InviteeLimit:       request.InviteeLimit,
+		Timezone:           timezone,
+		RequiredHostEmails: requiredHosts,
+		OptionalHostEmails: optionalHosts,
+		Schedule:           schedule,
 	}, nil
 }
 
-func (s *Server) validateRecipients(values []string) ([]string, error) {
-	if len(values) == 0 {
-		return nil, errors.New("at least one recipient is required")
+func (s *Server) validateHosts(requiredValues, optionalValues []string) ([]string, []string, error) {
+	if len(requiredValues) == 0 {
+		return nil, nil, errors.New("at least one required host is required")
 	}
-	recipients := make([]string, 0, len(values))
-	seen := make(map[string]bool, len(values))
-	for _, value := range values {
-		email, err := security.NormalizeEmail(value)
-		if err != nil {
-			return nil, errors.New("recipientEmails must contain valid user emails")
+	required := make([]string, 0, len(requiredValues))
+	optional := make([]string, 0, len(optionalValues))
+	seen := make(map[string]bool, len(requiredValues)+len(optionalValues))
+	appendHosts := func(values []string, destination *[]string) error {
+		for _, value := range values {
+			email, err := security.NormalizeEmail(value)
+			if err != nil {
+				return errors.New("host email lists must contain valid user emails")
+			}
+			if seen[email] {
+				return errors.New("host email lists must not contain duplicates")
+			}
+			if _, err := s.store.GetUser(email); errors.Is(err, store.ErrNotFound) {
+				return fmt.Errorf("host user %q does not exist", email)
+			} else if err != nil {
+				return err
+			}
+			seen[email] = true
+			*destination = append(*destination, email)
 		}
-		if seen[email] {
-			return nil, errors.New("recipientEmails must not contain duplicates")
-		}
-		if _, err := s.store.GetUser(email); errors.Is(err, store.ErrNotFound) {
-			return nil, fmt.Errorf("recipient user %q does not exist", email)
-		} else if err != nil {
-			return nil, err
-		}
-		seen[email] = true
-		recipients = append(recipients, email)
+		return nil
 	}
-	sort.Strings(recipients)
-	return recipients, nil
+	if err := appendHosts(requiredValues, &required); err != nil {
+		return nil, nil, err
+	}
+	if err := appendHosts(optionalValues, &optional); err != nil {
+		return nil, nil, err
+	}
+	sort.Strings(required)
+	sort.Strings(optional)
+	return required, optional, nil
 }
 
 func validateSchedule(values []model.ScheduleDay) ([]model.ScheduleDay, error) {

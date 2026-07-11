@@ -2,6 +2,7 @@ package httpapi
 
 import (
 	"errors"
+	"log/slog"
 	"net/http"
 	"strings"
 	"time"
@@ -117,13 +118,26 @@ func (s *Server) createBooking(w http.ResponseWriter, r *http.Request) {
 		GuestEmails:      guestEmails,
 		Notes:            notes,
 		Title:            eventType.Name,
-		RecipientEmails:  append([]string(nil), eventType.RecipientEmails...),
+		RecipientEmails:  eventType.HostEmails(),
 		CreatedAt:        now,
 		UpdatedAt:        now,
 	}
+	busy, err := s.liveGoogleBusy(r.Context(), eventType, booking.Time, booking.EndTime)
+	if err != nil {
+		slog.Error("check live Google Calendar availability", "error", err, "eventType", eventType.EventSlug)
+		writeError(w, http.StatusServiceUnavailable, "calendar availability could not be verified")
+		return
+	}
+	if busy {
+		writeError(w, http.StatusConflict, "selected time is no longer available")
+		return
+	}
 	slotKey := eventType.EventSlug + booking.Time.Format(time.RFC3339) + "-" + booking.EndTime.Format(time.RFC3339)
-	if err := s.store.CreateBookingWithSecret(slotKey, booking, eventType.InviteeLimit, secretToken); errors.Is(err, store.ErrCapacity) {
+	if err := s.store.CreateBookingWithSecret(slotKey, booking, eventType.RequiredHostEmails, eventType.InviteeLimit, secretToken); errors.Is(err, store.ErrCapacity) {
 		writeError(w, http.StatusConflict, "invitee limit has been reached for this time")
+		return
+	} else if errors.Is(err, store.ErrBusy) {
+		writeError(w, http.StatusConflict, "selected time is no longer available")
 		return
 	} else if errors.Is(err, store.ErrExists) {
 		writeError(w, http.StatusConflict, "this invitee already has a booking at this time")
@@ -382,7 +396,7 @@ func (s *Server) validateBookingTime(eventType model.EventType, bookingTime time
 	if bookingDate.Before(today) {
 		return errors.New("booking time must be in the future")
 	}
-	if eventType.BookingWindowDays != nil && bookingDate.After(today.AddDate(0, 0, *eventType.BookingWindowDays)) {
+	if bookingDate.After(today.AddDate(0, 0, eventType.BookingWindowDays)) {
 		return errors.New("booking time is outside the booking window")
 	}
 	return nil
