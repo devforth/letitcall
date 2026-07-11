@@ -87,34 +87,46 @@
 
 	/* Secondary button styling */
 	:global(form button[type="submit"]) {
-		background: rgb(var(--color-secondary)) !important;
-		border: 2px solid rgb(var(--color-secondary)) !important;
+		background: rgb(var(--color-primary)) !important;
+		border: 2px solid color-mix(in srgb, rgb(var(--color-primary)), black 10%) !important;
 		color: rgb(var(--color-contrast-text)) !important;
 		padding: 0.875rem !important;
 		min-height: auto !important;
 		font-size: 1rem !important;
-		box-shadow: 0 10px 30px rgba(0, 153, 255, 0.3) !important;
+		box-shadow: var(--shadow-small);
 	}
 
 	:global(form button[type="submit"]:hover:not(:disabled)) {
-		background: rgb(var(--color-secondary-hover)) !important;
-		border-color: rgb(var(--color-secondary-hover)) !important;
-		box-shadow: 0 15px 40px rgb(var(--color-secondary) / 0.5) !important;
+		background: color-mix(in srgb, rgb(var(--color-primary)), white 10%) !important;
+		border-color: color-mix(in srgb, rgb(var(--color-primary)), white 10%) !important;
+	}
+
+	:global(form button[type="submit"]:active:not(:disabled)) {
+		background: color-mix(in srgb, rgb(var(--color-primary)), black 8%) !important;
+		border-color: color-mix(in srgb, rgb(var(--color-primary)), black 15%) !important;
+		box-shadow: none;
 	}
 
 	/* Secondary button styling */
 	:global(button[type="button"]) {
-		border: 2px solid rgb(var(--color-secondary)) !important;
-		background-color: rgb(var(--color-background)) !important;
-		color: rgb(var(--color-contrast-text)) !important;
+		border: 2px solid rgb(var(--color-primary)) !important;
+		background-color: rgb(var(--color-foreground)) !important;
+		color: rgb(var(--color-text)) !important;
 		padding: 0.875rem !important;
 		min-height: auto !important;
 		font-size: 1rem !important;
+		box-shadow: var(--shadow-small);
 	}
 
 	:global(button[type="button"]:hover:not(:disabled)) {
-		background-color: rgb(var(--color-secondary) / 0.1) !important;
-		border-color: rgb(var(--color-secondary)) !important;
+		background-color: rgb(var(--color-primary) / 0.1) !important;
+		border-color: rgb(var(--color-primary)) !important;
+	}
+
+	:global(button[type="button"]:active:not(:disabled)) {
+		background-color: rgb(var(--color-primary) / 0.2) !important;
+		border-color: color-mix(in srgb, rgb(var(--color-primary)), black 10%) !important;
+		box-shadow: none;
 	}
 
 	/* Dark mode overrides */
@@ -150,7 +162,7 @@
 
 <div class="relative min-h-screen overflow-hidden login-bg">
 	<!-- Gradient background - positioned to start from form midpoint -->
-	<div class="absolute top-0 right-0 bottom-0 w-3/5 bg-primary" style="clip-path: polygon(50% 0%, 100% 0%, 100% 100%, 30% 100%);"></div>
+	<div class="absolute top-0 right-0 bottom-0 w-3/5"></div>
 
 	<!-- Floating background elements -->
 	<div class="absolute top-0 right-12 w-96 h-96 bg-white/10 rounded-full blur-3xl -mr-48 -mt-48"></div>
@@ -187,7 +199,7 @@
 
 		<!-- Right side form -->
 		<section class="w-full max-w-md mx-auto lg:mx-0 lg:col-span-2 px-4 lg:pl-8 xl:pl-12" aria-labelledby="login-title">
-			<div class="p-8 sm:p-10 rounded-2xl border-4 border-primary" style="background: rgb(var(--color-background));s">
+			<div class="p-8 sm:p-10 rounded-2xl border-2 border-border" style="background: rgb(var(--color-foreground)); box-shadow: var(--shadow);">
 				<div class="mb-8">
 					<h1 id="login-title" class="text-primary text-3xl font-normal tracking-tight">Welcome Back</h1>
 					<p class="mt-2 text-sm">Sign in to manage your team's schedule</p>
@@ -215,13 +227,16 @@
 				{#if googleEnabled}
 					<div class="my-6 flex items-center gap-3" aria-hidden="true">
 						<div class="h-px flex-1 bg-gray-300"></div>
-						<span class="text-xs uppercase font-medium">or continue with</span>
+						<span class="text-sm font-medium opacity-50">or</span>
 						<div class="h-px flex-1 bg-gray-300"></div>
 					</div>
-					<Button variant="secondary" fullWidth onclick={googleLogin}>
+					<Button variant="secondary" fullWidth class="!p-[11px]" onclick={googleLogin}>
 						<span class="flex items-center gap-2">
-							<Icon icon={googleIcon} width="20" height="20" />
-							Continue with Google and allow calendar access
+							<Icon class="self-center" icon={googleIcon} width="28" height="28" />
+							<span class="flex flex-col items-start leading-tight">
+								<span class="-mt-1 text-base leading-[1.2]">Continue with Google</span>
+								<span class="text-sm font-normal leading-none opacity-50">to get access to calendar</span>
+							</span>
 						</span>
 					</Button>
 				{/if}

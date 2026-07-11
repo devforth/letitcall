@@ -8,8 +8,9 @@
 		font-synthesis: none;
 
 		/* Light theme (default) */
-		--color-foreground: 0 0 0;
-		--color-background: 255 255 255; /* White */
+		--color-foreground: 255 255 255;
+		--color-background: 245 245 230; /* White */
+		--color-border: 196 196 196;
 		--color-text: 100 100 100;
 		--color-contrast-text: 255 255 255;
 		--color-border: 222 222 222;
@@ -18,6 +19,8 @@
 		--color-primary: 0 201 80;
 		--color-secondary: 0 153 255;
 		--color-secondary-hover: 0 119 204;
+		--shadow: 0 0px 4vw rgb(0 0 0 / 0.15);
+		--shadow-small: 0 0px 1vw rgb(0 0 0 / 0.15);
 
 		color-scheme: light;
 		color: rgb(var(--color-text));
@@ -26,12 +29,16 @@
 
 	html.dark {
 		/* Dark theme */
-		--color-foreground: 255 255 255;
+		--color-foreground: 100 100 100;
 		--color-background: 51 51 51;
 		--color-border: 77 77 77;
 		--color-muted-foreground: 153 153 153;
 		--color-muted-background: 64 64 64;
 		--color-text: 220 220 220;
+		--color-border: 65 65 66;
+		--shadow: 0 0px 4vw rgb(0 0 0 / 0.5);
+		--shadow-small: 0 0px 1vw rgb(0 0 0 / 0.1);
+
 
 		color-scheme: dark;
 		background: rgb(var(--color-background));

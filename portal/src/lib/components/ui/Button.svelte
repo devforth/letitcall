@@ -7,6 +7,7 @@
 		disabled = false,
 		variant = 'primary',
 		fullWidth = false,
+		class: className = '',
 		onclick
 	}: {
 		children: Snippet;
@@ -14,6 +15,7 @@
 		disabled?: boolean;
 		variant?: 'primary' | 'secondary' | 'danger';
 		fullWidth?: boolean;
+		class?: string;
 		onclick?: (event: MouseEvent) => void;
 	} = $props();
 
@@ -28,7 +30,7 @@
 	{type}
 	{disabled}
 	{onclick}
-	class={`inline-flex min-h-11 items-center justify-center border px-4 py-2 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-40 ${variants[variant]} ${fullWidth ? 'w-full' : ''}`}
+	class={`inline-flex min-h-11 items-center justify-center border px-4 py-2 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-40 ${variants[variant]} ${fullWidth ? 'w-full' : ''} ${className}`}
 >
 	{@render children()}
 </button>

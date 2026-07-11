@@ -34,9 +34,10 @@
 		position: relative !important;
 		width: 68px !important;
 		height: 36px !important;
-		border: none !important;
+		border: 2px solid rgb(var(--color-border)) !important;
 		border-radius: 20px !important;
-		background: #e0e0e0 !important;
+		background: rgb(var(--color-foreground)) !important;
+		color: rgb(var(--color-text)) !important;
 		cursor: pointer !important;
 		padding: 0 !important;
 		display: flex !important;
@@ -51,7 +52,6 @@
 	}
 
 	.toggle-switch.dark {
-		background: #333 !important;
 		justify-content: flex-end !important;
 	}
 
@@ -64,7 +64,6 @@
 		left: 6px !important;
 		width: 20px !important;
 		height: 20px !important;
-		color: #333 !important;
 		transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
 		flex-shrink: 0 !important;
 	}
@@ -79,7 +78,6 @@
 		right: 6px !important;
 		width: 20px !important;
 		height: 20px !important;
-		color: #333 !important;
 		opacity: 0 !important;
 		transform: scale(0.5) translateX(10px) !important;
 		transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
@@ -88,7 +86,6 @@
 
 	.toggle-switch.dark .moon-icon {
 		opacity: 1 !important;
-		color: #eee !important;
 		transform: scale(1) translateX(0) !important;
 	}
 </style>
