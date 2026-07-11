@@ -3,6 +3,8 @@ package config
 import (
 	"errors"
 	"fmt"
+	"log/slog"
+	"net/url"
 	"os"
 	"strconv"
 	"strings"
@@ -11,7 +13,8 @@ import (
 
 const (
 	EnvHTTPPort            = "HTTP__PORT"
-	EnvHTTPBasePath        = "HTTP__BASE__PATH"
+	EnvHTTPBaseURL         = "HTTP__BASE__URL"
+	EnvBrandName           = "BRANDING__DISPLAY__NAME"
 	EnvStorageLevelDBPath  = "STORAGE__LEVELDB__PATH"
 	EnvFirstUserEmail      = "FIRSTUSER__CREDENTIALS__EMAIL"
 	EnvFirstUserPassword   = "FIRSTUSER__CREDENTIALS__PASSWORD"
@@ -21,21 +24,36 @@ const (
 	EnvGoogleClientID      = "LOGIN__OAUTH__GOOGLE__CLIENT_ID"
 	EnvGoogleClientSecret  = "LOGIN__OAUTH__GOOGLE__CLIENT_SECRET"
 	EnvMailgunAPIKey       = "MAILING__SENDING__MAILGUN__API_KEY"
+	EnvMailgunBaseURL      = "MAILING__SENDING__MAILGUN__BASE_URL"
 	EnvMailgunDomain       = "MAILING__SENDING__MAILGUN__DOMAIN"
 	EnvMailgunFrom         = "MAILING__SENDING__MAILGUN__FROM"
 )
 
 type Config struct {
 	HTTP      HTTP
+	Branding  Branding
 	Storage   Storage
 	FirstUser FirstUser
 	Login     Login
 	Mailing   Mailing
 }
 
+const DefaultBrandName = "Let It Call"
+
+type Branding struct {
+	Name string
+}
+
 type HTTP struct {
-	Port     int
-	BasePath string
+	Port    int
+	BaseURL string
+}
+
+const DefaultBaseURL = "http://127.0.0.1:41783"
+
+func (h HTTP) BasePath() string {
+	parsed, _ := url.Parse(h.BaseURL)
+	return strings.TrimRight(parsed.Path, "/")
 }
 
 type Storage struct {
@@ -64,9 +82,10 @@ type Mailing struct {
 }
 
 type Mailgun struct {
-	APIKey string
-	Domain string
-	From   string
+	APIKey  string
+	BaseURL string
+	Domain  string
+	From    string
 }
 
 func (m Mailgun) Enabled() bool {
@@ -78,7 +97,15 @@ func (g GoogleOAuth) Enabled() bool {
 }
 
 func Load() (Config, error) {
-	basePath := strings.TrimRight(strings.TrimSpace(os.Getenv(EnvHTTPBasePath)), "/")
+	baseURL := strings.TrimRight(strings.TrimSpace(os.Getenv(EnvHTTPBaseURL)), "/")
+	if baseURL == "" {
+		baseURL = DefaultBaseURL
+		slog.Warn("HTTP base URL is not configured; using local URL", "environment", EnvHTTPBaseURL, "baseURL", baseURL)
+	}
+	brandName := strings.TrimSpace(os.Getenv(EnvBrandName))
+	if brandName == "" {
+		brandName = DefaultBrandName
+	}
 	port, err := envInt(EnvHTTPPort, 80)
 	if err != nil {
 		return Config{}, err
@@ -98,10 +125,11 @@ func Load() (Config, error) {
 
 	cfg := Config{
 		HTTP: HTTP{
-			Port:     port,
-			BasePath: basePath,
+			Port:    port,
+			BaseURL: baseURL,
 		},
-		Storage: Storage{LevelDBPath: envString(EnvStorageLevelDBPath, "./data")},
+		Branding: Branding{Name: brandName},
+		Storage:  Storage{LevelDBPath: envString(EnvStorageLevelDBPath, "./data")},
 		FirstUser: FirstUser{
 			Email:    strings.TrimSpace(os.Getenv(EnvFirstUserEmail)),
 			Password: os.Getenv(EnvFirstUserPassword),
@@ -116,9 +144,10 @@ func Load() (Config, error) {
 			},
 		},
 		Mailing: Mailing{Mailgun: Mailgun{
-			APIKey: os.Getenv(EnvMailgunAPIKey),
-			Domain: strings.TrimSpace(os.Getenv(EnvMailgunDomain)),
-			From:   strings.TrimSpace(os.Getenv(EnvMailgunFrom)),
+			APIKey:  os.Getenv(EnvMailgunAPIKey),
+			BaseURL: strings.TrimRight(strings.TrimSpace(os.Getenv(EnvMailgunBaseURL)), "/"),
+			Domain:  strings.TrimSpace(os.Getenv(EnvMailgunDomain)),
+			From:    strings.TrimSpace(os.Getenv(EnvMailgunFrom)),
 		}},
 	}
 
@@ -132,8 +161,12 @@ func (c Config) Validate() error {
 	if c.HTTP.Port < 1 || c.HTTP.Port > 65535 {
 		return fmt.Errorf("%s must be between 1 and 65535", EnvHTTPPort)
 	}
-	if c.HTTP.BasePath != "" && !strings.HasPrefix(c.HTTP.BasePath, "/") {
-		return fmt.Errorf("%s must start with /", EnvHTTPBasePath)
+	if strings.TrimSpace(c.Branding.Name) == "" {
+		return fmt.Errorf("%s cannot be empty", EnvBrandName)
+	}
+	baseURL, err := url.Parse(c.HTTP.BaseURL)
+	if err != nil || (baseURL.Scheme != "http" && baseURL.Scheme != "https") || baseURL.Host == "" || baseURL.RawQuery != "" || baseURL.Fragment != "" {
+		return fmt.Errorf("%s must be a full HTTP or HTTPS URL without a query or fragment", EnvHTTPBaseURL)
 	}
 	if strings.TrimSpace(c.Storage.LevelDBPath) == "" {
 		return fmt.Errorf("%s cannot be empty", EnvStorageLevelDBPath)
@@ -156,13 +189,19 @@ func (c Config) Validate() error {
 	}
 	mailgun := c.Mailing.Mailgun
 	configuredMailgunValues := 0
-	for _, value := range []string{mailgun.APIKey, mailgun.Domain, mailgun.From} {
+	for _, value := range []string{mailgun.APIKey, mailgun.BaseURL, mailgun.Domain, mailgun.From} {
 		if value != "" {
 			configuredMailgunValues++
 		}
 	}
-	if configuredMailgunValues != 0 && configuredMailgunValues != 3 {
-		return fmt.Errorf("%s, %s, and %s must be set together", EnvMailgunAPIKey, EnvMailgunDomain, EnvMailgunFrom)
+	if configuredMailgunValues != 0 && configuredMailgunValues != 4 {
+		return fmt.Errorf("%s, %s, %s, and %s must be set together", EnvMailgunAPIKey, EnvMailgunBaseURL, EnvMailgunDomain, EnvMailgunFrom)
+	}
+	if mailgun.Enabled() {
+		baseURL, err := url.Parse(mailgun.BaseURL)
+		if err != nil || (baseURL.Scheme != "http" && baseURL.Scheme != "https") || baseURL.Host == "" || (baseURL.Path != "" && baseURL.Path != "/") || baseURL.RawQuery != "" || baseURL.Fragment != "" {
+			return fmt.Errorf("%s must be a full HTTP or HTTPS origin without a path, query, or fragment", EnvMailgunBaseURL)
+		}
 	}
 	return nil
 }

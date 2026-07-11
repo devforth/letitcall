@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"html"
 	"io"
 	"io/fs"
 	"log/slog"
@@ -60,11 +61,15 @@ func New(cfg config.Config, database *store.Store) (*Server, error) {
 	if err != nil {
 		return nil, err
 	}
+	renderer, err := mailing.NewRenderer()
+	if err != nil {
+		return nil, err
+	}
 	server := &Server{
 		cfg:       cfg,
 		store:     database,
 		avatars:   avatars,
-		mailer:    mailing.New(cfg.Mailing.Mailgun),
+		mailer:    mailing.New(cfg.Mailing.Mailgun, renderer, cfg.Branding.Name),
 		limiter:   security.NewLoginLimiter(cfg.Login.PasswordMaxAttempts, cfg.Login.PasswordLockout),
 		dummyHash: dummyHash,
 		now:       time.Now,
@@ -109,6 +114,9 @@ func (s *Server) Handler() http.Handler {
 	mux.Handle("GET /api/bookings", s.requireAuth(http.HandlerFunc(s.listBookings)))
 	mux.HandleFunc("POST /api/bookings", s.createBooking)
 	mux.Handle("DELETE /api/bookings/{id}", s.requireAuth(http.HandlerFunc(s.deleteBooking)))
+	mux.Handle("GET /api/events/{secret}", s.optionalAuth(http.HandlerFunc(s.getManagedBooking)))
+	mux.Handle("PATCH /api/events/{secret}", s.optionalAuth(http.HandlerFunc(s.updateManagedBooking)))
+	mux.Handle("POST /api/events/{secret}/cancel", s.optionalAuth(http.HandlerFunc(s.cancelManagedBooking)))
 	mux.Handle("GET /api/event-types", s.requireAuth(http.HandlerFunc(s.listEventTypes)))
 	mux.Handle("POST /api/event-types", s.requireAuth(http.HandlerFunc(s.createEventType)))
 	mux.Handle("GET /api/event-types/{slug}", s.requireAuth(http.HandlerFunc(s.getEventType)))
@@ -119,11 +127,12 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("/content/", http.NotFound)
 	mux.HandleFunc("/", s.servePortal)
 	handler := s.middleware(mux)
-	if s.cfg.HTTP.BasePath == "" {
+	basePath := s.cfg.HTTP.BasePath()
+	if basePath == "" {
 		return handler
 	}
 	mounted := http.NewServeMux()
-	mounted.Handle(s.cfg.HTTP.BasePath+"/", http.StripPrefix(s.cfg.HTTP.BasePath, handler))
+	mounted.Handle(basePath+"/", http.StripPrefix(basePath, handler))
 	return mounted
 }
 
@@ -176,6 +185,35 @@ func (s *Server) requireAuth(next http.Handler) http.Handler {
 	})
 }
 
+func (s *Server) optionalAuth(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet && r.Method != http.MethodHead && !s.validOrigin(r) {
+			writeError(w, http.StatusForbidden, "request origin is not allowed")
+			return
+		}
+		cookie, err := r.Cookie(sessionCookieName)
+		if err != nil || cookie.Value == "" {
+			next.ServeHTTP(w, r)
+			return
+		}
+		session, err := s.store.GetSession(cookie.Value, s.now())
+		if err != nil {
+			s.clearCookie(w, r)
+			next.ServeHTTP(w, r)
+			return
+		}
+		user, err := s.store.GetUser(session.Email)
+		if err != nil {
+			_ = s.store.DeleteSession(cookie.Value)
+			s.clearCookie(w, r)
+			next.ServeHTTP(w, r)
+			return
+		}
+		ctx := context.WithValue(r.Context(), userContextKey, user)
+		next.ServeHTTP(w, r.WithContext(ctx))
+	})
+}
+
 func (s *Server) validOrigin(r *http.Request) bool {
 	origin := r.Header.Get("Origin")
 	if origin == "" {
@@ -201,7 +239,10 @@ func (s *Server) servePortal(w http.ResponseWriter, r *http.Request) {
 		internalError(w, err, "read portal asset")
 		return
 	}
-	contents = bytes.ReplaceAll(contents, []byte(portalBasePlaceholder), []byte(s.cfg.HTTP.BasePath))
+	contents = bytes.ReplaceAll(contents, []byte(portalBasePlaceholder), []byte(s.cfg.HTTP.BasePath()))
+	if assetPath == "index.html" {
+		contents = bytes.ReplaceAll(contents, []byte(config.DefaultBrandName), []byte(html.EscapeString(s.cfg.Branding.Name)))
+	}
 	if contentType := mime.TypeByExtension(path.Ext(assetPath)); contentType != "" {
 		w.Header().Set("Content-Type", contentType)
 	}
@@ -213,11 +254,19 @@ func (s *Server) health(w http.ResponseWriter, _ *http.Request) {
 }
 
 func (s *Server) publicConfig(w http.ResponseWriter, _ *http.Request) {
-	writeJSON(w, http.StatusOK, map[string]bool{"googleLoginEnabled": s.cfg.Login.Google.Enabled()})
+	writeJSON(w, http.StatusOK, map[string]any{
+		"brandName":          s.cfg.Branding.Name,
+		"googleLoginEnabled": s.cfg.Login.Google.Enabled(),
+	})
 }
 
 func userFromRequest(r *http.Request) model.User {
 	return r.Context().Value(userContextKey).(model.User)
+}
+
+func authenticatedUser(r *http.Request) (model.User, bool) {
+	user, ok := r.Context().Value(userContextKey).(model.User)
+	return user, ok
 }
 
 func writeJSON(w http.ResponseWriter, status int, value any) {
@@ -285,10 +334,11 @@ func (s *Server) clearCookie(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) cookiePath() string {
-	if s.cfg.HTTP.BasePath == "" {
+	basePath := s.cfg.HTTP.BasePath()
+	if basePath == "" {
 		return "/"
 	}
-	return s.cfg.HTTP.BasePath
+	return basePath
 }
 
 func (s *Server) createSession(w http.ResponseWriter, r *http.Request, email string) error {

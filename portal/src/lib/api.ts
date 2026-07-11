@@ -49,6 +49,14 @@ export function getSession(reportError = true): Promise<{ user: SessionUser }> {
 	return callApi('/api/auth/session', undefined, reportError);
 }
 
-export function getPublicConfig(): Promise<PublicConfig> {
-	return callApi('/api/config/public');
+let publicConfigRequest: Promise<PublicConfig> | undefined;
+
+export function getPublicConfig(reportError = true): Promise<PublicConfig> {
+	if (publicConfigRequest) return publicConfigRequest;
+	const request = callApi<PublicConfig>('/api/config/public', undefined, reportError).catch((error) => {
+		publicConfigRequest = undefined;
+		throw error;
+	});
+	publicConfigRequest = request;
+	return request;
 }

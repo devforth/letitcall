@@ -11,6 +11,9 @@
 	import type { Booking, PublicEventType } from '$lib/types';
 	import { getLocalTimezones } from '$lib/timezones';
 	import Button from '$lib/components/ui/Button.svelte';
+	import GuestEmailFields from '$lib/components/GuestEmailFields.svelte';
+	import PageTitle from '$lib/components/PageTitle.svelte';
+	import { branding } from '$lib/stores/branding.svelte';
 	import Input from '$lib/components/ui/Input.svelte';
 	import MonthCalendar from '$lib/components/ui/MonthCalendar.svelte';
 	import SearchableSelect from '$lib/components/ui/SearchableSelect.svelte';
@@ -27,8 +30,10 @@
 	let selectedTime = $state('');
 	let attendeeName = $state('');
 	let attendeeEmail = $state('');
+	let guestEmails = $state<string[]>([]);
 	let notes = $state('');
 	let booking = $state<Booking | null>(null);
+	let manageURL = $state('');
 	let saving = $state(false);
 	let now = $state(new Date());
 	let clock: number | undefined;
@@ -40,6 +45,11 @@
 	);
 	const availableDates = $derived(Object.keys(slotsByDate));
 	const selectedSlots = $derived(selectedDate ? (slotsByDate[selectedDate] ?? []) : []);
+	const guestLimit = $derived.by(() => {
+		if (!eventType || eventType.inviteeLimit === null || !selectedTime) return null;
+		const remaining = eventType.remainingInvitees[selectedTime] ?? eventType.inviteeLimit;
+		return Math.max(0, remaining - 1);
+	});
 	const selectedDateLabel = $derived(
 		selectedDate
 			? new Intl.DateTimeFormat(undefined, { dateStyle: 'full', timeZone: 'UTC' }).format(
@@ -94,26 +104,34 @@
 		event.preventDefault();
 		saving = true;
 		try {
-			const response = await callApi<{ booking: Booking }>('/api/bookings', {
+			const response = await callApi<{ booking: Booking; manageURL: string }>('/api/bookings', {
 				method: 'POST',
 				body: JSON.stringify({
 					eventSlug: eventType!.eventSlug,
 					time: selectedTime,
 					attendeeName,
 					attendeeEmail,
+					attendeeTimezone: timezone,
+					guestEmails,
 					notes
 				})
 			});
 			booking = response.booking;
+			manageURL = response.manageURL;
 		} catch {
 			// callApi reports the error globally.
 		} finally {
 			saving = false;
 		}
 	}
+
+	function selectTime(time: string) {
+		selectedTime = time;
+		if (guestLimit !== null) guestEmails = guestEmails.slice(0, guestLimit);
+	}
 </script>
 
-<svelte:head><title>{eventType?.name ?? 'Book'} · Let It Call</title></svelte:head>
+<PageTitle title={eventType?.name ?? 'Book'} />
 
 {#if loading}
 	<main class="grid min-h-screen place-items-center p-6"><p class="text-sm">Loading booking page…</p></main>
@@ -161,7 +179,7 @@
 						{timezone}
 					</p>
 				{/if}
-				<p class="mt-auto hidden pt-12 text-xs lg:block">Powered by Let It Call</p>
+				<p class="mt-auto hidden pt-12 text-xs lg:block">Powered by {branding.name}</p>
 			</aside>
 
 			<section class="p-6 lg:p-10" aria-labelledby="booking-title">
@@ -173,6 +191,7 @@
 							<p class="mt-1 text-sm">
 								{new Intl.DateTimeFormat(undefined, { dateStyle: 'full', timeStyle: 'short', timeZone: timezone }).format(new Date(booking.time))}
 							</p>
+							<a class="mt-6 inline-block border border-black px-4 py-3 text-sm font-medium hover:bg-black hover:text-white" href={manageURL}>Cancel or update event</a>
 						</div>
 					</div>
 				{:else if selectedTime}
@@ -181,6 +200,7 @@
 						<form class="mt-7 grid gap-6" onsubmit={createBooking}>
 							<Input id="attendee-name" label="Name" bind:value={attendeeName} required autocomplete="name" />
 							<Input id="attendee-email" label="Email" type="email" bind:value={attendeeEmail} required autocomplete="email" />
+							<GuestEmailFields idPrefix="booking-guest" bind:emails={guestEmails} limit={guestLimit} />
 							<Textarea
 								id="booking-notes"
 								label="Please share anything that will help prepare for our meeting."
@@ -216,13 +236,17 @@
 							{:else}
 								<div class="mt-5 grid gap-2">
 									{#each selectedSlots as slot (slot.time)}
-										<button
-											type="button"
-											class={`min-h-12 border border-black px-4 text-sm font-medium ${selectedTime === slot.time ? 'bg-black text-white' : 'bg-white text-black hover:bg-black hover:text-white'}`}
-											onclick={() => (selectedTime = slot.time)}
+										<Button
+											variant="secondary"
+											fullWidth
+											disabled={slot.busy}
+											onclick={() => selectTime(slot.time)}
 										>
-											{slot.label}
-										</button>
+											<span class="flex min-h-8 flex-col items-center justify-center">
+												<span>{slot.label}</span>
+												{#if slot.busy}<span class="text-xs font-normal">Busy</span>{/if}
+											</span>
+										</Button>
 									{/each}
 								</div>
 							{/if}

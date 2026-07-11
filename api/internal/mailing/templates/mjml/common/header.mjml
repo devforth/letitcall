@@ -1,0 +1,10 @@
+<mj-section padding="32px 24px 28px">
+  <mj-column>
+    <mj-text font-size="20px" font-weight="600" letter-spacing="-0.3px">{{.BrandName}}</mj-text>
+  </mj-column>
+</mj-section>
+<mj-section padding="0 24px">
+  <mj-column>
+    <mj-text css-class="rule" padding="0">&nbsp;</mj-text>
+  </mj-column>
+</mj-section>

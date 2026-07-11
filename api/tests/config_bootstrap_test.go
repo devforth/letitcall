@@ -24,7 +24,7 @@ func TestConfigUsesStrictEnvironmentNamesAndDefaults(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if cfg.HTTP.Port != 8080 || cfg.FirstUser.Email != "owner@example.com" {
+	if cfg.HTTP.Port != 8080 || cfg.HTTP.BaseURL != config.DefaultBaseURL || cfg.Branding.Name != config.DefaultBrandName || cfg.FirstUser.Email != "owner@example.com" {
 		t.Fatalf("configuration did not load structured environment variables: %#v", cfg)
 	}
 }
@@ -34,7 +34,7 @@ func TestDotEnvLoadOrderAndMissingFiles(t *testing.T) {
 	if err := os.Unsetenv(config.EnvHTTPPort); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.Unsetenv(config.EnvHTTPBasePath); err != nil {
+	if err := os.Unsetenv(config.EnvHTTPBaseURL); err != nil {
 		t.Fatal(err)
 	}
 	directory := t.TempDir()
@@ -53,7 +53,7 @@ func TestDotEnvLoadOrderAndMissingFiles(t *testing.T) {
 	if err := config.LoadDotEnv(); err != nil {
 		t.Fatal(err)
 	}
-	local := config.EnvHTTPPort + "=41784\n" + config.EnvHTTPBasePath + "=/local\n"
+	local := config.EnvHTTPPort + "=41784\n" + config.EnvHTTPBaseURL + "=https://local.example/local\n"
 	if err := os.WriteFile(filepath.Join(directory, ".env.local"), []byte(local), 0o600); err != nil {
 		t.Fatal(err)
 	}
@@ -68,7 +68,7 @@ func TestDotEnvLoadOrderAndMissingFiles(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if cfg.HTTP.Port != 8080 || cfg.HTTP.BasePath != "/local" {
+	if cfg.HTTP.Port != 8080 || cfg.HTTP.BaseURL != "https://local.example/local" {
 		t.Fatalf("unexpected dotenv configuration: %#v", cfg.HTTP)
 	}
 }
@@ -81,31 +81,44 @@ func TestConfigRejectsPartialGoogleOAuthSettings(t *testing.T) {
 	}
 }
 
-func TestConfigLoadsBasePathAndGoogleOAuthSettings(t *testing.T) {
+func TestConfigLoadsBaseURLAndGoogleOAuthSettings(t *testing.T) {
 	clearConfigEnvironment(t)
-	t.Setenv(config.EnvHTTPBasePath, "/calendar/")
+	t.Setenv(config.EnvHTTPBaseURL, "https://calls.example.com/calendar/")
 	t.Setenv(config.EnvGoogleClientID, "client-id")
 	t.Setenv(config.EnvGoogleClientSecret, "client-secret")
 	cfg, err := config.Load()
 	if err != nil {
 		t.Fatal(err)
 	}
-	if cfg.HTTP.BasePath != "/calendar" || !cfg.Login.Google.Enabled() {
-		t.Fatalf("unexpected base path or Google settings: %#v", cfg)
+	if cfg.HTTP.BaseURL != "https://calls.example.com/calendar" || cfg.HTTP.BasePath() != "/calendar" || !cfg.Login.Google.Enabled() {
+		t.Fatalf("unexpected base URL or Google settings: %#v", cfg)
 	}
 }
 
 func TestConfigLoadsMailgunSettings(t *testing.T) {
 	clearConfigEnvironment(t)
 	t.Setenv(config.EnvMailgunAPIKey, "mailgun-key")
+	t.Setenv(config.EnvMailgunBaseURL, "https://api.eu.mailgun.net/")
 	t.Setenv(config.EnvMailgunDomain, "mail.example.com")
 	t.Setenv(config.EnvMailgunFrom, "Let It Call <bookings@example.com>")
 	cfg, err := config.Load()
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !cfg.Mailing.Mailgun.Enabled() || cfg.Mailing.Mailgun.Domain != "mail.example.com" {
+	if !cfg.Mailing.Mailgun.Enabled() || cfg.Mailing.Mailgun.BaseURL != "https://api.eu.mailgun.net" || cfg.Mailing.Mailgun.Domain != "mail.example.com" {
 		t.Fatalf("Mailgun settings were not loaded: %#v", cfg.Mailing.Mailgun)
+	}
+}
+
+func TestConfigLoadsBrandName(t *testing.T) {
+	clearConfigEnvironment(t)
+	t.Setenv(config.EnvBrandName, "DevForth")
+	cfg, err := config.Load()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cfg.Branding.Name != "DevForth" {
+		t.Fatalf("brand name was not loaded: %#v", cfg.Branding)
 	}
 }
 
@@ -117,11 +130,22 @@ func TestConfigRejectsPartialMailgunSettings(t *testing.T) {
 	}
 }
 
-func TestConfigRejectsBasePathWithoutLeadingSlash(t *testing.T) {
+func TestConfigRejectsMailgunBaseURLWithPath(t *testing.T) {
 	clearConfigEnvironment(t)
-	t.Setenv(config.EnvHTTPBasePath, "calendar")
-	if _, err := config.Load(); err == nil || !strings.Contains(err.Error(), "must start with /") {
-		t.Fatalf("expected invalid base path error, got %v", err)
+	t.Setenv(config.EnvMailgunAPIKey, "mailgun-key")
+	t.Setenv(config.EnvMailgunBaseURL, "https://api.eu.mailgun.net/v3")
+	t.Setenv(config.EnvMailgunDomain, "mail.example.com")
+	t.Setenv(config.EnvMailgunFrom, "Bookings <bookings@example.com>")
+	if _, err := config.Load(); err == nil || !strings.Contains(err.Error(), "without a path") {
+		t.Fatalf("expected invalid Mailgun base URL error, got %v", err)
+	}
+}
+
+func TestConfigRejectsBaseURLWithoutOrigin(t *testing.T) {
+	clearConfigEnvironment(t)
+	t.Setenv(config.EnvHTTPBaseURL, "/calendar")
+	if _, err := config.Load(); err == nil || !strings.Contains(err.Error(), "must be a full HTTP or HTTPS URL") {
+		t.Fatalf("expected invalid base URL error, got %v", err)
 	}
 }
 
@@ -129,7 +153,8 @@ func clearConfigEnvironment(t *testing.T) {
 	t.Helper()
 	for _, name := range []string{
 		config.EnvHTTPPort,
-		config.EnvHTTPBasePath,
+		config.EnvHTTPBaseURL,
+		config.EnvBrandName,
 		config.EnvStorageLevelDBPath,
 		config.EnvFirstUserEmail,
 		config.EnvFirstUserPassword,
@@ -139,6 +164,7 @@ func clearConfigEnvironment(t *testing.T) {
 		config.EnvGoogleClientID,
 		config.EnvGoogleClientSecret,
 		config.EnvMailgunAPIKey,
+		config.EnvMailgunBaseURL,
 		config.EnvMailgunDomain,
 		config.EnvMailgunFrom,
 	} {

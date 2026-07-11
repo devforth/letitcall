@@ -47,16 +47,28 @@ type OAuthState struct {
 }
 
 type Booking struct {
-	ID              string    `json:"id"`
-	EventSlug       string    `json:"eventSlug"`
-	Time            time.Time `json:"time"`
-	EndTime         time.Time `json:"endTime"`
-	AttendeeName    string    `json:"attendeeName"`
-	AttendeeEmail   string    `json:"attendeeEmail"`
-	Notes           string    `json:"notes,omitempty"`
-	Title           string    `json:"title"`
-	RecipientEmails []string  `json:"recipientEmails"`
-	CreatedAt       time.Time `json:"createdAt"`
+	ID                 string            `json:"id"`
+	EventSlug          string            `json:"eventSlug"`
+	Time               time.Time         `json:"time"`
+	EndTime            time.Time         `json:"endTime"`
+	AttendeeName       string            `json:"attendeeName"`
+	AttendeeEmail      string            `json:"attendeeEmail"`
+	AttendeeTimezone   string            `json:"attendeeTimezone"`
+	GuestEmails        []string          `json:"guestEmails"`
+	Notes              string            `json:"notes,omitempty"`
+	Title              string            `json:"title"`
+	RecipientEmails    []string          `json:"recipientEmails"`
+	GoogleEventIDs     map[string]string `json:"googleEventIds,omitempty"`
+	CanceledAt         *time.Time        `json:"canceledAt,omitempty"`
+	CanceledBy         *BookingActor     `json:"canceledBy,omitempty"`
+	CancellationReason string            `json:"cancellationReason,omitempty"`
+	CreatedAt          time.Time         `json:"createdAt"`
+	UpdatedAt          time.Time         `json:"updatedAt"`
+}
+
+type BookingActor struct {
+	Name  string `json:"name"`
+	Email string `json:"email"`
 }
 
 type EventType struct {

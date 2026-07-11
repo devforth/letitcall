@@ -13,12 +13,14 @@ import (
 
 	"github.com/letitcall/letitcall/api/internal/model"
 	"github.com/syndtr/goleveldb/leveldb"
+	"github.com/syndtr/goleveldb/leveldb/util"
 )
 
 var (
 	ErrNotFound      = errors.New("not found")
 	ErrExists        = errors.New("already exists")
 	ErrCapacity      = errors.New("capacity reached")
+	ErrCanceled      = errors.New("booking is canceled")
 	ErrLastRecipient = errors.New("user is the final event type recipient")
 )
 
@@ -26,6 +28,7 @@ type Store struct {
 	users       *leveldb.DB
 	eventTypes  *leveldb.DB
 	bookings    *leveldb.DB
+	secretLinks *leveldb.DB
 	sessions    *leveldb.DB
 	oauthStates *leveldb.DB
 	mu          sync.Mutex
@@ -36,7 +39,7 @@ func Open(root string) (*Store, error) {
 		return nil, fmt.Errorf("create LevelDB root: %w", err)
 	}
 
-	opened := make([]*leveldb.DB, 0, 5)
+	opened := make([]*leveldb.DB, 0, 6)
 	openTable := func(name string) (*leveldb.DB, error) {
 		db, err := leveldb.OpenFile(filepath.Join(root, name+".leveldb"), nil)
 		if err != nil {
@@ -60,6 +63,11 @@ func Open(root string) (*Store, error) {
 		closeAll(opened)
 		return nil, err
 	}
+	secretLinks, err := openTable("secret_link_map")
+	if err != nil {
+		closeAll(opened)
+		return nil, err
+	}
 	sessions, err := openTable("sessions")
 	if err != nil {
 		closeAll(opened)
@@ -71,11 +79,11 @@ func Open(root string) (*Store, error) {
 		return nil, err
 	}
 
-	return &Store{users: users, eventTypes: eventTypes, bookings: bookings, sessions: sessions, oauthStates: oauthStates}, nil
+	return &Store{users: users, eventTypes: eventTypes, bookings: bookings, secretLinks: secretLinks, sessions: sessions, oauthStates: oauthStates}, nil
 }
 
 func (s *Store) Close() error {
-	return errors.Join(s.users.Close(), s.eventTypes.Close(), s.bookings.Close(), s.sessions.Close(), s.oauthStates.Close())
+	return errors.Join(s.users.Close(), s.eventTypes.Close(), s.bookings.Close(), s.secretLinks.Close(), s.sessions.Close(), s.oauthStates.Close())
 }
 
 func closeAll(databases []*leveldb.DB) {
@@ -328,6 +336,18 @@ func (s *Store) RemoveEventTypeRecipient(email string, updatedAt time.Time) erro
 }
 
 func (s *Store) CreateBooking(slotKey string, booking model.Booking, inviteeLimit *int) error {
+	return s.createBooking(slotKey, booking, inviteeLimit, "")
+}
+
+func (s *Store) CreateBookingWithSecret(slotKey string, booking model.Booking, inviteeLimit *int, secretToken string) error {
+	return s.createBooking(slotKey, booking, inviteeLimit, secretToken)
+}
+
+type secretLink struct {
+	BookingID string `json:"bookingId"`
+}
+
+func (s *Store) createBooking(slotKey string, booking model.Booking, inviteeLimit *int, secretToken string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	key := []byte(slotKey)
@@ -341,14 +361,98 @@ func (s *Store) CreateBooking(slotKey string, booking model.Booking, inviteeLimi
 		return err
 	}
 	for _, existing := range bookings {
-		if normalizeEmail(existing.AttendeeEmail) == normalizeEmail(booking.AttendeeEmail) {
+		if existing.CanceledAt == nil && normalizeEmail(existing.AttendeeEmail) == normalizeEmail(booking.AttendeeEmail) {
 			return ErrExists
 		}
 	}
-	if inviteeLimit != nil && len(bookings) >= *inviteeLimit {
+	occupied := 0
+	for _, existing := range bookings {
+		if existing.CanceledAt == nil {
+			occupied += 1 + len(existing.GuestEmails)
+		}
+	}
+	if inviteeLimit != nil && occupied+1+len(booking.GuestEmails) > *inviteeLimit {
 		return ErrCapacity
 	}
-	return putJSON(s.bookings, key, append(bookings, booking))
+	if secretToken != "" {
+		exists, err := s.secretLinks.Has([]byte(secretToken), nil)
+		if err != nil {
+			return err
+		}
+		if exists {
+			return ErrExists
+		}
+	}
+	if err := putJSON(s.bookings, key, append(bookings, booking)); err != nil {
+		return err
+	}
+	if secretToken == "" {
+		return nil
+	}
+	if err := putJSON(s.secretLinks, []byte(secretToken), secretLink{BookingID: booking.ID}); err != nil {
+		if len(bookings) == 0 {
+			_ = s.bookings.Delete(key, nil)
+		} else {
+			_ = putJSON(s.bookings, key, bookings)
+		}
+		return err
+	}
+	return nil
+}
+
+func (s *Store) GetBookingBySecret(secretToken string) (model.Booking, error) {
+	var link secretLink
+	if err := getJSON(s.secretLinks, []byte(secretToken), &link); err != nil {
+		return model.Booking{}, err
+	}
+	return s.GetBooking(link.BookingID)
+}
+
+func (s *Store) GetBookingSecret(id string) (string, error) {
+	iterator := s.secretLinks.NewIterator(nil, nil)
+	defer iterator.Release()
+	for iterator.Next() {
+		var link secretLink
+		if err := json.Unmarshal(iterator.Value(), &link); err != nil {
+			return "", err
+		}
+		if link.BookingID == id {
+			return string(iterator.Key()), nil
+		}
+	}
+	if err := iterator.Error(); err != nil {
+		return "", err
+	}
+	return "", ErrNotFound
+}
+
+func (s *Store) ModifyBooking(id string, modify func(*model.Booking, []model.Booking) error) (model.Booking, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	iterator := s.bookings.NewIterator(nil, nil)
+	defer iterator.Release()
+	for iterator.Next() {
+		var bookings []model.Booking
+		if err := json.Unmarshal(iterator.Value(), &bookings); err != nil {
+			return model.Booking{}, err
+		}
+		for index := range bookings {
+			if bookings[index].ID != id {
+				continue
+			}
+			if err := modify(&bookings[index], bookings); err != nil {
+				return model.Booking{}, err
+			}
+			if err := putJSON(s.bookings, append([]byte(nil), iterator.Key()...), bookings); err != nil {
+				return model.Booking{}, err
+			}
+			return bookings[index], nil
+		}
+	}
+	if err := iterator.Error(); err != nil {
+		return model.Booking{}, err
+	}
+	return model.Booking{}, ErrNotFound
 }
 
 func (s *Store) GetBooking(id string) (model.Booking, error) {
@@ -389,6 +493,52 @@ func (s *Store) ListBookings() ([]model.Booking, error) {
 	return bookings, nil
 }
 
+type ActiveBookingSlot struct {
+	Start    time.Time
+	End      time.Time
+	Invitees int
+}
+
+func (s *Store) ListActiveBookingSlots(eventSlug string) ([]ActiveBookingSlot, error) {
+	const instantLength = len("2006-01-02T15:04:05Z")
+	const slotKeySuffixLength = instantLength*2 + 1
+	iterator := s.bookings.NewIterator(util.BytesPrefix([]byte(eventSlug)), nil)
+	defer iterator.Release()
+	slots := make([]ActiveBookingSlot, 0)
+	for iterator.Next() {
+		suffix := string(iterator.Key()[len(eventSlug):])
+		if len(suffix) != slotKeySuffixLength {
+			continue
+		}
+		start, err := time.Parse(time.RFC3339, suffix[:instantLength])
+		if err != nil {
+			return nil, err
+		}
+		end, err := time.Parse(time.RFC3339, suffix[instantLength+1:])
+		if err != nil {
+			return nil, err
+		}
+		var bookings []model.Booking
+		if err := json.Unmarshal(iterator.Value(), &bookings); err != nil {
+			return nil, err
+		}
+		invitees := 0
+		for _, booking := range bookings {
+			if booking.CanceledAt == nil {
+				invitees += 1 + len(booking.GuestEmails)
+			}
+		}
+		if invitees > 0 {
+			slots = append(slots, ActiveBookingSlot{Start: start, End: end, Invitees: invitees})
+		}
+	}
+	if err := iterator.Error(); err != nil {
+		return nil, err
+	}
+	sort.Slice(slots, func(i, j int) bool { return slots[i].Start.Before(slots[j].Start) })
+	return slots, nil
+}
+
 func (s *Store) DeleteBooking(id string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -405,6 +555,9 @@ func (s *Store) DeleteBooking(id string) error {
 			}
 			key := append([]byte(nil), iterator.Key()...)
 			bookings = append(bookings[:index], bookings[index+1:]...)
+			if err := s.deleteBookingSecret(id); err != nil {
+				return err
+			}
 			if len(bookings) == 0 {
 				return s.bookings.Delete(key, nil)
 			}
@@ -415,6 +568,21 @@ func (s *Store) DeleteBooking(id string) error {
 		return err
 	}
 	return ErrNotFound
+}
+
+func (s *Store) deleteBookingSecret(id string) error {
+	iterator := s.secretLinks.NewIterator(nil, nil)
+	defer iterator.Release()
+	for iterator.Next() {
+		var link secretLink
+		if err := json.Unmarshal(iterator.Value(), &link); err != nil {
+			return err
+		}
+		if link.BookingID == id {
+			return s.secretLinks.Delete(append([]byte(nil), iterator.Key()...), nil)
+		}
+	}
+	return iterator.Error()
 }
 
 func normalizeEmail(email string) string {

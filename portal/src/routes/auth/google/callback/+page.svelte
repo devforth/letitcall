@@ -6,6 +6,7 @@
 	import { onMount } from 'svelte';
 	import { appPath, callApi } from '$lib/api';
 	import Button from '$lib/components/ui/Button.svelte';
+	import PageTitle from '$lib/components/PageTitle.svelte';
 
 	let error = $state('');
 
@@ -26,7 +27,7 @@
 	});
 </script>
 
-<svelte:head><title>Google sign-in · Let It Call</title></svelte:head>
+<PageTitle title="Google sign-in" />
 
 <main class="grid min-h-screen place-items-center px-4 py-12">
 	<section class="w-full max-w-md border border-black p-6 text-center sm:p-8" aria-live="polite">

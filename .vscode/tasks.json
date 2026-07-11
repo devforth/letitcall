@@ -33,7 +33,7 @@
 		{
 			"label": "Dev: Go API (41784)",
 			"type": "shell",
-			"command": "fuser -k 41784/tcp >/dev/null 2>&1 || true; go mod download && go run ./cmd/server",
+			"command": "fuser -k 41784/tcp >/dev/null 2>&1 || true; npm install && ./render-mjml.sh && go mod download && go run ./cmd/server",
 			"options": {
 				"cwd": "${workspaceFolder}/api"
 			},

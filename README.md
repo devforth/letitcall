@@ -24,7 +24,8 @@ All backend settings use structured uppercase environment variables:
 | Name | What it does | Default value |
 | --- | --- | --- |
 | `HTTP__PORT` | Sets the HTTP server port. | `80` |
-| `HTTP__BASE__PATH` | Sets the URL path prefix where the application is served. A configured value must start with `/`, for example `/letitcall`. | Empty (served at `/`) |
+| `HTTP__BASE__URL` | Sets the full public application URL, including any path prefix, for example `https://calls.example.com/letitcall`. | `http://127.0.0.1:41783` |
+| `BRANDING__DISPLAY__NAME` | Sets the product name shown in the portal and emails. | `Let It Call` |
 | `STORAGE__LEVELDB__PATH` | Sets the directory containing the LevelDB databases. | `./data` (`/data` in Docker) |
 | `FIRSTUSER__CREDENTIALS__EMAIL` | Sets the email of the user created when the users table is empty. Must be set together with the first-user password. | Not set |
 | `FIRSTUSER__CREDENTIALS__PASSWORD` | Sets the password of the user created when the users table is empty. Must be set together with the first-user email. | Not set |
@@ -33,17 +34,20 @@ All backend settings use structured uppercase environment variables:
 | `LOGIN__PASSWORD__LOCKOUT` | Sets how long a password login remains locked after reaching the failed-attempt limit. | `15m` |
 | `LOGIN__OAUTH__GOOGLE__CLIENT_ID` | Sets the Google OAuth client ID and enables Google login when the client secret is also set. | Not set |
 | `LOGIN__OAUTH__GOOGLE__CLIENT_SECRET` | Sets the Google OAuth client secret. Must be set together with the client ID. | Not set |
-| `MAILING__SENDING__MAILGUN__API_KEY` | Enables Mailgun booking notifications. Must be set with the Mailgun domain and sender. | Not set (email delivery is skipped) |
-| `MAILING__SENDING__MAILGUN__DOMAIN` | Sets the Mailgun sending domain. | Not set |
+| `MAILING__SENDING__MAILGUN__API_KEY` | Enables Mailgun booking notifications. Must be set with the Mailgun base URL, domain, and sender. | Not set (email delivery is skipped) |
+| `MAILING__SENDING__MAILGUN__BASE_URL` | Sets the regional Mailgun API origin: `https://api.eu.mailgun.net` for EU or `https://api.mailgun.net` for US. | Not set |
+| `MAILING__SENDING__MAILGUN__DOMAIN` | Sets the Mailgun sending domain only, for example `talk.devforth.io` (not an API URL). | Not set |
 | `MAILING__SENDING__MAILGUN__FROM` | Sets the Mailgun From address, such as `Let It Call <bookings@example.com>`. | Not set |
+
+Set `MAILING__SENDING__MAILGUN__DOMAIN` to the sending domain only, without a scheme, path, or `/messages` suffix.
 
 To enable Google OAuth, set both Google settings and add this authorized redirect URI to the Google client:
 
 ```text
-https://your-host.example{HTTP__BASE__PATH}/auth/google/callback
+{HTTP__BASE__URL}/auth/google/callback
 ```
 
-For example, a HTTP__BASE__PATH of `/letitcall` produces `https://your-host.example/letitcall/auth/google/callback`. Omit the base path portion when the application is served at `/`. A TLS-terminating reverse proxy must preserve the request host and set `X-Forwarded-Proto: https` so the server forms the same redirect URI.
+For example, `HTTP__BASE__URL=https://your-host.example/letitcall` produces `https://your-host.example/letitcall/auth/google/callback`.
 
 The requested scopes include identity and permission to manage Google Calendar events. OAuth state uses PKCE. Google tokens are encrypted with a random key generated on first use and kept in `google-token.key` under `STORAGE__LEVELDB__PATH`; persist the data directory across restarts.
 

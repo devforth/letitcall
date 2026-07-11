@@ -4,6 +4,7 @@
 	import { callApi, appPath, getSession } from '$lib/api';
 	import AvatarSelector from '$lib/components/AvatarSelector.svelte';
 	import UserTable from '$lib/components/UserTable.svelte';
+	import PageTitle from '$lib/components/PageTitle.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
 	import Input from '$lib/components/ui/Input.svelte';
 	import SearchableSelect from '$lib/components/ui/SearchableSelect.svelte';
@@ -85,7 +86,7 @@
 	}
 </script>
 
-<svelte:head><title>Users · Let It Call</title></svelte:head>
+<PageTitle title="Users" />
 
 <section aria-labelledby="users-title">
 	<div class="mb-6 flex flex-wrap items-center justify-between gap-4">

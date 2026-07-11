@@ -1,9 +1,11 @@
 .git
-api/.env
 .agents
 .codex
 .data
-portal/.svelte-kit
+api/.env
+api/node_modules
+api/internal/mailing/templates/rendered
 portal/build
 portal/node_modules
+portal/.svelte-kit
 **/.DS_Store
