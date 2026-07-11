@@ -156,6 +156,7 @@
 	:global(html.dark) .bg-gray-300 {
 		background-color: rgb(75, 85, 99);
 	}
+
 </style>
 
 <svelte:head><title>Sign in · Let It Call</title></svelte:head>
@@ -176,11 +177,9 @@
 		<!-- Left side content -->
 		<div class="hidden lg:flex lg:col-span-2 flex-col justify-center px-12 xl:px-20">
 			<h2 class="mb-8 text-3xl xl:text-4xl font-bold leading-tight whitespace-nowrap">
-				<span class="text-primary">LET IT CALL</span>
-				<span class="mx-1">-</span>
-				<span>Schedule Better</span>
+				<span class="text-primary">Schedule Admin Panel</span>
 			</h2>
-			<p class="text-lg mb-8 max-w-lg">Let It Call makes team scheduling simple and transparent. Share availability once. Get things booked faster.</p>
+			<p class="text-lg mb-8 max-w-lg">Makes team scheduling simple and transparent. Share availability once. Get things booked faster.</p>
 			<div class="space-y-4">
 				<div class="flex items-start gap-3">
 					<span class="text-primary text-2xl">✓</span>
@@ -201,7 +200,7 @@
 		<section class="w-full max-w-md mx-auto lg:mx-0 lg:col-span-2 px-4 lg:pl-8 xl:pl-12" aria-labelledby="login-title">
 			<div class="p-8 sm:p-10 rounded-2xl border-2 border-border" style="background: rgb(var(--color-foreground)); box-shadow: var(--shadow);">
 				<div class="mb-8">
-					<h1 id="login-title" class="text-primary text-3xl font-normal tracking-tight">Welcome Back</h1>
+					<h1 id="login-title" class="text-secondary text-3xl font-normal tracking-tight">Welcome Back</h1>
 					<p class="mt-2 text-sm">Sign in to manage your team's schedule</p>
 				</div>
 
@@ -219,13 +218,13 @@
 						required
 						autocomplete="current-password"
 					/>
-					<Button type="submit" fullWidth disabled={submitting}>
+					<Button type="submit" fullWidth class="mt-2" disabled={submitting}>
 						{submitting ? 'Signing in…' : 'Sign in'}
 					</Button>
 				</form>
 
 				{#if googleEnabled}
-					<div class="my-6 flex items-center gap-3" aria-hidden="true">
+					<div class="my-4 flex items-center gap-3" aria-hidden="true">
 						<div class="h-px flex-1 bg-gray-300"></div>
 						<span class="text-sm font-medium opacity-50">or</span>
 						<div class="h-px flex-1 bg-gray-300"></div>
