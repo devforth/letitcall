@@ -1,5 +1,7 @@
 .data/
 api/.env
+api/node_modules/
+api/internal/mailing/templates/rendered/*.html
 portal/build/
 portal/node_modules/
 portal/.svelte-kit/

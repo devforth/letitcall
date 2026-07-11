@@ -1,0 +1,27 @@
+Hi {{.RecipientName}},
+
+A new event has been scheduled.
+
+Event type:
+{{.EventName}}
+
+Invitee:
+{{.AttendeeName}}
+
+Invitee email:
+{{.AttendeeEmail}}
+
+Event date and time:
+{{.EventDateTime}}
+
+Invitee time zone:
+{{.AttendeeTimezone}}
+{{if .Notes}}
+Booking details:
+Please share anything that will help prepare for our meeting.
+{{.Notes}}
+{{end}}
+Cancel or update event:
+{{.ManageURL}}
+
+Sent by {{.BrandName}}

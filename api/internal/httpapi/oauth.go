@@ -176,7 +176,7 @@ func (s *Server) googleCallback(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) googleOAuthConfig(r *http.Request) *oauth2.Config {
 	config := *s.oauth
-	config.RedirectURL = requestOrigin(r) + s.cfg.HTTP.BasePath + googlePortalCallbackPath
+	config.RedirectURL = s.cfg.HTTP.BaseURL + googlePortalCallbackPath
 	return &config
 }
 

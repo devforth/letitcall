@@ -1,0 +1,30 @@
+<mjml>
+  <mj-head>
+    <mj-title>{{.Subject}}</mj-title>
+    <mj-preview>{{.EventName}} with {{.AttendeeName}} has been canceled.</mj-preview>
+    <mj-include path="./common/head.mjml" />
+  </mj-head>
+  <mj-body width="640px">
+    <mj-include path="./common/header.mjml" />
+    <mj-section padding="36px 24px 0">
+      <mj-column>
+        <mj-text font-size="20px" padding-bottom="22px">Hi {{.RecipientName}},</mj-text>
+        <mj-text font-size="24px" font-weight="600" line-height="1.35" padding-bottom="32px">An event has been canceled.</mj-text>
+        <mj-text css-class="label">Event type</mj-text>
+        <mj-text css-class="value">{{.EventName}}</mj-text>
+        <mj-text css-class="label">Invitee</mj-text>
+        <mj-text css-class="value">{{.AttendeeName}} · {{.AttendeeEmail}}</mj-text>
+        <mj-text css-class="label">Event date and time</mj-text>
+        <mj-text css-class="value">{{.EventDateTime}}</mj-text>
+        <mj-text css-class="label">Canceled by</mj-text>
+        <mj-text css-class="value">{{.CanceledBy}}</mj-text>
+        <mj-raw>{{if .Reason}}</mj-raw>
+        <mj-text css-class="label">Reason</mj-text>
+        <mj-text css-class="value">{{.Reason}}</mj-text>
+        <mj-raw>{{end}}</mj-raw>
+        <mj-button href="{{.ManageURL}}" align="left">View event</mj-button>
+      </mj-column>
+    </mj-section>
+    <mj-include path="./common/footer.mjml" />
+  </mj-body>
+</mjml>

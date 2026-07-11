@@ -4,8 +4,10 @@
 	import calendarEventIcon from '@iconify-icons/tabler/calendar-event';
 	import clockIcon from '@iconify-icons/tabler/clock';
 	import historyIcon from '@iconify-icons/tabler/history';
+	import externalLinkIcon from '@iconify-icons/tabler/external-link';
 	import { callApi } from '$lib/api';
 	import type { Booking } from '$lib/types';
+	import PageTitle from '$lib/components/PageTitle.svelte';
 
 	let bookings = $state<Booking[]>([]);
 	let loading = $state(true);
@@ -14,12 +16,12 @@
 
 	const upcoming = $derived(
 		bookings
-			.filter((booking) => new Date(booking.time) >= now)
+			.filter((booking) => !booking.canceledAt && new Date(booking.time) >= now)
 			.sort((left, right) => left.time.localeCompare(right.time))
 	);
 	const history = $derived(
 		bookings
-			.filter((booking) => new Date(booking.time) < now)
+			.filter((booking) => Boolean(booking.canceledAt) || new Date(booking.time) < now)
 			.sort((left, right) => right.time.localeCompare(left.time))
 	);
 
@@ -54,7 +56,7 @@
 	}
 </script>
 
-<svelte:head><title>Bookings · Let It Call</title></svelte:head>
+<PageTitle title="Bookings" />
 
 <section aria-labelledby="bookings-title">
 	<div>
@@ -85,7 +87,14 @@
 							<p class="mt-1 text-sm">{booking.attendeeName} · {booking.attendeeEmail}</p>
 							<p class="mt-2 text-xs">{localDate(booking.time)}</p>
 						</div>
-						<p class="w-fit border border-black px-3 py-2 text-sm font-medium">{relativeTime(booking.time)}</p>
+						<div class="flex items-center gap-2">
+							<p class="w-fit border border-black px-3 py-2 text-sm font-medium">{relativeTime(booking.time)}</p>
+							{#if booking.manageURL}
+								<a class="grid size-10 place-items-center border border-black hover:bg-black hover:text-white" href={booking.manageURL} aria-label={`Manage ${booking.title}`} title="Open booking page">
+									<Icon icon={externalLinkIcon} width="18" height="18" />
+								</a>
+							{/if}
+						</div>
 					</article>
 				{:else}
 					<p class="border border-black p-6 text-sm">No upcoming bookings.</p>
@@ -107,7 +116,14 @@
 								<p class="mt-1 text-sm">{booking.attendeeName} · {booking.attendeeEmail}</p>
 								<p class="mt-2 text-xs">{localDate(booking.time)}</p>
 							</div>
-							<p class="text-sm">{relativeTime(booking.time)}</p>
+							<div class="flex items-center gap-3">
+								<p class="text-sm">{booking.canceledAt ? 'Canceled' : relativeTime(booking.time)}</p>
+								{#if booking.manageURL}
+									<a class="grid size-10 place-items-center border border-black hover:bg-black hover:text-white" href={booking.manageURL} aria-label={`Manage ${booking.title}`} title="Open booking page">
+										<Icon icon={externalLinkIcon} width="18" height="18" />
+									</a>
+								{/if}
+							</div>
 						</article>
 					{/each}
 				</div>

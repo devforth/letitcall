@@ -1,8 +1,9 @@
 <script lang="ts">
 	import { page } from '$app/state';
 	import EventTypeEditor from '$lib/components/EventTypeEditor.svelte';
+	import PageTitle from '$lib/components/PageTitle.svelte';
 </script>
 
-<svelte:head><title>Edit event type · Let It Call</title></svelte:head>
+<PageTitle title="Edit event type" />
 
 <EventTypeEditor slug={page.params.slug} />

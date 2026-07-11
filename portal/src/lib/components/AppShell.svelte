@@ -6,6 +6,7 @@
 	import type { SessionUser } from '$lib/types';
 	import Button from '$lib/components/ui/Button.svelte';
 	import ThemeToggle from '$lib/components/ThemeToggle.svelte';
+	import { branding } from '$lib/stores/branding.svelte';
 
 	let {
 		user,
@@ -30,7 +31,7 @@
 <div class="min-h-screen bg-white text-black">
 	<header class="border-b border-black">
 		<div class="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-4 px-4 py-4 sm:px-6 lg:px-8">
-			<a class="text-lg font-bold tracking-tight" href={appPath('/')}>Let It Call</a>
+			<a class="text-lg font-bold tracking-tight" href={appPath('/')}>{branding.name}</a>
 			<div class="flex items-center gap-4">
 				<span class="hidden text-sm sm:inline">{user.email}</span>
 				<ThemeToggle />

@@ -7,6 +7,8 @@
 	import Button from '$lib/components/ui/Button.svelte';
 	import Input from '$lib/components/ui/Input.svelte';
 	import ThemeToggle from '$lib/components/ThemeToggle.svelte';
+	import PageTitle from '$lib/components/PageTitle.svelte';
+	import { branding } from '$lib/stores/branding.svelte';
 
 	let email = $state('');
 	let password = $state('');
@@ -24,7 +26,9 @@
 		}
 
 		try {
-			googleEnabled = (await getPublicConfig()).googleLoginEnabled;
+			const config = await getPublicConfig();
+			googleEnabled = config.googleLoginEnabled;
+			branding.name = config.brandName;
 		} catch (cause) {
 			error = cause instanceof Error ? cause.message : 'Unable to load login settings';
 		}
@@ -146,7 +150,7 @@
 	}
 </style>
 
-<svelte:head><title>Sign in · Let It Call</title></svelte:head>
+<PageTitle title="Sign in" />
 
 <div class="relative min-h-screen overflow-hidden login-bg">
 	<!-- Gradient background - positioned to start from form midpoint -->
@@ -164,11 +168,11 @@
 		<!-- Left side content -->
 		<div class="hidden lg:flex lg:col-span-2 flex-col justify-center px-12 xl:px-20">
 			<h2 class="mb-8 text-3xl xl:text-4xl font-bold leading-tight whitespace-nowrap">
-				<span class="text-primary">LET IT CALL</span>
+				<span class="text-primary">{branding.name.toUpperCase()}</span>
 				<span class="mx-1">-</span>
 				<span>Schedule Better</span>
 			</h2>
-			<p class="text-lg mb-8 max-w-lg">Let It Call makes team scheduling simple and transparent. Share availability once. Get things booked faster.</p>
+			<p class="text-lg mb-8 max-w-lg">{branding.name} makes team scheduling simple and transparent. Share availability once. Get things booked faster.</p>
 			<div class="space-y-4">
 				<div class="flex items-start gap-3">
 					<span class="text-primary text-2xl">✓</span>

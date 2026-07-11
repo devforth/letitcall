@@ -65,7 +65,7 @@ func newConfiguredFixture(t *testing.T, googleEnabled bool, basePath string, con
 		t.Fatal(err)
 	}
 	cfg := testConfig(dataPath)
-	cfg.HTTP.BasePath = basePath
+	cfg.HTTP.BaseURL = "http://example.test" + basePath
 	if googleEnabled {
 		cfg.Login.Google = config.GoogleOAuth{
 			ClientID:     "google-client-id",
@@ -100,8 +100,9 @@ func newConfiguredFixture(t *testing.T, googleEnabled bool, basePath string, con
 
 func testConfig(dataPath string) config.Config {
 	return config.Config{
-		HTTP:    config.HTTP{Port: 80},
-		Storage: config.Storage{LevelDBPath: dataPath},
+		HTTP:     config.HTTP{Port: 80, BaseURL: config.DefaultBaseURL},
+		Branding: config.Branding{Name: config.DefaultBrandName},
+		Storage:  config.Storage{LevelDBPath: dataPath},
 		Login: config.Login{
 			SessionTTL:          time.Hour,
 			PasswordMaxAttempts: 20,
@@ -161,13 +162,27 @@ func TestPublicAndUnknownEndpoints(t *testing.T) {
 		t.Fatalf("unexpected health body: %s", health)
 	}
 	publicConfig := expectStatus(t, f.request(http.MethodGet, "/api/config/public", nil), http.StatusOK)
-	if !strings.Contains(string(publicConfig), `"googleLoginEnabled":false`) {
+	if !strings.Contains(string(publicConfig), `"googleLoginEnabled":false`) || !strings.Contains(string(publicConfig), `"brandName":"Let It Call"`) {
 		t.Fatalf("unexpected public config: %s", publicConfig)
 	}
 	expectStatus(t, f.request(http.MethodGet, "/api/does-not-exist", nil), http.StatusNotFound)
 	portal := expectStatus(t, f.request(http.MethodGet, "/users", nil), http.StatusOK)
 	if !strings.Contains(string(portal), "Let It Call") {
 		t.Fatalf("SPA fallback did not serve the portal: %s", portal)
+	}
+}
+
+func TestPublicConfigAndPortalUseConfiguredBrandName(t *testing.T) {
+	f := newConfiguredFixture(t, false, "", func(cfg *config.Config) {
+		cfg.Branding.Name = "DevForth"
+	})
+	publicConfig := expectStatus(t, f.request(http.MethodGet, "/api/config/public", nil), http.StatusOK)
+	if !strings.Contains(string(publicConfig), `"brandName":"DevForth"`) {
+		t.Fatalf("public config did not include the brand: %s", publicConfig)
+	}
+	portal := expectStatus(t, f.request(http.MethodGet, "/", nil), http.StatusOK)
+	if !strings.Contains(string(portal), "DevForth") || strings.Contains(string(portal), "Let It Call") {
+		t.Fatalf("portal fallback did not use the brand: %s", portal)
 	}
 }
 
@@ -356,8 +371,11 @@ func TestBookingAPIs(t *testing.T) {
 	expectStatus(t, f.request(http.MethodPost, "/api/bookings", offset), http.StatusBadRequest)
 	expectStatus(t, f.request(http.MethodPost, "/api/auth/logout", nil), http.StatusNoContent)
 	booking := map[string]string{
-		"eventSlug": "planning-call", "time": bookingTime, "attendeeName": "Guest Person", "attendeeEmail": "guest@example.com", "notes": "Discuss launch",
+		"eventSlug": "planning-call", "time": bookingTime, "attendeeName": "Guest Person", "attendeeEmail": "guest@example.com", "attendeeTimezone": "UTC", "notes": "Discuss launch",
 	}
+	expectStatus(t, f.request(http.MethodPost, "/api/bookings", map[string]any{
+		"eventSlug": "planning-call", "time": bookingTime, "attendeeName": "Guest Person", "attendeeEmail": "guest@example.com", "attendeeTimezone": "UTC", "guestEmails": []string{"friend@example.com"}, "notes": "Discuss launch",
+	}), http.StatusConflict)
 	created := expectStatus(t, f.request(http.MethodPost, "/api/bookings", booking), http.StatusCreated)
 	var createdResponse struct {
 		Booking struct {
@@ -371,8 +389,11 @@ func TestBookingAPIs(t *testing.T) {
 	if !strings.Contains(string(publicEventType), `"unavailableTimes":["`+bookingTime+`"]`) {
 		t.Fatalf("booked slot was not exposed as unavailable: %s", publicEventType)
 	}
+	if !strings.Contains(string(publicEventType), `"remainingInvitees":{"`+bookingTime+`":0}`) {
+		t.Fatalf("remaining invitee capacity was not exposed: %s", publicEventType)
+	}
 	limitReached := expectStatus(t, f.request(http.MethodPost, "/api/bookings", map[string]string{
-		"eventSlug": "planning-call", "time": bookingTime, "attendeeName": "Second Guest", "attendeeEmail": "second@example.com", "notes": "",
+		"eventSlug": "planning-call", "time": bookingTime, "attendeeName": "Second Guest", "attendeeEmail": "second@example.com", "attendeeTimezone": "UTC", "notes": "",
 	}), http.StatusConflict)
 	if !strings.Contains(string(limitReached), "invitee limit has been reached") {
 		t.Fatalf("unexpected capacity error: %s", limitReached)
@@ -428,23 +449,131 @@ func TestBookingsUseUTCSlotKey(t *testing.T) {
 	}
 }
 
+func TestPublicEventTypeMarksStoredSlotUnavailableWithoutInviteeLimit(t *testing.T) {
+	f := newFixture(t, false)
+	expectStatus(t, f.login(adminEmail, adminPassword), http.StatusOK)
+	eventType := eventTypeBody("Exclusive Call", []string{adminEmail}, 1)
+	eventType["inviteeLimit"] = nil
+	expectStatus(t, f.request(http.MethodPost, "/api/event-types", eventType), http.StatusCreated)
+	expectStatus(t, f.request(http.MethodPost, "/api/auth/logout", nil), http.StatusNoContent)
+
+	candidate := time.Now().UTC().AddDate(0, 0, 2)
+	bookingTime := time.Date(candidate.Year(), candidate.Month(), candidate.Day(), 10, 0, 0, 0, time.UTC).Format(time.RFC3339)
+	expectStatus(t, f.request(http.MethodPost, "/api/bookings", map[string]string{
+		"eventSlug": "exclusive-call", "time": bookingTime, "attendeeName": "Guest", "attendeeEmail": "guest@example.com", "attendeeTimezone": "UTC",
+	}), http.StatusCreated)
+
+	publicEventType := expectStatus(t, f.request(http.MethodGet, "/api/public/event-types/exclusive-call", nil), http.StatusOK)
+	if !strings.Contains(string(publicEventType), `"unavailableTimes":["`+bookingTime+`"]`) {
+		t.Fatalf("stored slot was not exposed as unavailable without an invitee limit: %s", publicEventType)
+	}
+}
+
+func TestBookingManagementAPIsWithSecretAndAuthenticatedActors(t *testing.T) {
+	f := newFixture(t, false)
+	expectStatus(t, f.login(adminEmail, adminPassword), http.StatusOK)
+	expectStatus(t, f.request(http.MethodPost, "/api/event-types", eventTypeBody("Managed Call", []string{adminEmail}, 3)), http.StatusCreated)
+	expectStatus(t, f.request(http.MethodPost, "/api/auth/logout", nil), http.StatusNoContent)
+
+	candidate := time.Now().UTC().AddDate(0, 0, 3)
+	bookingTime := time.Date(candidate.Year(), candidate.Month(), candidate.Day(), 13, 0, 0, 0, time.UTC).Format(time.RFC3339)
+	created := expectStatus(t, f.request(http.MethodPost, "/api/bookings", map[string]string{
+		"eventSlug": "managed-call", "time": bookingTime, "attendeeName": "Public Guest", "attendeeEmail": "guest@example.com", "attendeeTimezone": "Europe/London", "notes": "Initial notes",
+	}), http.StatusCreated)
+	var creation struct {
+		Booking   model.Booking `json:"booking"`
+		ManageURL string        `json:"manageURL"`
+	}
+	if err := json.Unmarshal(created, &creation); err != nil {
+		t.Fatal(err)
+	}
+	manageURL, err := url.Parse(creation.ManageURL)
+	if err != nil {
+		t.Fatal(err)
+	}
+	secretToken := strings.TrimPrefix(manageURL.Path, "/event/")
+	if secretToken == "" || strings.ContainsAny(secretToken, "/+=") {
+		t.Fatalf("booking secret is not URL-safe: %q", secretToken)
+	}
+	if _, err := os.Stat(filepath.Join(f.dataPath, "secret_link_map.leveldb")); err != nil {
+		t.Fatalf("secret link map was not created: %v", err)
+	}
+	managed := expectStatus(t, f.request(http.MethodGet, "/api/events/"+secretToken, nil), http.StatusOK)
+	if !strings.Contains(string(managed), `"authenticated":false`) || !strings.Contains(string(managed), `"guestLimit":2`) {
+		t.Fatalf("public management response was not anonymous: %s", managed)
+	}
+	updated := expectStatus(t, f.request(http.MethodPatch, "/api/events/"+secretToken, map[string]any{
+		"notes": "Updated description", "guestEmails": []string{"one@example.com", "two@example.com"},
+	}), http.StatusOK)
+	if !strings.Contains(string(updated), "Updated description") || !strings.Contains(string(updated), "two@example.com") {
+		t.Fatalf("booking details were not updated: %s", updated)
+	}
+	expectStatus(t, f.request(http.MethodPatch, "/api/events/"+secretToken, map[string]any{
+		"notes": "Too many", "guestEmails": []string{"one@example.com", "two@example.com", "three@example.com"},
+	}), http.StatusConflict)
+	canceled := expectStatus(t, f.request(http.MethodPost, "/api/events/"+secretToken+"/cancel", map[string]string{
+		"reason": "Plans changed",
+	}), http.StatusOK)
+	if !strings.Contains(string(canceled), `"email":"guest@example.com"`) || !strings.Contains(string(canceled), `"cancellationReason":"Plans changed"`) {
+		t.Fatalf("public cancellation actor or reason was not recorded: %s", canceled)
+	}
+	expectStatus(t, f.request(http.MethodPost, "/api/events/"+secretToken+"/cancel", map[string]string{"reason": "Again"}), http.StatusConflict)
+
+	secondTime := time.Date(candidate.Year(), candidate.Month(), candidate.Day(), 14, 0, 0, 0, time.UTC).Format(time.RFC3339)
+	secondCreated := expectStatus(t, f.request(http.MethodPost, "/api/bookings", map[string]string{
+		"eventSlug": "managed-call", "time": secondTime, "attendeeName": "Second Guest", "attendeeEmail": "second@example.com", "attendeeTimezone": "UTC", "notes": "",
+	}), http.StatusCreated)
+	if err := json.Unmarshal(secondCreated, &creation); err != nil {
+		t.Fatal(err)
+	}
+	secondURL, _ := url.Parse(creation.ManageURL)
+	secondSecret := strings.TrimPrefix(secondURL.Path, "/event/")
+	expectStatus(t, f.login(adminEmail, adminPassword), http.StatusOK)
+	authenticated := expectStatus(t, f.request(http.MethodGet, "/api/events/"+secondSecret, nil), http.StatusOK)
+	if !strings.Contains(string(authenticated), `"authenticated":true`) {
+		t.Fatalf("signed-in management response was not authenticated: %s", authenticated)
+	}
+	adminCanceled := expectStatus(t, f.request(http.MethodPost, "/api/events/"+secondSecret+"/cancel", map[string]string{"reason": "Host unavailable"}), http.StatusOK)
+	if !strings.Contains(string(adminCanceled), `"email":"admin@example.com"`) {
+		t.Fatalf("authenticated cancellation actor was not recorded: %s", adminCanceled)
+	}
+}
+
 func TestBookingDeliveryUsesMailgunAndConnectedGoogleCalendar(t *testing.T) {
 	f := newConfiguredFixture(t, true, "", func(cfg *config.Config) {
 		cfg.Mailing.Mailgun = config.Mailgun{
-			APIKey: "mailgun-key", Domain: "mail.example.com", From: "Bookings <bookings@example.com>",
+			APIKey: "mailgun-key", BaseURL: "https://api.eu.mailgun.net", Domain: "mail.example.com", From: "Bookings <bookings@example.com>",
 		}
 	})
 	mockGoogleProvider(t, adminEmail, "", "", nil)
 	expectStatus(t, googleCallback(f), http.StatusOK)
-	calendarRequests, mailgunRequests := mockBookingDelivery(t)
-	expectStatus(t, f.request(http.MethodPost, "/api/event-types", eventTypeBody("Delivery test", []string{adminEmail}, 1)), http.StatusCreated)
+	calendarRequests, calendarUpdates, mailgunRequests := mockBookingDelivery(t)
+	expectStatus(t, f.request(http.MethodPost, "/api/event-types", eventTypeBody("Delivery test", []string{adminEmail}, 3)), http.StatusCreated)
 	candidate := time.Now().UTC().AddDate(0, 0, 2)
 	bookingTime := time.Date(candidate.Year(), candidate.Month(), candidate.Day(), 12, 0, 0, 0, time.UTC).Format(time.RFC3339)
-	expectStatus(t, f.request(http.MethodPost, "/api/bookings", map[string]string{
-		"eventSlug": "delivery-test", "time": bookingTime, "attendeeName": "Guest Person", "attendeeEmail": "guest@example.com", "notes": "",
+	created := expectStatus(t, f.request(http.MethodPost, "/api/bookings", map[string]any{
+		"eventSlug": "delivery-test", "time": bookingTime, "attendeeName": "Guest Person", "attendeeEmail": "guest@example.com", "attendeeTimezone": "UTC", "guestEmails": []string{"friend@example.com"}, "notes": "",
 	}), http.StatusCreated)
-	if *calendarRequests != 1 || *mailgunRequests != 1 {
-		t.Fatalf("unexpected delivery calls: calendar=%d mailgun=%d", *calendarRequests, *mailgunRequests)
+	if *calendarRequests != 1 || *calendarUpdates != 0 || *mailgunRequests != 1 {
+		t.Fatalf("unexpected delivery calls: calendar=%d updates=%d mailgun=%d", *calendarRequests, *calendarUpdates, *mailgunRequests)
+	}
+	var response struct {
+		ManageURL string `json:"manageURL"`
+	}
+	if err := json.Unmarshal(created, &response); err != nil {
+		t.Fatal(err)
+	}
+	manageURL, _ := url.Parse(response.ManageURL)
+	secretToken := strings.TrimPrefix(manageURL.Path, "/event/")
+	expectStatus(t, f.request(http.MethodPatch, "/api/events/"+secretToken, map[string]any{
+		"notes": "Bring the project plan", "guestEmails": []string{"friend@example.com", "second-friend@example.com"},
+	}), http.StatusOK)
+	if *calendarUpdates != 1 {
+		t.Fatalf("guest update did not update Google Calendar: %d", *calendarUpdates)
+	}
+	expectStatus(t, f.request(http.MethodPost, "/api/events/"+secretToken+"/cancel", map[string]string{"reason": "Host unavailable"}), http.StatusOK)
+	if *calendarRequests != 1 || *calendarUpdates != 2 || *mailgunRequests != 2 {
+		t.Fatalf("unexpected cancellation delivery calls: calendar=%d updates=%d mailgun=%d", *calendarRequests, *calendarUpdates, *mailgunRequests)
 	}
 }
 
@@ -529,7 +658,7 @@ func TestGoogleOAuthAPIs(t *testing.T) {
 	if !strings.Contains(query.Get("scope"), "calendar.events") {
 		t.Fatalf("OAuth redirect is missing calendar scope: %s", query.Get("scope"))
 	}
-	if query.Get("redirect_uri") != enabled.server.URL+"/calendar/auth/google/callback" {
+	if query.Get("redirect_uri") != "http://example.test/calendar/auth/google/callback" {
 		t.Fatalf("unexpected OAuth redirect URI: %s", query.Get("redirect_uri"))
 	}
 	expectStatus(t, enabled.request(http.MethodPost, "/api/auth/google/callback", map[string]string{"error": "access_denied"}), http.StatusBadRequest)
@@ -756,16 +885,40 @@ func mockGoogleProvider(t *testing.T, email, fullName, pictureURL string, pictur
 	return &avatarRequests
 }
 
-func mockBookingDelivery(t *testing.T) (*int, *int) {
+func mockBookingDelivery(t *testing.T) (*int, *int, *int) {
 	t.Helper()
 	originalTransport := http.DefaultTransport
 	calendarRequests := 0
+	calendarUpdates := 0
 	mailgunRequests := 0
 	http.DefaultTransport = roundTripFunc(func(request *http.Request) (*http.Response, error) {
-		switch request.URL.String() {
-		case "https://www.googleapis.com/calendar/v3/calendars/primary/events":
+		switch {
+		case request.Method == http.MethodPost && request.URL.Path == "/calendar/v3/calendars/primary/events":
 			calendarRequests++
-		case "https://api.mailgun.net/v3/mail.example.com/messages":
+			body, _ := io.ReadAll(request.Body)
+			if request.URL.Query().Get("sendUpdates") != "all" || !strings.Contains(string(body), "Cancel or update event") || !strings.Contains(string(body), "/event/") || !strings.Contains(string(body), `"email":"guest@example.com"`) || !strings.Contains(string(body), `"email":"friend@example.com"`) {
+				t.Errorf("Google event did not include attendee invitations and management link: url=%s body=%s", request.URL, body)
+			}
+		case request.Method == http.MethodPatch && request.URL.Path == "/calendar/v3/calendars/primary/events/accepted":
+			calendarUpdates++
+			body, _ := io.ReadAll(request.Body)
+			if request.URL.Query().Get("sendUpdates") != "all" || !strings.Contains(string(body), `"email":"friend@example.com"`) {
+				t.Errorf("Google event update did not send attendee updates: url=%s body=%s", request.URL, body)
+			} else if calendarUpdates == 1 && (!strings.Contains(string(body), `"summary":"Delivery test"`) || !strings.Contains(string(body), `"email":"second-friend@example.com"`)) {
+				t.Errorf("Google guest update was not correct: %s", body)
+			} else if calendarUpdates == 2 && (!strings.Contains(string(body), `"summary":"Canceled: Delivery test"`) || !strings.Contains(string(body), "Reason: Host unavailable")) {
+				t.Errorf("Google cancellation event was not updated correctly: %s", body)
+			}
+		case request.URL.String() == "https://api.eu.mailgun.net/v3/mail.example.com/messages":
+			body, _ := io.ReadAll(request.Body)
+			values, _ := url.ParseQuery(string(body))
+			wantSubject := "New Event -"
+			if mailgunRequests == 1 {
+				wantSubject = "Canceled Event -"
+			}
+			if !strings.HasPrefix(values.Get("subject"), wantSubject) || values.Get("html") == "" || values.Get("text") == "" {
+				t.Errorf("Mailgun message is missing rendered parts: %s", body)
+			}
 			mailgunRequests++
 		default:
 			return nil, fmt.Errorf("unexpected delivery request: %s", request.URL)
@@ -779,5 +932,5 @@ func mockBookingDelivery(t *testing.T) (*int, *int) {
 		}, nil
 	})
 	t.Cleanup(func() { http.DefaultTransport = originalTransport })
-	return &calendarRequests, &mailgunRequests
+	return &calendarRequests, &calendarUpdates, &mailgunRequests
 }

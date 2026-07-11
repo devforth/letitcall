@@ -12,6 +12,7 @@ export type ManagedUser = SessionUser & {
 };
 
 export type PublicConfig = {
+	brandName: string;
 	googleLoginEnabled: boolean;
 };
 
@@ -58,6 +59,7 @@ export type PublicEventType = Pick<
 > & {
 	hosts: { email: string; fullName: string; avatarPath?: string }[];
 	unavailableTimes: string[];
+	remainingInvitees: Record<string, number>;
 };
 
 export type Booking = {
@@ -67,8 +69,15 @@ export type Booking = {
 	endTime: string;
 	attendeeName: string;
 	attendeeEmail: string;
+	attendeeTimezone: string;
+	guestEmails: string[];
 	notes?: string;
 	title: string;
 	recipientEmails: string[];
 	createdAt: string;
+	updatedAt: string;
+	manageURL?: string;
+	canceledAt?: string;
+	canceledBy?: { name: string; email: string };
+	cancellationReason?: string;
 };

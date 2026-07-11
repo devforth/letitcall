@@ -1,0 +1,23 @@
+Hi {{.RecipientName}},
+
+An event has been canceled.
+
+Event type:
+{{.EventName}}
+
+Invitee:
+{{.AttendeeName}} · {{.AttendeeEmail}}
+
+Event date and time:
+{{.EventDateTime}}
+
+Canceled by:
+{{.CanceledBy}}
+{{if .Reason}}
+Reason:
+{{.Reason}}
+{{end}}
+View event:
+{{.ManageURL}}
+
+Sent by {{.BrandName}}

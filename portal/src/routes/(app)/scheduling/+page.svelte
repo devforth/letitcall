@@ -5,6 +5,7 @@
 	import { appPath, avatarURL, callApi } from '$lib/api';
 	import EventTypeActionsMenu from '$lib/components/EventTypeActionsMenu.svelte';
 	import ConfirmationDialog from '$lib/components/ui/ConfirmationDialog.svelte';
+	import PageTitle from '$lib/components/PageTitle.svelte';
 	import type { EventType, ManagedUser } from '$lib/types';
 
 	let eventTypes = $state<EventType[]>([]);
@@ -47,7 +48,7 @@
 	}
 </script>
 
-<svelte:head><title>Scheduling · Let It Call</title></svelte:head>
+<PageTitle title="Scheduling" />
 
 <section aria-labelledby="scheduling-title">
 	<div class="flex flex-wrap items-start justify-between gap-4">

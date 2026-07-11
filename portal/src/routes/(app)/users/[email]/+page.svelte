@@ -4,6 +4,7 @@
 	import { onMount } from 'svelte';
 	import { callApi, appPath, avatarURL } from '$lib/api';
 	import AvatarSelector from '$lib/components/AvatarSelector.svelte';
+	import PageTitle from '$lib/components/PageTitle.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
 	import Input from '$lib/components/ui/Input.svelte';
 	import SearchableSelect from '$lib/components/ui/SearchableSelect.svelte';
@@ -65,7 +66,7 @@
 	}
 </script>
 
-<svelte:head><title>Edit user · Let It Call</title></svelte:head>
+<PageTitle title="Edit user" />
 
 <section aria-labelledby="edit-user-title">
 	<div class="mb-6">

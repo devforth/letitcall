@@ -3,6 +3,7 @@ import type { PublicEventType, ScheduleDay } from '$lib/types';
 export type BookingSlot = {
 	time: string;
 	label: string;
+	busy: boolean;
 };
 
 type DateParts = { year: number; month: number; day: number };
@@ -104,10 +105,14 @@ export function generateBookingSlots(
 			if (schedule.breaks.some((pause) => minutes < minuteOfDay(pause.end) && slotEnd > minuteOfDay(pause.start))) continue;
 			const instant = wallTimeToUTC(candidate, minutes, eventType.timezone);
 			const time = instant.toISOString().replace('.000Z', 'Z');
-			if (instant <= now || unavailable.has(time)) continue;
+			if (instant <= now) continue;
 			const viewerDate = timezoneDateKey(instant, timezone);
 			if (!viewerDate.startsWith(month)) continue;
-			(slots[viewerDate] ??= []).push({ time, label: timeFormatter.format(instant) });
+			(slots[viewerDate] ??= []).push({
+				time,
+				label: timeFormatter.format(instant),
+				busy: unavailable.has(time)
+			});
 		}
 	}
 	for (const daySlots of Object.values(slots)) {

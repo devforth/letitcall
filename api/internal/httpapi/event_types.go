@@ -148,24 +148,18 @@ func (s *Server) getPublicEventType(w http.ResponseWriter, r *http.Request) {
 		hosts = append(hosts, host{Email: user.Email, FullName: user.FullName, AvatarPath: user.AvatarPath})
 	}
 	unavailableTimes := make([]string, 0)
-	if eventType.InviteeLimit != nil {
-		bookings, err := s.store.ListBookings()
-		if err != nil {
-			internalError(w, err, "list public event type bookings")
-			return
+	remainingInvitees := make(map[string]int)
+	bookingSlots, err := s.store.ListActiveBookingSlots(eventType.EventSlug)
+	if err != nil {
+		internalError(w, err, "list public event type booking slots")
+		return
+	}
+	for _, slot := range bookingSlots {
+		bookingTime := slot.Start.Format(time.RFC3339)
+		unavailableTimes = append(unavailableTimes, bookingTime)
+		if eventType.InviteeLimit != nil {
+			remainingInvitees[bookingTime] = max(0, *eventType.InviteeLimit-slot.Invitees)
 		}
-		counts := make(map[string]int)
-		for _, booking := range bookings {
-			if booking.EventSlug == eventType.EventSlug {
-				counts[booking.Time.Format(time.RFC3339)]++
-			}
-		}
-		for bookingTime, count := range counts {
-			if count >= *eventType.InviteeLimit {
-				unavailableTimes = append(unavailableTimes, bookingTime)
-			}
-		}
-		sort.Strings(unavailableTimes)
 	}
 	writeJSON(w, http.StatusOK, map[string]any{
 		"eventType": map[string]any{
@@ -178,6 +172,7 @@ func (s *Server) getPublicEventType(w http.ResponseWriter, r *http.Request) {
 			"schedule":          eventType.Schedule,
 			"hosts":             hosts,
 			"unavailableTimes":  unavailableTimes,
+			"remainingInvitees": remainingInvitees,
 		},
 	})
 }
