@@ -9,6 +9,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/letitcall/letitcall/api/internal/security"
 )
 
 const (
@@ -170,6 +172,11 @@ func (c Config) Validate() error {
 	}
 	if (c.FirstUser.Email == "") != (c.FirstUser.Password == "") {
 		return fmt.Errorf("%s and %s must be set together", EnvFirstUserEmail, EnvFirstUserPassword)
+	}
+	if c.FirstUser.Email != "" {
+		if _, err := security.NormalizeEmail(c.FirstUser.Email); err != nil {
+			return fmt.Errorf("%s must be a valid email address", EnvFirstUserEmail)
+		}
 	}
 	if c.Login.SessionTTL <= 0 {
 		return fmt.Errorf("%s must be a positive duration", EnvSessionTTL)

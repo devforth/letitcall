@@ -68,7 +68,7 @@ pnpm install
 pnpm run dev --host 127.0.0.1 --port 41783 --strictPort
 ```
 
-Open `http://127.0.0.1:41783`; default login is `admin` / `admin`. There is no signup: the first user comes from `FIRSTUSER__CREDENTIALS__EMAIL` and `FIRSTUSER__CREDENTIALS__PASSWORD`; add later users in Users. Set the product name and logo in Branding. Manage event types in Scheduling and book at `/book/{event-slug}`.
+Open `http://127.0.0.1:41783`; default login is `admin@example.com` / `admin`. There is no signup: the first user comes from `FIRSTUSER__CREDENTIALS__EMAIL` and `FIRSTUSER__CREDENTIALS__PASSWORD`; add later users in Users. Set the product name and logo in Branding. Manage event types in Scheduling and book at `/book/{event-slug}`.
 
 ### Google OAuth test credentials
 
