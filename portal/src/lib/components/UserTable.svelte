@@ -6,12 +6,14 @@
 	let {
 		users,
 		currentEmail,
+		checkingEmail = '',
 		deletingEmail = '',
 		onedit,
 		ondelete
 	}: {
 		users: ManagedUser[];
 		currentEmail: string;
+		checkingEmail?: string;
 		deletingEmail?: string;
 		onedit: (email: string) => void;
 		ondelete: (email: string) => void;
@@ -53,10 +55,10 @@
 							<Button variant="secondary" onclick={() => onedit(user.email)}>Edit</Button>
 							<Button
 								variant="danger"
-								disabled={user.email === currentEmail || deletingEmail === user.email}
+								disabled={user.email === currentEmail || checkingEmail === user.email || deletingEmail === user.email}
 								onclick={() => ondelete(user.email)}
 							>
-								{deletingEmail === user.email ? 'Deleting…' : 'Delete'}
+								{checkingEmail === user.email ? 'Checking…' : deletingEmail === user.email ? 'Deleting…' : 'Delete'}
 							</Button>
 						</div>
 					</td>

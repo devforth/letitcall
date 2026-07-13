@@ -137,6 +137,8 @@ func (s *Server) Handler() http.Handler {
 	mux.Handle("GET /api/users", s.requireAuth(http.HandlerFunc(s.listUsers)))
 	mux.Handle("POST /api/users", s.requireAuth(http.HandlerFunc(s.createUser)))
 	mux.Handle("PATCH /api/users/{email}", s.requireAuth(http.HandlerFunc(s.updateUser)))
+	mux.Handle("GET /api/users/{email}/deletion-impact", s.requireAuth(http.HandlerFunc(s.getUserDeletionImpact)))
+	mux.Handle("POST /api/users/{email}/reassign-bookings", s.requireAuth(http.HandlerFunc(s.reassignUserBookings)))
 	mux.Handle("DELETE /api/users/{email}", s.requireAuth(http.HandlerFunc(s.deleteUser)))
 	mux.Handle("GET /api/bookings", s.requireAuth(http.HandlerFunc(s.listBookings)))
 	mux.HandleFunc("POST /api/bookings", s.createBooking)

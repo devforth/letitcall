@@ -92,6 +92,23 @@ func UpdateGoogleEvent(ctx context.Context, client *http.Client, eventID string,
 	return nil
 }
 
+func DeleteGoogleEvent(ctx context.Context, client *http.Client, eventID string) error {
+	request, err := http.NewRequestWithContext(ctx, http.MethodDelete, eventURL(eventID), nil)
+	if err != nil {
+		return err
+	}
+	response, err := client.Do(request)
+	if err != nil {
+		return err
+	}
+	defer response.Body.Close()
+	if response.StatusCode < 200 || response.StatusCode >= 300 {
+		body, _ := io.ReadAll(io.LimitReader(response.Body, 4096))
+		return fmt.Errorf("Google Calendar returned %s: %s", response.Status, body)
+	}
+	return nil
+}
+
 type date struct {
 	DateTime string `json:"dateTime"`
 }

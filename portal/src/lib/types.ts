@@ -11,6 +11,18 @@ export type ManagedUser = SessionUser & {
 	updatedAt: string;
 };
 
+export type UserDeletionImpact =
+	| {
+			requiresReassignment: false;
+			futureBookingCount: 0;
+	  }
+	| {
+			requiresReassignment: true;
+			futureBookingCount: number;
+			earliestBookingAt: string;
+			latestBookingAt: string;
+	  };
+
 export type PublicConfig = {
 	brandName: string;
 	logoPath: string;

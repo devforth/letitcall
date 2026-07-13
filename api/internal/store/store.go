@@ -397,6 +397,39 @@ func (s *Store) RemoveEventTypeHost(email string, updatedAt time.Time) error {
 	return s.eventTypes.Write(batch, nil)
 }
 
+func (s *Store) ReassignSoleRequiredHost(oldEmail, newEmail string, updatedAt time.Time) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	oldNormalized := normalizeEmail(oldEmail)
+	newNormalized := normalizeEmail(newEmail)
+	iterator := s.eventTypes.NewIterator(nil, nil)
+	defer iterator.Release()
+	batch := new(leveldb.Batch)
+	for iterator.Next() {
+		var eventType model.EventType
+		if err := json.Unmarshal(iterator.Value(), &eventType); err != nil {
+			return err
+		}
+		if len(eventType.RequiredHostEmails) != 1 || normalizeEmail(eventType.RequiredHostEmails[0]) != oldNormalized {
+			continue
+		}
+		eventType.RequiredHostEmails[0] = newNormalized
+		if optionalIndex := emailIndex(eventType.OptionalHostEmails, newNormalized); optionalIndex >= 0 {
+			eventType.OptionalHostEmails = append(eventType.OptionalHostEmails[:optionalIndex], eventType.OptionalHostEmails[optionalIndex+1:]...)
+		}
+		eventType.UpdatedAt = updatedAt
+		encoded, err := json.Marshal(eventType)
+		if err != nil {
+			return err
+		}
+		batch.Put(append([]byte(nil), iterator.Key()...), encoded)
+	}
+	if err := iterator.Error(); err != nil {
+		return err
+	}
+	return s.eventTypes.Write(batch, nil)
+}
+
 func (s *Store) CreateBooking(slotKey string, booking model.Booking, requiredHostEmails []string, inviteeLimit *int) error {
 	return s.createBooking(slotKey, booking, requiredHostEmails, inviteeLimit, "")
 }
