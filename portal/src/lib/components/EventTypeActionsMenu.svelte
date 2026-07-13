@@ -31,7 +31,7 @@
 	<div class="absolute right-0 z-10 mt-2 w-48 border border-black bg-white p-2 shadow-[4px_4px_0_0_#000]">
 		<button
 			type="button"
-			class="min-h-11 w-full px-3 py-2 text-left text-sm font-medium underline transition hover:bg-black hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
+			class="button-secondary min-h-11 w-full px-3 py-2 text-left underline disabled:cursor-not-allowed disabled:opacity-40"
 			disabled={deleting}
 			onclick={deleteEventType}
 		>

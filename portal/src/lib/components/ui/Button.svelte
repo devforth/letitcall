@@ -20,9 +20,9 @@
 	} = $props();
 
 	const variants = {
-		primary: 'border-black bg-black text-white hover:bg-white hover:text-black',
-		secondary: 'border-black bg-white text-black hover:bg-black hover:text-white',
-		danger: 'border-black bg-white text-black underline hover:bg-black hover:text-white'
+		primary: 'button-primary',
+		secondary: 'button-secondary',
+		danger: 'button-secondary underline'
 	};
 </script>
 
