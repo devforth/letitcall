@@ -17,6 +17,7 @@
 	import Input from '$lib/components/ui/Input.svelte';
 	import MonthCalendar from '$lib/components/ui/MonthCalendar.svelte';
 	import SearchableSelect from '$lib/components/ui/SearchableSelect.svelte';
+	import BrandLogo from '$lib/components/BrandLogo.svelte';
 	import Textarea from '$lib/components/ui/Textarea.svelte';
 
 	let eventType = $state<PublicEventType | null>(null);
@@ -199,7 +200,10 @@
 						{timezone}
 					</p>
 				{/if}
-				<p class="mt-auto hidden pt-12 text-xs lg:block">Powered by {branding.name}</p>
+				<div class="mt-auto flex items-center gap-3 pt-12 text-sm font-semibold">
+					<BrandLogo class="size-10 border border-black object-cover" />
+					<span>{branding.name}</span>
+				</div>
 			</aside>
 
 			<section class="p-6 lg:p-10" aria-labelledby="booking-title">

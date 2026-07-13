@@ -2,6 +2,13 @@ package model
 
 import "time"
 
+const DefaultBrandName = "Let It Call"
+
+type Branding struct {
+	Name     string `json:"name"`
+	LogoPath string `json:"logoPath,omitempty"`
+}
+
 type User struct {
 	Email                string    `json:"email"`
 	FullName             string    `json:"fullName"`

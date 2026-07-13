@@ -2,7 +2,7 @@
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { callApi, appPath, getSession } from '$lib/api';
-	import AvatarSelector from '$lib/components/AvatarSelector.svelte';
+	import ImageSelector from '$lib/components/ImageSelector.svelte';
 	import UserTable from '$lib/components/UserTable.svelte';
 	import PageTitle from '$lib/components/PageTitle.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
@@ -23,7 +23,7 @@
 	let saving = $state(false);
 	let deletingEmail = $state('');
 	let error = $state('');
-	let avatarSelector = $state<AvatarSelector | null>(null);
+	let avatarSelector = $state<ImageSelector | null>(null);
 
 	onMount(async () => {
 		const localTimezones = getLocalTimezones();
@@ -49,7 +49,7 @@
 		saving = true;
 		error = '';
 		try {
-			const avatar = (await avatarSelector?.exportAvatar()) ?? '';
+			const avatar = (await avatarSelector?.exportImage()) ?? '';
 			const response = await callApi<{ user: ManagedUser }>('/api/users', {
 				method: 'POST',
 				body: JSON.stringify({ email, fullName, password, timezone, avatar })
@@ -121,7 +121,7 @@
 				required
 			/>
 			<div class="lg:col-span-3">
-				<AvatarSelector id="new-avatar" bind:this={avatarSelector} />
+				<ImageSelector id="new-avatar" legend="Avatar" bind:this={avatarSelector} />
 			</div>
 			<div class="flex items-end lg:col-span-3">
 				<Button type="submit" disabled={saving}>{saving ? 'Creating…' : 'Create user'}</Button>

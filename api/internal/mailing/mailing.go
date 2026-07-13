@@ -6,6 +6,7 @@ import (
 )
 
 type Booking struct {
+	BrandName        string
 	EventName        string
 	AttendeeName     string
 	AttendeeEmail    string

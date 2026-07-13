@@ -32,6 +32,7 @@ type Store struct {
 	sessions    *leveldb.DB
 	oauthStates *leveldb.DB
 	googleBusy  *leveldb.DB
+	branding    *leveldb.DB
 	mu          sync.Mutex
 }
 
@@ -40,7 +41,7 @@ func Open(root string) (*Store, error) {
 		return nil, fmt.Errorf("create LevelDB root: %w", err)
 	}
 
-	opened := make([]*leveldb.DB, 0, 7)
+	opened := make([]*leveldb.DB, 0, 8)
 	openTable := func(name string) (*leveldb.DB, error) {
 		db, err := leveldb.OpenFile(filepath.Join(root, name+".leveldb"), nil)
 		if err != nil {
@@ -84,18 +85,47 @@ func Open(root string) (*Store, error) {
 		closeAll(opened)
 		return nil, err
 	}
+	branding, err := openTable("branding")
+	if err != nil {
+		closeAll(opened)
+		return nil, err
+	}
+	brandingKey := []byte("current")
+	exists, err := branding.Has(brandingKey, nil)
+	if err != nil {
+		closeAll(opened)
+		return nil, fmt.Errorf("inspect branding table: %w", err)
+	}
+	if !exists {
+		if err := putJSON(branding, brandingKey, model.Branding{Name: model.DefaultBrandName}); err != nil {
+			closeAll(opened)
+			return nil, fmt.Errorf("seed branding table: %w", err)
+		}
+	}
 
-	return &Store{users: users, eventTypes: eventTypes, bookings: bookings, secretLinks: secretLinks, sessions: sessions, oauthStates: oauthStates, googleBusy: googleBusy}, nil
+	return &Store{users: users, eventTypes: eventTypes, bookings: bookings, secretLinks: secretLinks, sessions: sessions, oauthStates: oauthStates, googleBusy: googleBusy, branding: branding}, nil
 }
 
 func (s *Store) Close() error {
-	return errors.Join(s.users.Close(), s.eventTypes.Close(), s.bookings.Close(), s.secretLinks.Close(), s.sessions.Close(), s.oauthStates.Close(), s.googleBusy.Close())
+	return errors.Join(s.users.Close(), s.eventTypes.Close(), s.bookings.Close(), s.secretLinks.Close(), s.sessions.Close(), s.oauthStates.Close(), s.googleBusy.Close(), s.branding.Close())
 }
 
 func closeAll(databases []*leveldb.DB) {
 	for _, database := range databases {
 		_ = database.Close()
 	}
+}
+
+func (s *Store) GetBranding() (model.Branding, error) {
+	var branding model.Branding
+	if err := getJSON(s.branding, []byte("current"), &branding); err != nil {
+		return model.Branding{}, err
+	}
+	return branding, nil
+}
+
+func (s *Store) PutBranding(branding model.Branding) error {
+	return putJSON(s.branding, []byte("current"), branding)
 }
 
 func (s *Store) UserCount() (int, error) {

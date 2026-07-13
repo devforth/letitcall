@@ -10,6 +10,10 @@ export function avatarURL(filename: string): string {
 	return appPath(`/content/avatars/${filename}`);
 }
 
+export function logoURL(filename: string): string {
+	return appPath(`/content/logos/${filename}`);
+}
+
 export async function callApi<T>(path: string, init?: RequestInit, reportError = true): Promise<T> {
 	const headers = new Headers(init?.headers);
 	if (init?.body && !headers.has('content-type')) {

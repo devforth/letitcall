@@ -1,1 +1,1 @@
-export const branding = $state({ name: 'Let It Call' });
+export const branding = $state({ name: 'Let It Call', logoPath: '' });

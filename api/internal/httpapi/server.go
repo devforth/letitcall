@@ -41,6 +41,7 @@ type Server struct {
 	cfg         config.Config
 	store       *store.Store
 	avatars     *content.Avatars
+	logos       *content.Logos
 	oauth       *oauth2.Config
 	tokenCipher *security.TokenCipher
 	limiter     *security.LoginLimiter
@@ -61,6 +62,10 @@ func New(cfg config.Config, database *store.Store) (*Server, error) {
 	if err != nil {
 		return nil, err
 	}
+	logos, err := content.NewLogos(cfg.Storage.LevelDBPath)
+	if err != nil {
+		return nil, err
+	}
 	renderer, err := mailing.NewRenderer()
 	if err != nil {
 		return nil, err
@@ -69,7 +74,8 @@ func New(cfg config.Config, database *store.Store) (*Server, error) {
 		cfg:       cfg,
 		store:     database,
 		avatars:   avatars,
-		mailer:    mailing.New(cfg.Mailing.Mailgun, renderer, cfg.Branding.Name),
+		logos:     logos,
+		mailer:    mailing.New(cfg.Mailing.Mailgun, renderer),
 		limiter:   security.NewLoginLimiter(cfg.Login.PasswordMaxAttempts, cfg.Login.PasswordLockout),
 		dummyHash: dummyHash,
 		now:       time.Now,
@@ -107,6 +113,8 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("POST "+googleAPICallbackPath, s.googleCallback)
 	mux.Handle("GET /api/auth/session", s.requireAuth(http.HandlerFunc(s.session)))
 	mux.Handle("POST /api/auth/logout", s.requireAuth(http.HandlerFunc(s.logout)))
+	mux.Handle("GET /api/branding", s.requireAuth(http.HandlerFunc(s.getBranding)))
+	mux.Handle("PUT /api/branding", s.requireAuth(http.HandlerFunc(s.updateBranding)))
 	mux.Handle("GET /api/users", s.requireAuth(http.HandlerFunc(s.listUsers)))
 	mux.Handle("POST /api/users", s.requireAuth(http.HandlerFunc(s.createUser)))
 	mux.Handle("PATCH /api/users/{email}", s.requireAuth(http.HandlerFunc(s.updateUser)))
@@ -124,6 +132,7 @@ func (s *Server) Handler() http.Handler {
 	mux.Handle("DELETE /api/event-types/{slug}", s.requireAuth(http.HandlerFunc(s.deleteEventType)))
 	mux.HandleFunc("GET /api/public/event-types/{slug}", s.getPublicEventType)
 	mux.HandleFunc("GET /content/avatars/{filename}", s.serveAvatar)
+	mux.HandleFunc("GET /content/logos/{filename}", s.serveLogo)
 	mux.HandleFunc("/content/", http.NotFound)
 	mux.HandleFunc("/", s.servePortal)
 	handler := s.middleware(mux)
@@ -241,7 +250,12 @@ func (s *Server) servePortal(w http.ResponseWriter, r *http.Request) {
 	}
 	contents = bytes.ReplaceAll(contents, []byte(portalBasePlaceholder), []byte(s.cfg.HTTP.BasePath()))
 	if assetPath == "index.html" {
-		contents = bytes.ReplaceAll(contents, []byte(config.DefaultBrandName), []byte(html.EscapeString(s.cfg.Branding.Name)))
+		branding, err := s.store.GetBranding()
+		if err != nil {
+			internalError(w, err, "load branding")
+			return
+		}
+		contents = bytes.ReplaceAll(contents, []byte(model.DefaultBrandName), []byte(html.EscapeString(branding.Name)))
 	}
 	if contentType := mime.TypeByExtension(path.Ext(assetPath)); contentType != "" {
 		w.Header().Set("Content-Type", contentType)
@@ -254,8 +268,14 @@ func (s *Server) health(w http.ResponseWriter, _ *http.Request) {
 }
 
 func (s *Server) publicConfig(w http.ResponseWriter, _ *http.Request) {
+	branding, err := s.store.GetBranding()
+	if err != nil {
+		internalError(w, err, "load branding")
+		return
+	}
 	writeJSON(w, http.StatusOK, map[string]any{
-		"brandName":          s.cfg.Branding.Name,
+		"brandName":          branding.Name,
+		"logoPath":           branding.LogoPath,
 		"googleLoginEnabled": s.cfg.Login.Google.Enabled(),
 	})
 }

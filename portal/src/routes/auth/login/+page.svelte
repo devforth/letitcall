@@ -8,6 +8,7 @@
 	import Input from '$lib/components/ui/Input.svelte';
 	import ThemeToggle from '$lib/components/ThemeToggle.svelte';
 	import PageTitle from '$lib/components/PageTitle.svelte';
+	import BrandLogo from '$lib/components/BrandLogo.svelte';
 	import { branding } from '$lib/stores/branding.svelte';
 
 	let email = $state('');
@@ -29,6 +30,7 @@
 			const config = await getPublicConfig();
 			googleEnabled = config.googleLoginEnabled;
 			branding.name = config.brandName;
+			branding.logoPath = config.logoPath;
 		} catch (cause) {
 			error = cause instanceof Error ? cause.message : 'Unable to load login settings';
 		}
@@ -206,6 +208,7 @@
 		<section class="w-full max-w-md mx-auto lg:mx-0 lg:col-span-2 px-4 lg:pl-8 xl:pl-12" aria-labelledby="login-title">
 			<div class="p-8 sm:p-10 rounded-2xl border-2 border-border" style="background: rgb(var(--color-foreground)); box-shadow: var(--shadow);">
 				<div class="mb-8">
+					<BrandLogo class="mb-6 size-20 border border-black object-cover" />
 					<h1 id="login-title" class="text-secondary text-3xl font-normal tracking-tight">Welcome Back</h1>
 					<p class="mt-2 text-sm">Sign in to manage your team's schedule</p>
 				</div>

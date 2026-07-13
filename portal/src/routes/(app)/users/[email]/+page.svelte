@@ -3,7 +3,7 @@
 	import { page } from '$app/state';
 	import { onMount } from 'svelte';
 	import { callApi, appPath, avatarURL } from '$lib/api';
-	import AvatarSelector from '$lib/components/AvatarSelector.svelte';
+	import ImageSelector from '$lib/components/ImageSelector.svelte';
 	import PageTitle from '$lib/components/PageTitle.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
 	import Input from '$lib/components/ui/Input.svelte';
@@ -17,7 +17,7 @@
 	let timezone = $state('UTC');
 	let timezones = $state<string[]>(['UTC']);
 	let avatarPath = $state('');
-	let avatarSelector = $state<AvatarSelector | null>(null);
+	let avatarSelector = $state<ImageSelector | null>(null);
 	let loading = $state(true);
 	let saving = $state(false);
 	let error = $state('');
@@ -51,7 +51,7 @@
 				timezone
 			};
 			if (password) update.password = password;
-			const avatar = (await avatarSelector?.exportAvatar()) ?? '';
+			const avatar = (await avatarSelector?.exportImage()) ?? '';
 			if (avatar) update.avatar = avatar;
 			await callApi(`/api/users/${encodeURIComponent(email)}`, {
 				method: 'PATCH',
@@ -106,7 +106,7 @@
 				</div>
 			{/if}
 			<div class="lg:col-span-2">
-				<AvatarSelector id="edit-avatar" bind:this={avatarSelector} />
+				<ImageSelector id="edit-avatar" legend="Avatar" bind:this={avatarSelector} />
 			</div>
 			<div class="flex flex-wrap gap-2 lg:col-span-2">
 				<Button type="submit" disabled={saving}>{saving ? 'Saving…' : 'Save changes'}</Button>

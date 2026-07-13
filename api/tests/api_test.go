@@ -102,9 +102,8 @@ func newConfiguredFixture(t *testing.T, googleEnabled bool, basePath string, con
 
 func testConfig(dataPath string) config.Config {
 	return config.Config{
-		HTTP:     config.HTTP{Port: 80, BaseURL: config.DefaultBaseURL},
-		Branding: config.Branding{Name: config.DefaultBrandName},
-		Storage:  config.Storage{LevelDBPath: dataPath},
+		HTTP:    config.HTTP{Port: 80, BaseURL: config.DefaultBaseURL},
+		Storage: config.Storage{LevelDBPath: dataPath},
 		Login: config.Login{
 			SessionTTL:          time.Hour,
 			PasswordMaxAttempts: 20,
@@ -174,10 +173,11 @@ func TestPublicAndUnknownEndpoints(t *testing.T) {
 	}
 }
 
-func TestPublicConfigAndPortalUseConfiguredBrandName(t *testing.T) {
-	f := newConfiguredFixture(t, false, "", func(cfg *config.Config) {
-		cfg.Branding.Name = "DevForth"
-	})
+func TestPublicConfigAndPortalUseStoredBrandName(t *testing.T) {
+	f := newFixture(t, false)
+	if err := f.store.PutBranding(model.Branding{Name: "DevForth"}); err != nil {
+		t.Fatal(err)
+	}
 	publicConfig := expectStatus(t, f.request(http.MethodGet, "/api/config/public", nil), http.StatusOK)
 	if !strings.Contains(string(publicConfig), `"brandName":"DevForth"`) {
 		t.Fatalf("public config did not include the brand: %s", publicConfig)
@@ -185,6 +185,66 @@ func TestPublicConfigAndPortalUseConfiguredBrandName(t *testing.T) {
 	portal := expectStatus(t, f.request(http.MethodGet, "/", nil), http.StatusOK)
 	if !strings.Contains(string(portal), "DevForth") || strings.Contains(string(portal), "Let It Call") {
 		t.Fatalf("portal fallback did not use the brand: %s", portal)
+	}
+}
+
+func TestBrandingAPIsStoreAndServeLogo(t *testing.T) {
+	f := newFixture(t, false)
+	expectStatus(t, f.request(http.MethodGet, "/api/branding", nil), http.StatusUnauthorized)
+	expectStatus(t, f.login(adminEmail, adminPassword), http.StatusOK)
+
+	initial := expectStatus(t, f.request(http.MethodGet, "/api/branding", nil), http.StatusOK)
+	if !strings.Contains(string(initial), `"name":"Let It Call"`) {
+		t.Fatalf("unexpected initial branding: %s", initial)
+	}
+	updated := expectStatus(t, f.request(http.MethodPut, "/api/branding", map[string]string{
+		"name": "DevForth", "logo": jpegDataURL(t, 512, 512),
+	}), http.StatusOK)
+	logoFilename := logoFilenameFromResponse(t, updated)
+	branding, err := f.store.GetBranding()
+	if err != nil || branding.Name != "DevForth" || branding.LogoPath != logoFilename {
+		t.Fatalf("branding was not stored: branding=%#v err=%v", branding, err)
+	}
+	if _, err := os.Stat(filepath.Join(f.dataPath, "branding.leveldb")); err != nil {
+		t.Fatalf("branding LevelDB was not created: %v", err)
+	}
+	stored, err := os.ReadFile(filepath.Join(f.dataPath, "content", "logos", logoFilename))
+	if err != nil || !bytes.Equal(stored, jpegBytes(t, 512, 512)) {
+		t.Fatalf("logo JPEG was not stored: %v", err)
+	}
+	served := f.request(http.MethodGet, "/content/logos/"+logoFilename, nil)
+	servedBody := expectStatus(t, served, http.StatusOK)
+	if served.Header.Get("Content-Type") != "image/jpeg" || !bytes.Equal(servedBody, stored) {
+		t.Fatal("stored logo was not served as a JPEG")
+	}
+	publicConfig := expectStatus(t, f.request(http.MethodGet, "/api/config/public", nil), http.StatusOK)
+	if !strings.Contains(string(publicConfig), `"brandName":"DevForth"`) || !strings.Contains(string(publicConfig), `"logoPath":"`+logoFilename+`"`) {
+		t.Fatalf("public config did not include stored branding: %s", publicConfig)
+	}
+
+	reuploaded := expectStatus(t, f.request(http.MethodPut, "/api/branding", map[string]string{
+		"name": "DevForth", "logo": jpegDataURL(t, 512, 512),
+	}), http.StatusOK)
+	secondLogoFilename := logoFilenameFromResponse(t, reuploaded)
+	if secondLogoFilename == logoFilename {
+		t.Fatal("re-uploaded logo reused the previous filename")
+	}
+	if _, err := os.Stat(filepath.Join(f.dataPath, "content", "logos", logoFilename)); !os.IsNotExist(err) {
+		t.Fatalf("previous logo was not removed: %v", err)
+	}
+	expectStatus(t, f.request(http.MethodGet, "/content/logos/not-a-logo.txt", nil), http.StatusNotFound)
+}
+
+func TestBrandingAPIValidatesNameAndLogo(t *testing.T) {
+	f := newFixture(t, false)
+	expectStatus(t, f.login(adminEmail, adminPassword), http.StatusOK)
+	expectStatus(t, f.request(http.MethodPut, "/api/branding", map[string]string{"name": " "}), http.StatusBadRequest)
+	expectStatus(t, f.request(http.MethodPut, "/api/branding", map[string]string{
+		"name": "DevForth", "logo": jpegDataURL(t, 64, 64),
+	}), http.StatusBadRequest)
+	branding, err := f.store.GetBranding()
+	if err != nil || branding.Name != model.DefaultBrandName || branding.LogoPath != "" {
+		t.Fatalf("invalid branding update was stored: branding=%#v err=%v", branding, err)
 	}
 }
 
@@ -996,6 +1056,17 @@ func avatarFilenameFromResponse(t *testing.T, body []byte, emailSlug string) str
 		t.Fatal(err)
 	}
 	return requireAvatarFilename(t, response.User.AvatarPath, emailSlug)
+}
+
+func logoFilenameFromResponse(t *testing.T, body []byte) string {
+	t.Helper()
+	var response struct {
+		Branding model.Branding `json:"branding"`
+	}
+	if err := json.Unmarshal(body, &response); err != nil {
+		t.Fatal(err)
+	}
+	return requireAvatarFilename(t, response.Branding.LogoPath, "logo")
 }
 
 func requireAvatarFilename(t *testing.T, filename, emailSlug string) string {

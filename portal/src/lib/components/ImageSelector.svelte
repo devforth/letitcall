@@ -3,9 +3,9 @@
 	import Cropper from 'cropperjs';
 	import Button from '$lib/components/ui/Button.svelte';
 
-	let { id = 'avatar' }: { id?: string } = $props();
+	let { id, legend }: { id: string; legend: string } = $props();
 
-	const avatarTemplate = `
+	const imageTemplate = `
 		<cropper-canvas background scale-step="0.1">
 			<cropper-image initial-center-size="cover" scalable translatable></cropper-image>
 			<cropper-handle action="move" plain></cropper-handle>
@@ -23,7 +23,7 @@
 	let source = $state('');
 	let filename = $state('');
 
-	async function selectAvatar(event: Event) {
+	async function selectImage(event: Event) {
 		const file = (event.currentTarget as HTMLInputElement).files?.[0];
 		if (!file) return;
 		destroyCropper();
@@ -31,7 +31,7 @@
 		filename = file.name;
 		await tick();
 		if (!container || !image) return;
-		cropper = new Cropper(image, { container, template: avatarTemplate });
+		cropper = new Cropper(image, { container, template: imageTemplate });
 		await cropper.getCropperImage()?.$ready();
 	}
 
@@ -50,7 +50,7 @@
 		if (source) URL.revokeObjectURL(source);
 	}
 
-	export async function exportAvatar(): Promise<string> {
+	export async function exportImage(): Promise<string> {
 		const selection = cropper?.getCropperSelection();
 		if (!selection) return '';
 		const canvas = await selection.$toCanvas({
@@ -68,14 +68,14 @@
 </script>
 
 <fieldset class="grid gap-3 border border-black p-4">
-	<legend class="px-2 text-sm font-medium">Avatar</legend>
+	<legend class="px-2 text-sm font-medium">{legend}</legend>
 	<label class="grid gap-2 text-sm" for={id}>
 		<span class="font-medium">Choose image</span>
 		<input
 			{id}
 			type="file"
 			accept="image/jpeg,image/png,image/webp"
-			onchange={selectAvatar}
+			onchange={selectImage}
 			class="min-h-11 w-full border border-black bg-white px-3 py-2 text-black file:mr-3 file:border file:border-black file:bg-white file:px-3 file:py-1 file:text-black"
 		/>
 	</label>

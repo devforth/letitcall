@@ -6,6 +6,7 @@
 	import type { SessionUser } from '$lib/types';
 	import Button from '$lib/components/ui/Button.svelte';
 	import ThemeToggle from '$lib/components/ThemeToggle.svelte';
+	import BrandLogo from '$lib/components/BrandLogo.svelte';
 	import { branding } from '$lib/stores/branding.svelte';
 
 	let {
@@ -31,7 +32,10 @@
 <div class="min-h-screen bg-white text-black">
 	<header class="border-b border-black">
 		<div class="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-4 px-4 py-4 sm:px-6 lg:px-8">
-			<a class="text-lg font-bold tracking-tight" href={appPath('/')}>{branding.name}</a>
+			<a class="flex items-center gap-3 text-lg font-bold tracking-tight" href={appPath('/')}>
+				<BrandLogo class="size-10 border border-black object-cover" />
+				<span>{branding.name}</span>
+			</a>
 			<div class="flex items-center gap-4">
 				<span class="hidden text-sm sm:inline">{user.email}</span>
 				<ThemeToggle />
@@ -47,20 +51,26 @@
 			<ul class="flex gap-2 md:grid">
 				<li>
 					<a
-						class={`block border border-black px-4 py-3 text-sm font-medium ${page.url.pathname.startsWith(appPath('/scheduling')) ? 'bg-black text-white' : 'bg-white text-black'}`}
-						href={appPath('/scheduling')}>Scheduling</a
-					>
-				</li>
-				<li>
-					<a
 						class={`block border border-black px-4 py-3 text-sm font-medium ${page.url.pathname === appPath('/') ? 'bg-black text-white' : 'bg-white text-black'}`}
 						href={appPath('/')}>Bookings</a
 					>
 				</li>
 				<li>
 					<a
+						class={`block border border-black px-4 py-3 text-sm font-medium ${page.url.pathname.startsWith(appPath('/scheduling')) ? 'bg-black text-white' : 'bg-white text-black'}`}
+						href={appPath('/scheduling')}>Scheduling</a
+					>
+				</li>
+				<li>
+					<a
 						class={`block border border-black px-4 py-3 text-sm font-medium ${page.url.pathname.startsWith(appPath('/users')) ? 'bg-black text-white' : 'bg-white text-black'}`}
 						href={appPath('/users')}>Users</a
+					>
+				</li>
+				<li>
+					<a
+						class={`block border border-black px-4 py-3 text-sm font-medium ${page.url.pathname.startsWith(appPath('/branding')) ? 'bg-black text-white' : 'bg-white text-black'}`}
+						href={appPath('/branding')}>Branding</a
 					>
 				</li>
 			</ul>

@@ -15,7 +15,7 @@ docker run --rm -p 8080:80 \
   letitcall
 ```
 
-The server listens on `HTTP__PORT` (default `80`). LevelDB data is stored at `STORAGE__LEVELDB__PATH` (`/data` in Docker). Each logical table has its own LevelDB database, and user avatars are stored under its `content/avatars` subdirectory.
+The server listens on `HTTP__PORT` (default `80`). LevelDB data is stored at `STORAGE__LEVELDB__PATH` (`/data` in Docker). Each logical table has its own LevelDB database. User avatars and brand logos are stored under `content/avatars` and `content/logos`.
 
 ## Configuration
 
@@ -25,7 +25,6 @@ All backend settings use structured uppercase environment variables:
 | --- | --- | --- |
 | `HTTP__PORT` | Sets the HTTP server port. | `80` |
 | `HTTP__BASE__URL` | Sets the full public application URL, including any path prefix, for example `https://calls.example.com/letitcall`. | `http://127.0.0.1:41783` |
-| `BRANDING__DISPLAY__NAME` | Sets the product name shown in the portal and emails. | `Let It Call` |
 | `STORAGE__LEVELDB__PATH` | Sets the directory containing the LevelDB databases. | `./data` (`/data` in Docker) |
 | `FIRSTUSER__CREDENTIALS__EMAIL` | Sets the email of the user created when the users table is empty. Must be set together with the first-user password. | Not set |
 | `FIRSTUSER__CREDENTIALS__PASSWORD` | Sets the password of the user created when the users table is empty. Must be set together with the first-user email. | Not set |
@@ -68,7 +67,7 @@ pnpm install
 pnpm run dev --host 127.0.0.1 --port 41783 --strictPort
 ```
 
-Open `http://127.0.0.1:41783`; default login is `admin` / `admin`. There is no signup: the first user comes from `FIRSTUSER__CREDENTIALS__EMAIL` and `FIRSTUSER__CREDENTIALS__PASSWORD`; add later users in Users. Event types use immutable slugs, recipients, timezone-based weekly availability, and UTC bookings; manage them in Scheduling, book at `/book/{event-slug}`, and fetch public data from `/api/public/event-types/{event-slug}`.
+Open `http://127.0.0.1:41783`; default login is `admin` / `admin`. There is no signup: the first user comes from `FIRSTUSER__CREDENTIALS__EMAIL` and `FIRSTUSER__CREDENTIALS__PASSWORD`; add later users in Users. Set the product name and logo in Branding. Manage event types in Scheduling and book at `/book/{event-slug}`.
 
 ### Google OAuth test credentials
 

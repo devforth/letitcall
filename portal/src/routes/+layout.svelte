@@ -20,6 +20,7 @@
 		});
 		void getPublicConfig(false).then((config) => {
 			branding.name = config.brandName;
+			branding.logoPath = config.logoPath;
 		}).catch(() => {});
 
 		return unsubscribe;

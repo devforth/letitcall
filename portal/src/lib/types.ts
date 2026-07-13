@@ -13,7 +13,13 @@ export type ManagedUser = SessionUser & {
 
 export type PublicConfig = {
 	brandName: string;
+	logoPath: string;
 	googleLoginEnabled: boolean;
+};
+
+export type Branding = {
+	name: string;
+	logoPath?: string;
 };
 
 export type ApiError = {
