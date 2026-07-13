@@ -2,6 +2,7 @@ package tests
 
 import (
 	"bytes"
+	"context"
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
@@ -35,6 +36,7 @@ const (
 
 type fixture struct {
 	t        *testing.T
+	api      *httpapi.Server
 	server   *httptest.Server
 	client   *http.Client
 	store    *store.Store
@@ -88,7 +90,7 @@ func newConfiguredFixture(t *testing.T, googleEnabled bool, basePath string, con
 	client := testServer.Client()
 	client.Jar = jar
 	client.CheckRedirect = func(_ *http.Request, _ []*http.Request) error { return http.ErrUseLastResponse }
-	result := &fixture{t: t, server: testServer, client: client, store: database, basePath: basePath, dataPath: dataPath}
+	result := &fixture{t: t, api: handler, server: testServer, client: client, store: database, basePath: basePath, dataPath: dataPath}
 	t.Cleanup(func() {
 		testServer.Close()
 		if err := database.Close(); err != nil {
@@ -100,9 +102,8 @@ func newConfiguredFixture(t *testing.T, googleEnabled bool, basePath string, con
 
 func testConfig(dataPath string) config.Config {
 	return config.Config{
-		HTTP:     config.HTTP{Port: 80, BaseURL: config.DefaultBaseURL},
-		Branding: config.Branding{Name: config.DefaultBrandName},
-		Storage:  config.Storage{LevelDBPath: dataPath},
+		HTTP:    config.HTTP{Port: 80, BaseURL: config.DefaultBaseURL},
+		Storage: config.Storage{LevelDBPath: dataPath},
 		Login: config.Login{
 			SessionTTL:          time.Hour,
 			PasswordMaxAttempts: 20,
@@ -172,10 +173,11 @@ func TestPublicAndUnknownEndpoints(t *testing.T) {
 	}
 }
 
-func TestPublicConfigAndPortalUseConfiguredBrandName(t *testing.T) {
-	f := newConfiguredFixture(t, false, "", func(cfg *config.Config) {
-		cfg.Branding.Name = "DevForth"
-	})
+func TestPublicConfigAndPortalUseStoredBrandName(t *testing.T) {
+	f := newFixture(t, false)
+	if err := f.store.PutBranding(model.Branding{Name: "DevForth"}); err != nil {
+		t.Fatal(err)
+	}
 	publicConfig := expectStatus(t, f.request(http.MethodGet, "/api/config/public", nil), http.StatusOK)
 	if !strings.Contains(string(publicConfig), `"brandName":"DevForth"`) {
 		t.Fatalf("public config did not include the brand: %s", publicConfig)
@@ -183,6 +185,66 @@ func TestPublicConfigAndPortalUseConfiguredBrandName(t *testing.T) {
 	portal := expectStatus(t, f.request(http.MethodGet, "/", nil), http.StatusOK)
 	if !strings.Contains(string(portal), "DevForth") || strings.Contains(string(portal), "Let It Call") {
 		t.Fatalf("portal fallback did not use the brand: %s", portal)
+	}
+}
+
+func TestBrandingAPIsStoreAndServeLogo(t *testing.T) {
+	f := newFixture(t, false)
+	expectStatus(t, f.request(http.MethodGet, "/api/branding", nil), http.StatusUnauthorized)
+	expectStatus(t, f.login(adminEmail, adminPassword), http.StatusOK)
+
+	initial := expectStatus(t, f.request(http.MethodGet, "/api/branding", nil), http.StatusOK)
+	if !strings.Contains(string(initial), `"name":"Let It Call"`) {
+		t.Fatalf("unexpected initial branding: %s", initial)
+	}
+	updated := expectStatus(t, f.request(http.MethodPut, "/api/branding", map[string]string{
+		"name": "DevForth", "logo": jpegDataURL(t, 512, 512),
+	}), http.StatusOK)
+	logoFilename := logoFilenameFromResponse(t, updated)
+	branding, err := f.store.GetBranding()
+	if err != nil || branding.Name != "DevForth" || branding.LogoPath != logoFilename {
+		t.Fatalf("branding was not stored: branding=%#v err=%v", branding, err)
+	}
+	if _, err := os.Stat(filepath.Join(f.dataPath, "branding.leveldb")); err != nil {
+		t.Fatalf("branding LevelDB was not created: %v", err)
+	}
+	stored, err := os.ReadFile(filepath.Join(f.dataPath, "content", "logos", logoFilename))
+	if err != nil || !bytes.Equal(stored, jpegBytes(t, 512, 512)) {
+		t.Fatalf("logo JPEG was not stored: %v", err)
+	}
+	served := f.request(http.MethodGet, "/content/logos/"+logoFilename, nil)
+	servedBody := expectStatus(t, served, http.StatusOK)
+	if served.Header.Get("Content-Type") != "image/jpeg" || !bytes.Equal(servedBody, stored) {
+		t.Fatal("stored logo was not served as a JPEG")
+	}
+	publicConfig := expectStatus(t, f.request(http.MethodGet, "/api/config/public", nil), http.StatusOK)
+	if !strings.Contains(string(publicConfig), `"brandName":"DevForth"`) || !strings.Contains(string(publicConfig), `"logoPath":"`+logoFilename+`"`) {
+		t.Fatalf("public config did not include stored branding: %s", publicConfig)
+	}
+
+	reuploaded := expectStatus(t, f.request(http.MethodPut, "/api/branding", map[string]string{
+		"name": "DevForth", "logo": jpegDataURL(t, 512, 512),
+	}), http.StatusOK)
+	secondLogoFilename := logoFilenameFromResponse(t, reuploaded)
+	if secondLogoFilename == logoFilename {
+		t.Fatal("re-uploaded logo reused the previous filename")
+	}
+	if _, err := os.Stat(filepath.Join(f.dataPath, "content", "logos", logoFilename)); !os.IsNotExist(err) {
+		t.Fatalf("previous logo was not removed: %v", err)
+	}
+	expectStatus(t, f.request(http.MethodGet, "/content/logos/not-a-logo.txt", nil), http.StatusNotFound)
+}
+
+func TestBrandingAPIValidatesNameAndLogo(t *testing.T) {
+	f := newFixture(t, false)
+	expectStatus(t, f.login(adminEmail, adminPassword), http.StatusOK)
+	expectStatus(t, f.request(http.MethodPut, "/api/branding", map[string]string{"name": " "}), http.StatusBadRequest)
+	expectStatus(t, f.request(http.MethodPut, "/api/branding", map[string]string{
+		"name": "DevForth", "logo": jpegDataURL(t, 64, 64),
+	}), http.StatusBadRequest)
+	branding, err := f.store.GetBranding()
+	if err != nil || branding.Name != model.DefaultBrandName || branding.LogoPath != "" {
+		t.Fatalf("invalid branding update was stored: branding=%#v err=%v", branding, err)
 	}
 }
 
@@ -386,7 +448,7 @@ func TestBookingAPIs(t *testing.T) {
 		t.Fatalf("booking response did not include an ID: %s", created)
 	}
 	publicEventType := expectStatus(t, f.request(http.MethodGet, "/api/public/event-types/planning-call", nil), http.StatusOK)
-	if !strings.Contains(string(publicEventType), `"unavailableTimes":["`+bookingTime+`"]`) {
+	if !strings.Contains(string(publicEventType), `"busyRanges":[{"start":"`+bookingTime+`"`) {
 		t.Fatalf("booked slot was not exposed as unavailable: %s", publicEventType)
 	}
 	if !strings.Contains(string(publicEventType), `"remainingInvitees":{"`+bookingTime+`":0}`) {
@@ -426,7 +488,7 @@ func TestBookingsUseUTCSlotKey(t *testing.T) {
 			AttendeeName:  "Guest",
 			AttendeeEmail: email,
 		}
-		if err := database.CreateBooking(slotKey, booking, &limit); err != nil {
+		if err := database.CreateBooking(slotKey, booking, nil, &limit); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -459,14 +521,18 @@ func TestPublicEventTypeMarksStoredSlotUnavailableWithoutInviteeLimit(t *testing
 
 	candidate := time.Now().UTC().AddDate(0, 0, 2)
 	bookingTime := time.Date(candidate.Year(), candidate.Month(), candidate.Day(), 10, 0, 0, 0, time.UTC).Format(time.RFC3339)
-	expectStatus(t, f.request(http.MethodPost, "/api/bookings", map[string]string{
+	expectStatus(t, f.request(http.MethodPost, "/api/bookings", map[string]any{
 		"eventSlug": "exclusive-call", "time": bookingTime, "attendeeName": "Guest", "attendeeEmail": "guest@example.com", "attendeeTimezone": "UTC",
+		"guestEmails": []string{"friend@example.com"},
 	}), http.StatusCreated)
 
 	publicEventType := expectStatus(t, f.request(http.MethodGet, "/api/public/event-types/exclusive-call", nil), http.StatusOK)
-	if !strings.Contains(string(publicEventType), `"unavailableTimes":["`+bookingTime+`"]`) {
+	if !strings.Contains(string(publicEventType), `"busyRanges":[{"start":"`+bookingTime+`"`) {
 		t.Fatalf("stored slot was not exposed as unavailable without an invitee limit: %s", publicEventType)
 	}
+	expectStatus(t, f.request(http.MethodPost, "/api/bookings", map[string]string{
+		"eventSlug": "exclusive-call", "time": bookingTime, "attendeeName": "Second Guest", "attendeeEmail": "second@example.com", "attendeeTimezone": "UTC",
+	}), http.StatusConflict)
 }
 
 func TestBookingManagementAPIsWithSecretAndAuthenticatedActors(t *testing.T) {
@@ -599,11 +665,14 @@ func TestEventTypeAPIs(t *testing.T) {
 		t.Fatalf("event type missing from list: %s", listed)
 	}
 	public := expectStatus(t, f.request(http.MethodGet, "/api/public/event-types/team-consultation", nil), http.StatusOK)
-	if !strings.Contains(string(public), `"hosts"`) || !strings.Contains(string(public), `"fullName":"Ada Lovelace"`) {
+	if !strings.Contains(string(public), `"requiredHosts"`) || !strings.Contains(string(public), `"fullName":"Ada Lovelace"`) {
 		t.Fatalf("public event type did not include hosts: %s", public)
 	}
 	invalid := eventTypeBody("No recipients", nil, 1)
 	expectStatus(t, f.request(http.MethodPost, "/api/event-types", invalid), http.StatusBadRequest)
+	duplicate := eventTypeBody("Duplicate host", []string{adminEmail}, 1)
+	duplicate["optionalHostEmails"] = []string{adminEmail}
+	expectStatus(t, f.request(http.MethodPost, "/api/event-types", duplicate), http.StatusBadRequest)
 	expectStatus(t, f.request(http.MethodDelete, "/api/event-types/team-consultation", nil), http.StatusNoContent)
 	expectStatus(t, f.request(http.MethodGet, "/api/event-types/team-consultation", nil), http.StatusNotFound)
 	expectStatus(t, f.request(http.MethodGet, "/api/public/event-types/team-consultation", nil), http.StatusNotFound)
@@ -618,7 +687,7 @@ func TestDeletingUserUpdatesEventTypeRecipients(t *testing.T) {
 	expectStatus(t, f.request(http.MethodPost, "/api/event-types", eventTypeBody("Shared", []string{adminEmail, "member@example.com"}, 1)), http.StatusCreated)
 	expectStatus(t, f.request(http.MethodDelete, "/api/users/member@example.com", nil), http.StatusNoContent)
 	eventType, err := f.store.GetEventType("shared")
-	if err != nil || len(eventType.RecipientEmails) != 1 || eventType.RecipientEmails[0] != adminEmail {
+	if err != nil || len(eventType.RequiredHostEmails) != 1 || eventType.RequiredHostEmails[0] != adminEmail {
 		t.Fatalf("deleted user was not removed from event type: event=%#v err=%v", eventType, err)
 	}
 }
@@ -633,6 +702,195 @@ func TestDeletingFinalEventTypeRecipientIsRejected(t *testing.T) {
 	if _, err := f.store.GetUser("member@example.com"); err != nil {
 		t.Fatal("final event type recipient was deleted")
 	}
+}
+
+func TestRequiredAndOptionalHostAvailability(t *testing.T) {
+	f := newFixture(t, false)
+	expectStatus(t, f.login(adminEmail, adminPassword), http.StatusOK)
+	expectStatus(t, f.request(http.MethodPost, "/api/users", map[string]string{
+		"email": "member@example.com", "password": "MemberPassword123!", "timezone": "UTC",
+	}), http.StatusCreated)
+	eventType := eventTypeBody("Host roles", []string{adminEmail}, 1)
+	eventType["optionalHostEmails"] = []string{"member@example.com"}
+	expectStatus(t, f.request(http.MethodPost, "/api/event-types", eventType), http.StatusCreated)
+
+	candidate := time.Now().UTC().AddDate(0, 0, 2)
+	start := time.Date(candidate.Year(), candidate.Month(), candidate.Day(), 12, 0, 0, 0, time.UTC)
+	end := start.Add(30 * time.Minute)
+	memberBusy := model.GoogleBusyCache{
+		Periods:  []model.GoogleBusyPeriod{{EventID: "member-event", Start: start, End: end}},
+		SyncedAt: time.Now().UTC().Truncate(time.Second),
+	}
+	if err := f.store.PutGoogleBusy("member@example.com", memberBusy); err != nil {
+		t.Fatal(err)
+	}
+	public := expectStatus(t, f.request(http.MethodGet, "/api/public/event-types/host-roles", nil), http.StatusOK)
+	if !strings.Contains(string(public), "\"optionalHosts\"") || !strings.Contains(string(public), "\"busyRanges\":[]") {
+		t.Fatalf("optional host blocked availability: %s", public)
+	}
+
+	adminBusy := model.GoogleBusyCache{
+		Periods:  []model.GoogleBusyPeriod{{EventID: "admin-event", Start: start, End: end}},
+		SyncedAt: time.Now().UTC().Truncate(time.Second),
+	}
+	if err := f.store.PutGoogleBusy(adminEmail, adminBusy); err != nil {
+		t.Fatal(err)
+	}
+	public = expectStatus(t, f.request(http.MethodGet, "/api/public/event-types/host-roles", nil), http.StatusOK)
+	if !strings.Contains(string(public), "\"start\":\""+start.Format(time.RFC3339)+"\"") {
+		t.Fatalf("required host busy period was not exposed: %s", public)
+	}
+}
+
+func TestCrossEventRequiredHostConflictIgnoresOptionalHosts(t *testing.T) {
+	f := newFixture(t, false)
+	expectStatus(t, f.login(adminEmail, adminPassword), http.StatusOK)
+	expectStatus(t, f.request(http.MethodPost, "/api/users", map[string]string{
+		"email": "member@example.com", "password": "MemberPassword123!", "timezone": "UTC",
+	}), http.StatusCreated)
+	expectStatus(t, f.request(http.MethodPost, "/api/event-types", eventTypeBody("First", []string{adminEmail}, 1)), http.StatusCreated)
+	expectStatus(t, f.request(http.MethodPost, "/api/event-types", eventTypeBody("Required conflict", []string{adminEmail}, 1)), http.StatusCreated)
+	optional := eventTypeBody("Optional conflict", []string{"member@example.com"}, 1)
+	optional["optionalHostEmails"] = []string{adminEmail}
+	expectStatus(t, f.request(http.MethodPost, "/api/event-types", optional), http.StatusCreated)
+
+	candidate := time.Now().UTC().AddDate(0, 0, 2)
+	bookingTime := time.Date(candidate.Year(), candidate.Month(), candidate.Day(), 12, 0, 0, 0, time.UTC).Format(time.RFC3339)
+	body := func(slug, email string) map[string]string {
+		return map[string]string{
+			"eventSlug": slug, "time": bookingTime, "attendeeName": "Guest", "attendeeEmail": email, "attendeeTimezone": "UTC",
+		}
+	}
+	expectStatus(t, f.request(http.MethodPost, "/api/bookings", body("first", "first@example.com")), http.StatusCreated)
+	expectStatus(t, f.request(http.MethodPost, "/api/bookings", body("required-conflict", "second@example.com")), http.StatusConflict)
+	expectStatus(t, f.request(http.MethodPost, "/api/bookings", body("optional-conflict", "third@example.com")), http.StatusCreated)
+}
+
+func TestGoogleCalendarSyncRetainsFailuresAndRemovesDeletedEvents(t *testing.T) {
+	f := newFixture(t, true)
+	mockGoogleProvider(t, adminEmail, "", "", nil)
+	expectStatus(t, googleCallback(f), http.StatusOK)
+	expectStatus(t, f.request(http.MethodPost, "/api/event-types", eventTypeBody("Synced", []string{adminEmail}, 1)), http.StatusCreated)
+
+	candidate := time.Now().UTC().AddDate(0, 0, 2)
+	start := time.Date(candidate.Year(), candidate.Month(), candidate.Day(), 12, 0, 0, 0, time.UTC)
+	end := start.Add(30 * time.Minute)
+	limit := 2
+	ownedBooking := model.Booking{
+		ID: "owned-booking", EventSlug: "synced", Time: start, EndTime: end,
+		AttendeeName: "Guest", AttendeeEmail: "owned@example.com", RecipientEmails: []string{adminEmail},
+		GoogleEventIDs: map[string]string{adminEmail: "owned"},
+	}
+	ownedKey := "synced" + start.Format(time.RFC3339) + "-" + end.Format(time.RFC3339)
+	if err := f.store.CreateBooking(ownedKey, ownedBooking, []string{adminEmail}, &limit); err != nil {
+		t.Fatal(err)
+	}
+	originalTransport := http.DefaultTransport
+	cycle := 0
+	http.DefaultTransport = roundTripFunc(func(request *http.Request) (*http.Response, error) {
+		if request.Method != http.MethodGet || request.URL.Path != "/calendar/v3/calendars/primary/events" {
+			return nil, fmt.Errorf("unexpected sync request: %s %s", request.Method, request.URL)
+		}
+		if request.URL.Query().Get("singleEvents") != "true" || request.URL.Query().Get("maxResults") != "2500" {
+			t.Errorf("Google sync did not request expanded events: %s", request.URL)
+		}
+		pageToken := request.URL.Query().Get("pageToken")
+		if pageToken == "" {
+			cycle++
+		}
+		if cycle == 2 {
+			return &http.Response{
+				StatusCode: http.StatusInternalServerError,
+				Status:     "500 Internal Server Error",
+				Header:     make(http.Header),
+				Body:       io.NopCloser(strings.NewReader("{}")),
+				Request:    request,
+			}, nil
+		}
+		items := []map[string]any{}
+		nextPageToken := ""
+		if cycle == 1 && pageToken == "" {
+			items = append(items,
+				map[string]any{"id": "external", "status": "confirmed", "start": map[string]string{"dateTime": start.Format(time.RFC3339)}, "end": map[string]string{"dateTime": end.Format(time.RFC3339)}},
+				map[string]any{"id": "owned", "status": "confirmed", "start": map[string]string{"dateTime": start.Format(time.RFC3339)}, "end": map[string]string{"dateTime": end.Format(time.RFC3339)}},
+				map[string]any{"id": "transparent", "status": "confirmed", "transparency": "transparent", "start": map[string]string{"dateTime": start.Format(time.RFC3339)}, "end": map[string]string{"dateTime": end.Format(time.RFC3339)}},
+			)
+			nextPageToken = "second"
+		} else if cycle == 1 {
+			items = append(items,
+				map[string]any{"id": "all-day", "status": "confirmed", "start": map[string]string{"date": start.Format(time.DateOnly)}, "end": map[string]string{"date": start.AddDate(0, 0, 1).Format(time.DateOnly)}},
+				map[string]any{"id": "cancelled", "status": "cancelled", "start": map[string]string{"dateTime": start.Format(time.RFC3339)}, "end": map[string]string{"dateTime": end.Format(time.RFC3339)}},
+			)
+		}
+		body, _ := json.Marshal(map[string]any{"timeZone": "UTC", "nextPageToken": nextPageToken, "items": items})
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			Status:     "200 OK",
+			Header:     make(http.Header),
+			Body:       io.NopCloser(bytes.NewReader(body)),
+			Request:    request,
+		}, nil
+	})
+	t.Cleanup(func() { http.DefaultTransport = originalTransport })
+
+	f.api.SyncGoogleCalendars(context.Background())
+	cache, err := f.store.GetGoogleBusy(adminEmail)
+	if err != nil || len(cache.Periods) != 2 {
+		t.Fatalf("initial Google cache = %#v, err=%v", cache, err)
+	}
+	f.api.SyncGoogleCalendars(context.Background())
+	cache, err = f.store.GetGoogleBusy(adminEmail)
+	if err != nil || len(cache.Periods) != 2 {
+		t.Fatalf("failed sync replaced Google cache = %#v, err=%v", cache, err)
+	}
+	f.api.SyncGoogleCalendars(context.Background())
+	cache, err = f.store.GetGoogleBusy(adminEmail)
+	if err != nil || len(cache.Periods) != 0 {
+		t.Fatalf("deleted Google events remained cached = %#v, err=%v", cache, err)
+	}
+}
+
+func TestBookingLiveGoogleAvailability(t *testing.T) {
+	f := newFixture(t, true)
+	mockGoogleProvider(t, adminEmail, "", "", nil)
+	expectStatus(t, googleCallback(f), http.StatusOK)
+	expectStatus(t, f.request(http.MethodPost, "/api/event-types", eventTypeBody("Live check", []string{adminEmail}, 1)), http.StatusCreated)
+
+	candidate := time.Now().UTC().AddDate(0, 0, 2)
+	start := time.Date(candidate.Year(), candidate.Month(), candidate.Day(), 12, 0, 0, 0, time.UTC)
+	end := start.Add(30 * time.Minute)
+	originalTransport := http.DefaultTransport
+	call := 0
+	http.DefaultTransport = roundTripFunc(func(request *http.Request) (*http.Response, error) {
+		call++
+		status := http.StatusOK
+		body, _ := json.Marshal(map[string]any{
+			"timeZone": "UTC",
+			"items": []map[string]any{{
+				"id": "busy", "status": "confirmed",
+				"start": map[string]string{"dateTime": start.Format(time.RFC3339)},
+				"end":   map[string]string{"dateTime": end.Format(time.RFC3339)},
+			}},
+		})
+		if call == 2 {
+			status = http.StatusInternalServerError
+			body = []byte("{}")
+		}
+		return &http.Response{
+			StatusCode: status,
+			Status:     http.StatusText(status),
+			Header:     make(http.Header),
+			Body:       io.NopCloser(bytes.NewReader(body)),
+			Request:    request,
+		}, nil
+	})
+	t.Cleanup(func() { http.DefaultTransport = originalTransport })
+
+	request := map[string]string{
+		"eventSlug": "live-check", "time": start.Format(time.RFC3339), "attendeeName": "Guest", "attendeeEmail": "guest@example.com", "attendeeTimezone": "UTC",
+	}
+	expectStatus(t, f.request(http.MethodPost, "/api/bookings", request), http.StatusConflict)
+	expectStatus(t, f.request(http.MethodPost, "/api/bookings", request), http.StatusServiceUnavailable)
 }
 
 func TestGoogleOAuthAPIs(t *testing.T) {
@@ -776,13 +1034,14 @@ func eventTypeBody(name string, recipients []string, inviteeLimit int) map[strin
 		})
 	}
 	return map[string]any{
-		"name":              name,
-		"durationMinutes":   30,
-		"bookingWindowDays": 60,
-		"inviteeLimit":      inviteeLimit,
-		"timezone":          "UTC",
-		"recipientEmails":   recipients,
-		"schedule":          schedule,
+		"name":               name,
+		"durationMinutes":    30,
+		"bookingWindowDays":  60,
+		"inviteeLimit":       inviteeLimit,
+		"timezone":           "UTC",
+		"requiredHostEmails": recipients,
+		"optionalHostEmails": []string{},
+		"schedule":           schedule,
 	}
 }
 
@@ -797,6 +1056,17 @@ func avatarFilenameFromResponse(t *testing.T, body []byte, emailSlug string) str
 		t.Fatal(err)
 	}
 	return requireAvatarFilename(t, response.User.AvatarPath, emailSlug)
+}
+
+func logoFilenameFromResponse(t *testing.T, body []byte) string {
+	t.Helper()
+	var response struct {
+		Branding model.Branding `json:"branding"`
+	}
+	if err := json.Unmarshal(body, &response); err != nil {
+		t.Fatal(err)
+	}
+	return requireAvatarFilename(t, response.Branding.LogoPath, "logo")
 }
 
 func requireAvatarFilename(t *testing.T, filename, emailSlug string) string {
@@ -893,6 +1163,14 @@ func mockBookingDelivery(t *testing.T) (*int, *int, *int) {
 	mailgunRequests := 0
 	http.DefaultTransport = roundTripFunc(func(request *http.Request) (*http.Response, error) {
 		switch {
+		case request.Method == http.MethodGet && request.URL.Path == "/calendar/v3/calendars/primary/events":
+			return &http.Response{
+				StatusCode: http.StatusOK,
+				Status:     http.StatusText(http.StatusOK),
+				Header:     make(http.Header),
+				Body:       io.NopCloser(strings.NewReader(`{"timeZone":"UTC","items":[]}`)),
+				Request:    request,
+			}, nil
 		case request.Method == http.MethodPost && request.URL.Path == "/calendar/v3/calendars/primary/events":
 			calendarRequests++
 			body, _ := io.ReadAll(request.Body)

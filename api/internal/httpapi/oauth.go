@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"image"
 	"io"
+	"log/slog"
 	"net/http"
 	"strings"
 	"time"
@@ -166,6 +167,11 @@ func (s *Server) googleCallback(w http.ResponseWriter, r *http.Request) {
 	if err := s.store.PutUser(user); err != nil {
 		internalError(w, err, "save Google connection")
 		return
+	}
+	if days, syncErr := s.calendarSyncDays(); syncErr != nil {
+		slog.Error("calculate Google Calendar sync window after OAuth", "error", syncErr, "user", user.Email)
+	} else if days > 0 {
+		s.syncGoogleCalendar(r.Context(), user, days)
 	}
 	if err := s.createSession(w, r, user.Email); err != nil {
 		internalError(w, err, "create OAuth session")

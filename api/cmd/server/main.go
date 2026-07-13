@@ -53,6 +53,13 @@ func run() error {
 	if err != nil {
 		return fmt.Errorf("create API server: %w", err)
 	}
+	signals, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	defer stop()
+	syncDone := make(chan struct{})
+	go func() {
+		defer close(syncDone)
+		api.RunCalendarSync(signals)
+	}()
 
 	server := &http.Server{
 		Addr:              fmt.Sprintf(":%d", cfg.HTTP.Port),
@@ -70,10 +77,10 @@ func run() error {
 		serverError <- server.ListenAndServe()
 	}()
 
-	signals, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
-	defer stop()
 	select {
 	case err := <-serverError:
+		stop()
+		<-syncDone
 		if !errors.Is(err, http.ErrServerClosed) {
 			return err
 		}
@@ -83,8 +90,10 @@ func run() error {
 
 	shutdownContext, cancel := context.WithTimeout(context.Background(), shutdownTimeout)
 	defer cancel()
-	if err := server.Shutdown(shutdownContext); err != nil {
-		return fmt.Errorf("graceful shutdown: %w", err)
+	shutdownErr := server.Shutdown(shutdownContext)
+	<-syncDone
+	if shutdownErr != nil {
+		return fmt.Errorf("graceful shutdown: %w", shutdownErr)
 	}
 	return nil
 }

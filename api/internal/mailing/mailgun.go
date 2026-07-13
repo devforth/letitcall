@@ -13,34 +13,32 @@ import (
 )
 
 type Mailgun struct {
-	apiKey    string
-	baseURL   string
-	domain    string
-	from      string
-	client    *http.Client
-	renderer  *Renderer
-	brandName string
+	apiKey   string
+	baseURL  string
+	domain   string
+	from     string
+	client   *http.Client
+	renderer *Renderer
 }
 
-func New(mailgun config.Mailgun, renderer *Renderer, brandName string) Sender {
+func New(mailgun config.Mailgun, renderer *Renderer) Sender {
 	if !mailgun.Enabled() {
 		return Disabled{}
 	}
 	return &Mailgun{
-		apiKey:    mailgun.APIKey,
-		baseURL:   mailgun.BaseURL,
-		domain:    mailgun.Domain,
-		from:      mailgun.From,
-		client:    http.DefaultClient,
-		renderer:  renderer,
-		brandName: brandName,
+		apiKey:   mailgun.APIKey,
+		baseURL:  mailgun.BaseURL,
+		domain:   mailgun.Domain,
+		from:     mailgun.From,
+		client:   http.DefaultClient,
+		renderer: renderer,
 	}
 }
 
 func (m *Mailgun) SendBooking(ctx context.Context, booking Booking) error {
 	return m.send(ctx, booking.RecipientEmail, func(eventDateTime string) (Message, error) {
 		return m.renderer.RenderNewEvent(TemplateData{
-			BrandName:        m.brandName,
+			BrandName:        booking.BrandName,
 			Subject:          fmt.Sprintf("New Event - %s - %s - %s", booking.AttendeeName, eventDateTime, booking.EventName),
 			RecipientName:    booking.RecipientName,
 			EventName:        booking.EventName,
@@ -57,7 +55,7 @@ func (m *Mailgun) SendBooking(ctx context.Context, booking Booking) error {
 func (m *Mailgun) SendCancellation(ctx context.Context, cancellation Cancellation) error {
 	return m.send(ctx, cancellation.RecipientEmail, func(eventDateTime string) (Message, error) {
 		return m.renderer.RenderCancellation(TemplateData{
-			BrandName:     m.brandName,
+			BrandName:     cancellation.BrandName,
 			Subject:       fmt.Sprintf("Canceled Event - %s - %s - %s", cancellation.AttendeeName, eventDateTime, cancellation.EventName),
 			RecipientName: cancellation.RecipientName,
 			EventName:     cancellation.EventName,

@@ -13,7 +13,13 @@ export type ManagedUser = SessionUser & {
 
 export type PublicConfig = {
 	brandName: string;
+	logoPath: string;
 	googleLoginEnabled: boolean;
+};
+
+export type Branding = {
+	name: string;
+	logoPath?: string;
 };
 
 export type ApiError = {
@@ -24,10 +30,11 @@ export type EventType = {
 	eventSlug: string;
 	name: string;
 	durationMinutes: number;
-	bookingWindowDays: number | null;
+	bookingWindowDays: number;
 	inviteeLimit: number | null;
 	timezone: string;
-	recipientEmails: string[];
+	requiredHostEmails: string[];
+	optionalHostEmails: string[];
 	schedule: ScheduleDay[];
 	createdBy: string;
 	createdAt: string;
@@ -57,8 +64,9 @@ export type PublicEventType = Pick<
 	| 'timezone'
 	| 'schedule'
 > & {
-	hosts: { email: string; fullName: string; avatarPath?: string }[];
-	unavailableTimes: string[];
+	requiredHosts: { email: string; fullName: string; avatarPath?: string }[];
+	optionalHosts: { email: string; fullName: string; avatarPath?: string }[];
+	busyRanges: { start: string; end: string }[];
 	remainingInvitees: Record<string, number>;
 };
 

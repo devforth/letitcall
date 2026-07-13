@@ -17,6 +17,7 @@
 	import Input from '$lib/components/ui/Input.svelte';
 	import MonthCalendar from '$lib/components/ui/MonthCalendar.svelte';
 	import SearchableSelect from '$lib/components/ui/SearchableSelect.svelte';
+	import BrandLogo from '$lib/components/BrandLogo.svelte';
 	import Textarea from '$lib/components/ui/Textarea.svelte';
 
 	let eventType = $state<PublicEventType | null>(null);
@@ -37,6 +38,7 @@
 	let saving = $state(false);
 	let now = $state(new Date());
 	let clock: number | undefined;
+	let availabilityClock: number | undefined;
 
 	const timezone = $derived(timezones.includes(timezoneInput) ? timezoneInput : localTimezone);
 	const minimumMonth = $derived(timezoneDateKey(now, timezone).slice(0, 7));
@@ -45,6 +47,7 @@
 	);
 	const availableDates = $derived(Object.keys(slotsByDate));
 	const selectedSlots = $derived(selectedDate ? (slotsByDate[selectedDate] ?? []) : []);
+	const hosts = $derived(eventType ? [...eventType.requiredHosts, ...eventType.optionalHosts] : []);
 	const guestLimit = $derived.by(() => {
 		if (!eventType || eventType.inviteeLimit === null || !selectedTime) return null;
 		const remaining = eventType.remainingInvitees[selectedTime] ?? eventType.inviteeLimit;
@@ -85,10 +88,8 @@
 		month = selectedDate.slice(0, 7);
 		clock = window.setInterval(() => (now = new Date()), 60_000);
 		try {
-			const response = await callApi<{ eventType: PublicEventType }>(
-				`/api/public/event-types/${encodeURIComponent(page.params.slug!)}`
-			);
-			eventType = response.eventType;
+			await refreshEventType();
+			availabilityClock = window.setInterval(refreshEventType, 20_000);
 		} catch (cause) {
 			notFound = cause instanceof Error && cause.message === 'event type not found';
 		} finally {
@@ -98,7 +99,24 @@
 
 	onDestroy(() => {
 		if (clock !== undefined) window.clearInterval(clock);
+		if (availabilityClock !== undefined) window.clearInterval(availabilityClock);
 	});
+
+	async function refreshEventType() {
+		const response = await callApi<{ eventType: PublicEventType }>(
+			`/api/public/event-types/${encodeURIComponent(page.params.slug!)}`
+		);
+		if (selectedTime && isBusy(response.eventType, selectedTime)) selectedTime = '';
+		eventType = response.eventType;
+	}
+
+	function isBusy(candidate: PublicEventType, time: string) {
+		const start = new Date(time);
+		const end = new Date(start.getTime() + candidate.durationMinutes * 60_000);
+		return candidate.busyRanges.some(
+			(range) => start < new Date(range.end) && end > new Date(range.start)
+		);
+	}
 
 	async function createBooking(event: SubmitEvent) {
 		event.preventDefault();
@@ -157,13 +175,16 @@
 					</button>
 				{/if}
 				<div class="flex -space-x-3">
-					{#each eventType.hosts as host (host.email)}
+					{#each hosts as host (host.email)}
 						{#if host.avatarPath}
 							<img src={avatarURL(host.avatarPath)} alt="" class="size-20 border border-black bg-white object-cover" />
 						{/if}
 					{/each}
 				</div>
-				<p class="mt-6 text-sm font-medium">{eventType.hosts.map((host) => host.fullName).join(', ')}</p>
+				<p class="mt-6 text-sm font-medium">{eventType.requiredHosts.map((host) => host.fullName || host.email).join(', ')}</p>
+				{#if eventType.optionalHosts.length > 0}
+					<p class="mt-1 text-xs">Optional: {eventType.optionalHosts.map((host) => host.fullName || host.email).join(', ')}</p>
+				{/if}
 				<h1 class="mt-2 text-3xl font-semibold tracking-tight">{eventType.name}</h1>
 				<p class="mt-7 flex items-center gap-2 text-sm font-medium">
 					<Icon icon={clockIcon} width="22" height="22" />
@@ -179,7 +200,10 @@
 						{timezone}
 					</p>
 				{/if}
-				<p class="mt-auto hidden pt-12 text-xs lg:block">Powered by {branding.name}</p>
+				<div class="mt-auto flex items-center gap-3 pt-12 text-sm font-semibold">
+					<BrandLogo class="size-10 border border-black object-cover" />
+					<span>{branding.name}</span>
+				</div>
 			</aside>
 
 			<section class="p-6 lg:p-10" aria-labelledby="booking-title">

@@ -14,7 +14,6 @@ import (
 const (
 	EnvHTTPPort            = "HTTP__PORT"
 	EnvHTTPBaseURL         = "HTTP__BASE__URL"
-	EnvBrandName           = "BRANDING__DISPLAY__NAME"
 	EnvStorageLevelDBPath  = "STORAGE__LEVELDB__PATH"
 	EnvFirstUserEmail      = "FIRSTUSER__CREDENTIALS__EMAIL"
 	EnvFirstUserPassword   = "FIRSTUSER__CREDENTIALS__PASSWORD"
@@ -31,17 +30,10 @@ const (
 
 type Config struct {
 	HTTP      HTTP
-	Branding  Branding
 	Storage   Storage
 	FirstUser FirstUser
 	Login     Login
 	Mailing   Mailing
-}
-
-const DefaultBrandName = "Let It Call"
-
-type Branding struct {
-	Name string
 }
 
 type HTTP struct {
@@ -102,10 +94,6 @@ func Load() (Config, error) {
 		baseURL = DefaultBaseURL
 		slog.Warn("HTTP base URL is not configured; using local URL", "environment", EnvHTTPBaseURL, "baseURL", baseURL)
 	}
-	brandName := strings.TrimSpace(os.Getenv(EnvBrandName))
-	if brandName == "" {
-		brandName = DefaultBrandName
-	}
 	port, err := envInt(EnvHTTPPort, 80)
 	if err != nil {
 		return Config{}, err
@@ -128,8 +116,7 @@ func Load() (Config, error) {
 			Port:    port,
 			BaseURL: baseURL,
 		},
-		Branding: Branding{Name: brandName},
-		Storage:  Storage{LevelDBPath: envString(EnvStorageLevelDBPath, "./data")},
+		Storage: Storage{LevelDBPath: envString(EnvStorageLevelDBPath, "./data")},
 		FirstUser: FirstUser{
 			Email:    strings.TrimSpace(os.Getenv(EnvFirstUserEmail)),
 			Password: os.Getenv(EnvFirstUserPassword),
@@ -160,9 +147,6 @@ func Load() (Config, error) {
 func (c Config) Validate() error {
 	if c.HTTP.Port < 1 || c.HTTP.Port > 65535 {
 		return fmt.Errorf("%s must be between 1 and 65535", EnvHTTPPort)
-	}
-	if strings.TrimSpace(c.Branding.Name) == "" {
-		return fmt.Errorf("%s cannot be empty", EnvBrandName)
 	}
 	baseURL, err := url.Parse(c.HTTP.BaseURL)
 	if err != nil || (baseURL.Scheme != "http" && baseURL.Scheme != "https") || baseURL.Host == "" || baseURL.RawQuery != "" || baseURL.Fragment != "" {

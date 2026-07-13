@@ -71,13 +71,22 @@
 						<h2 class="font-semibold">{eventType.name}</h2>
 						<p class="mt-1 text-xs">{eventType.durationMinutes} minutes</p>
 						<div class="mt-3 flex flex-wrap items-center gap-2">
-							{#each eventType.recipientEmails as email (email)}
+							{#each eventType.requiredHostEmails as email (email)}
 								{@const recipient = user(email)}
 								<span class="inline-flex items-center gap-2 border border-black px-2 py-1 text-xs">
 									{#if recipient?.avatarPath}
 										<img src={avatarURL(recipient.avatarPath)} alt="" class="size-6 border border-black object-cover" />
 									{/if}
-									{email}
+									{email} · Required
+								</span>
+							{/each}
+							{#each eventType.optionalHostEmails as email (email)}
+								{@const recipient = user(email)}
+								<span class="inline-flex items-center gap-2 border border-black px-2 py-1 text-xs">
+									{#if recipient?.avatarPath}
+										<img src={avatarURL(recipient.avatarPath)} alt="" class="size-6 border border-black object-cover" />
+									{/if}
+									{email} · Optional
 								</span>
 							{/each}
 						</div>

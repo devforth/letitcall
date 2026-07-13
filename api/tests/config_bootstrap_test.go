@@ -24,7 +24,7 @@ func TestConfigUsesStrictEnvironmentNamesAndDefaults(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if cfg.HTTP.Port != 8080 || cfg.HTTP.BaseURL != config.DefaultBaseURL || cfg.Branding.Name != config.DefaultBrandName || cfg.FirstUser.Email != "owner@example.com" {
+	if cfg.HTTP.Port != 8080 || cfg.HTTP.BaseURL != config.DefaultBaseURL || cfg.FirstUser.Email != "owner@example.com" {
 		t.Fatalf("configuration did not load structured environment variables: %#v", cfg)
 	}
 }
@@ -110,18 +110,6 @@ func TestConfigLoadsMailgunSettings(t *testing.T) {
 	}
 }
 
-func TestConfigLoadsBrandName(t *testing.T) {
-	clearConfigEnvironment(t)
-	t.Setenv(config.EnvBrandName, "DevForth")
-	cfg, err := config.Load()
-	if err != nil {
-		t.Fatal(err)
-	}
-	if cfg.Branding.Name != "DevForth" {
-		t.Fatalf("brand name was not loaded: %#v", cfg.Branding)
-	}
-}
-
 func TestConfigRejectsPartialMailgunSettings(t *testing.T) {
 	clearConfigEnvironment(t)
 	t.Setenv(config.EnvMailgunAPIKey, "mailgun-key")
@@ -154,7 +142,6 @@ func clearConfigEnvironment(t *testing.T) {
 	for _, name := range []string{
 		config.EnvHTTPPort,
 		config.EnvHTTPBaseURL,
-		config.EnvBrandName,
 		config.EnvStorageLevelDBPath,
 		config.EnvFirstUserEmail,
 		config.EnvFirstUserPassword,

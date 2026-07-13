@@ -82,10 +82,7 @@ export function generateBookingSlots(
 	const lastCandidate = addDays({ year, month: monthNumber + 1, day: 1 }, 2);
 	const today = dateParts(now, eventType.timezone);
 	const firstBookable = dateKey(today);
-	const lastBookable = eventType.bookingWindowDays === null
-		? ''
-		: dateKey(addDays(today, eventType.bookingWindowDays));
-	const unavailable = new Set(eventType.unavailableTimes);
+	const lastBookable = dateKey(addDays(today, eventType.bookingWindowDays));
 	const slots: Record<string, BookingSlot[]> = {};
 	const timeFormatter = new Intl.DateTimeFormat(undefined, {
 		timeZone: timezone,
@@ -95,7 +92,7 @@ export function generateBookingSlots(
 
 	for (let candidate = firstCandidate; dateKey(candidate) < dateKey(lastCandidate); candidate = addDays(candidate, 1)) {
 		const candidateKey = dateKey(candidate);
-		if (candidateKey < firstBookable || (lastBookable && candidateKey > lastBookable)) continue;
+		if (candidateKey < firstBookable || candidateKey > lastBookable) continue;
 		const schedule = daySchedule(eventType.schedule, candidate);
 		if (!schedule.enabled) continue;
 		const start = minuteOfDay(schedule.start!);
@@ -104,6 +101,7 @@ export function generateBookingSlots(
 			const slotEnd = minutes + eventType.durationMinutes;
 			if (schedule.breaks.some((pause) => minutes < minuteOfDay(pause.end) && slotEnd > minuteOfDay(pause.start))) continue;
 			const instant = wallTimeToUTC(candidate, minutes, eventType.timezone);
+			const instantEnd = new Date(instant.getTime() + eventType.durationMinutes * 60_000);
 			const time = instant.toISOString().replace('.000Z', 'Z');
 			if (instant <= now) continue;
 			const viewerDate = timezoneDateKey(instant, timezone);
@@ -111,7 +109,9 @@ export function generateBookingSlots(
 			(slots[viewerDate] ??= []).push({
 				time,
 				label: timeFormatter.format(instant),
-				busy: unavailable.has(time)
+				busy: eventType.busyRanges.some(
+					(range) => instant < new Date(range.end) && instantEnd > new Date(range.start)
+				)
 			});
 		}
 	}

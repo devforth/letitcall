@@ -17,7 +17,7 @@ import (
 )
 
 func (s *Server) deliverBooking(ctx context.Context, eventType model.EventType, booking model.Booking, secretToken string) {
-	recipients, err := s.bookingRecipients(eventType.RecipientEmails)
+	recipients, err := s.bookingRecipients(eventType.HostEmails())
 	if err != nil {
 		slog.Error("load booking recipients", "error", err, "booking", booking.ID)
 		return
@@ -161,9 +161,13 @@ func bookingCalendarDescription(booking model.Booking, manageURL string) string 
 }
 
 func (s *Server) sendBookingEmail(ctx context.Context, recipients []model.User, booking model.Booking, manageURL string) error {
+	branding, err := s.store.GetBranding()
+	if err != nil {
+		return err
+	}
 	var results []error
 	for _, user := range recipients {
-		if err := s.mailer.SendBooking(ctx, mailingBooking(user, booking, manageURL)); err != nil {
+		if err := s.mailer.SendBooking(ctx, mailingBooking(branding.Name, user, booking, manageURL)); err != nil {
 			results = append(results, fmt.Errorf("email %s: %w", user.Email, err))
 		}
 	}
@@ -175,10 +179,14 @@ func (s *Server) sendCancellationEmail(ctx context.Context, booking model.Bookin
 	if err != nil {
 		return err
 	}
+	branding, err := s.store.GetBranding()
+	if err != nil {
+		return err
+	}
 	var results []error
 	for _, user := range recipients {
 		message := mailing.Cancellation{
-			Booking:    mailingBooking(user, booking, manageURL),
+			Booking:    mailingBooking(branding.Name, user, booking, manageURL),
 			CanceledBy: booking.CanceledBy.Name + " <" + booking.CanceledBy.Email + ">",
 			Reason:     booking.CancellationReason,
 		}
@@ -189,12 +197,13 @@ func (s *Server) sendCancellationEmail(ctx context.Context, booking model.Bookin
 	return errors.Join(results...)
 }
 
-func mailingBooking(user model.User, booking model.Booking, manageURL string) mailing.Booking {
+func mailingBooking(brandName string, user model.User, booking model.Booking, manageURL string) mailing.Booking {
 	recipientName := user.FullName
 	if recipientName == "" {
 		recipientName = user.Email
 	}
 	return mailing.Booking{
+		BrandName:        brandName,
 		EventName:        booking.Title,
 		AttendeeName:     booking.AttendeeName,
 		AttendeeEmail:    booking.AttendeeEmail,
