@@ -132,6 +132,7 @@ func (s *Server) Handler() http.Handler {
 	mux.Handle("GET /api/branding", s.requireAuth(http.HandlerFunc(s.getBranding)))
 	mux.Handle("PUT /api/branding", s.requireAuth(http.HandlerFunc(s.updateBranding)))
 	mux.Handle("GET /api/integration", s.requireAuth(http.HandlerFunc(s.getAPIIntegration)))
+	mux.Handle("GET /api/audit-logs", s.requireAuth(http.HandlerFunc(s.listAuditLogs)))
 	mux.Handle("POST /api/integration/tokens", s.requireAuth(http.HandlerFunc(s.createAPIToken)))
 	mux.Handle("DELETE /api/integration/tokens/{id}", s.requireAuth(http.HandlerFunc(s.deleteAPIToken)))
 	mux.Handle("GET /api/users", s.requireAuth(http.HandlerFunc(s.listUsers)))

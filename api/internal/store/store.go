@@ -36,6 +36,7 @@ type Store struct {
 	apiTokens            *leveldb.DB
 	webhookSubscriptions *leveldb.DB
 	webhookDeliveries    *leveldb.DB
+	auditLogs            *leveldb.DB
 	mu                   sync.Mutex
 }
 
@@ -44,7 +45,7 @@ func Open(root string) (*Store, error) {
 		return nil, fmt.Errorf("create LevelDB root: %w", err)
 	}
 
-	opened := make([]*leveldb.DB, 0, 11)
+	opened := make([]*leveldb.DB, 0, 12)
 	openTable := func(name string) (*leveldb.DB, error) {
 		db, err := leveldb.OpenFile(filepath.Join(root, name+".leveldb"), nil)
 		if err != nil {
@@ -108,6 +109,11 @@ func Open(root string) (*Store, error) {
 		closeAll(opened)
 		return nil, err
 	}
+	auditLogs, err := openTable(AuditLogsTableName)
+	if err != nil {
+		closeAll(opened)
+		return nil, err
+	}
 	brandingKey := []byte("current")
 	exists, err := branding.Has(brandingKey, nil)
 	if err != nil {
@@ -125,6 +131,7 @@ func Open(root string) (*Store, error) {
 		users: users, eventTypes: eventTypes, bookings: bookings, secretLinks: secretLinks,
 		sessions: sessions, oauthStates: oauthStates, googleBusy: googleBusy, branding: branding,
 		apiTokens: apiTokens, webhookSubscriptions: webhookSubscriptions, webhookDeliveries: webhookDeliveries,
+		auditLogs: auditLogs,
 	}, nil
 }
 
@@ -133,6 +140,7 @@ func (s *Store) Close() error {
 		s.users.Close(), s.eventTypes.Close(), s.bookings.Close(), s.secretLinks.Close(),
 		s.sessions.Close(), s.oauthStates.Close(), s.googleBusy.Close(), s.branding.Close(),
 		s.apiTokens.Close(), s.webhookSubscriptions.Close(), s.webhookDeliveries.Close(),
+		s.auditLogs.Close(),
 	)
 }
 

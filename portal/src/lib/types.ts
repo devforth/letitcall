@@ -51,6 +51,20 @@ export type ApiError = {
 	error: string;
 };
 
+export type AuditLog = {
+	id: string;
+	actor: {
+		email: string;
+		fullName: string;
+		avatarPath?: string;
+	};
+	action: string;
+	resource: string;
+	resourceId: string;
+	createdAt: string;
+	payload: Record<string, unknown>;
+};
+
 export type EventType = {
 	eventSlug: string;
 	name: string;

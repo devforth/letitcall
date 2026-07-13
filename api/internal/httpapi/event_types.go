@@ -75,6 +75,10 @@ func (s *Server) createEventType(w http.ResponseWriter, r *http.Request) {
 		internalError(w, err, "create event type")
 		return
 	}
+	if err := s.recordAuditLog(r, "created", "event_type", eventType.EventSlug, eventType); err != nil {
+		internalError(w, err, "record event type creation audit log")
+		return
+	}
 	writeJSON(w, http.StatusCreated, map[string]any{"eventType": eventType})
 }
 
@@ -105,12 +109,22 @@ func (s *Server) updateEventType(w http.ResponseWriter, r *http.Request) {
 		internalError(w, err, "update event type")
 		return
 	}
+	changes, err := auditDiff(existing, eventType, "updatedAt")
+	if err != nil {
+		internalError(w, err, "build event type update audit payload")
+		return
+	}
+	if err := s.recordAuditLog(r, "edited", "event_type", eventType.EventSlug, changes); err != nil {
+		internalError(w, err, "record event type update audit log")
+		return
+	}
 	writeJSON(w, http.StatusOK, map[string]any{"eventType": eventType})
 }
 
 func (s *Server) deleteEventType(w http.ResponseWriter, r *http.Request) {
 	slug := r.PathValue("slug")
-	if _, err := s.store.GetEventType(slug); errors.Is(err, store.ErrNotFound) {
+	eventType, err := s.store.GetEventType(slug)
+	if errors.Is(err, store.ErrNotFound) {
 		writeError(w, http.StatusNotFound, "event type not found")
 		return
 	} else if err != nil {
@@ -119,6 +133,10 @@ func (s *Server) deleteEventType(w http.ResponseWriter, r *http.Request) {
 	}
 	if err := s.store.DeleteEventType(slug); err != nil {
 		internalError(w, err, "delete event type")
+		return
+	}
+	if err := s.recordAuditLog(r, "deleted", "event_type", slug, eventType); err != nil {
+		internalError(w, err, "record event type deletion audit log")
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)

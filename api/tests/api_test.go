@@ -109,6 +109,7 @@ func testConfig(dataPath string) config.Config {
 			PasswordMaxAttempts: 20,
 			PasswordLockout:     time.Minute,
 		},
+		AuditLog: config.AuditLog{MaxItems: config.DefaultAuditLogMaxItems},
 	}
 }
 

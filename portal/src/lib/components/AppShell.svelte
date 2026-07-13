@@ -79,6 +79,12 @@
 						href={appPath('/api-integration')}>API Integration</a
 					>
 				</li>
+				<li>
+					<a
+						class={`block border border-black px-4 py-3 text-sm font-medium ${page.url.pathname.startsWith(appPath('/audit-log')) ? 'bg-black text-white' : 'bg-white text-black'}`}
+						href={appPath('/audit-log')}>Audit log</a
+					>
+				</li>
 			</ul>
 		</nav>
 

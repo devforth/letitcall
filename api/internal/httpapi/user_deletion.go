@@ -161,6 +161,14 @@ func (s *Server) reassignUserBookings(w http.ResponseWriter, r *http.Request) {
 		internalError(w, err, "reassign event type host")
 		return
 	}
+	if err := s.recordAuditLog(r, "reassigned_bookings", "user", oldEmail, map[string]any{
+		"previousHostEmail":      oldEmail,
+		"newHostEmail":           newEmail,
+		"reassignedBookingCount": len(bookings),
+	}); err != nil {
+		internalError(w, err, "record booking reassignment audit log")
+		return
+	}
 	writeJSON(w, http.StatusOK, map[string]any{"reassignedBookingCount": len(bookings)})
 }
 

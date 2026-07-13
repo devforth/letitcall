@@ -33,6 +33,7 @@ All backend settings use structured uppercase environment variables:
 | `LOGIN__PASSWORD__LOCKOUT` | Sets how long a password login remains locked after reaching the failed-attempt limit. | `15m` |
 | `LOGIN__OAUTH__GOOGLE__CLIENT_ID` | Sets the Google OAuth client ID and enables Google login when the client secret is also set. | Not set |
 | `LOGIN__OAUTH__GOOGLE__CLIENT_SECRET` | Sets the Google OAuth client secret. Must be set together with the client ID. | Not set |
+| `AUDITLOG__RETENTION__LEVELDB__MAX_ITEMS` | Sets the maximum retained backoffice audit-log entries. | `10000` |
 | `MAILING__SENDING__MAILGUN__API_KEY` | Enables Mailgun booking notifications. Must be set with the Mailgun base URL, domain, and sender. | Not set (email delivery is skipped) |
 | `MAILING__SENDING__MAILGUN__BASE_URL` | Sets the regional Mailgun API origin: `https://api.eu.mailgun.net` for EU or `https://api.mailgun.net` for US. | Not set |
 | `MAILING__SENDING__MAILGUN__DOMAIN` | Sets the Mailgun sending domain only, for example `talk.devforth.io` (not an API URL). | Not set |

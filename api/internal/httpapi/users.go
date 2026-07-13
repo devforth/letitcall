@@ -68,6 +68,19 @@ func (s *Server) createUser(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
+	payload, err := auditFields(user.Public())
+	if err != nil {
+		internalError(w, err, "build user creation audit payload")
+		return
+	}
+	payload["password"] = "not configured"
+	if request.Password != "" {
+		payload["password"] = "configured"
+	}
+	if err := s.recordAuditLog(r, "created", "user", user.Email, payload); err != nil {
+		internalError(w, err, "record user creation audit log")
+		return
+	}
 	writeJSON(w, http.StatusCreated, map[string]any{"user": user.Public()})
 }
 
@@ -101,6 +114,7 @@ func (s *Server) updateUser(w http.ResponseWriter, r *http.Request) {
 		internalError(w, err, "load user for update")
 		return
 	}
+	previousUser := user.Public()
 	previousAvatarFilename := user.AvatarPath
 	if request.FullName != nil {
 		user.FullName = strings.TrimSpace(*request.FullName)
@@ -141,6 +155,18 @@ func (s *Server) updateUser(w http.ResponseWriter, r *http.Request) {
 		internalError(w, err, "update user")
 		return
 	}
+	changes, err := auditDiff(previousUser, user.Public(), "updatedAt")
+	if err != nil {
+		internalError(w, err, "build user update audit payload")
+		return
+	}
+	if request.Password != nil {
+		changes["password"] = auditChange{Before: "protected", After: "changed"}
+	}
+	if err := s.recordAuditLog(r, "edited", "user", user.Email, changes); err != nil {
+		internalError(w, err, "record user update audit log")
+		return
+	}
 	if avatar.Filename != "" && previousAvatarFilename != "" {
 		if err := s.avatars.Remove(previousAvatarFilename); err != nil {
 			slog.Error("remove previous user avatar", "error", err, "filename", previousAvatarFilename)
@@ -159,6 +185,15 @@ func (s *Server) deleteUser(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusConflict, "you cannot delete your own user")
 		return
 	}
+	user, err := s.store.GetUser(email)
+	if errors.Is(err, store.ErrNotFound) {
+		writeError(w, http.StatusNotFound, "user not found")
+		return
+	}
+	if err != nil {
+		internalError(w, err, "load user for deletion")
+		return
+	}
 	if err := s.store.RemoveEventTypeHost(email, s.now().UTC().Truncate(time.Second)); errors.Is(err, store.ErrLastRequiredHost) {
 		writeError(w, http.StatusConflict, "user is the only required host for an event type")
 		return
@@ -175,6 +210,10 @@ func (s *Server) deleteUser(w http.ResponseWriter, r *http.Request) {
 	}
 	if err := s.store.DeleteSessionsForUser(email); err != nil {
 		internalError(w, err, "delete user sessions")
+		return
+	}
+	if err := s.recordAuditLog(r, "deleted", "user", email, user.Public()); err != nil {
+		internalError(w, err, "record user deletion audit log")
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)

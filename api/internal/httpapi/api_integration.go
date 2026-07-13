@@ -66,17 +66,35 @@ func (s *Server) createAPIToken(w http.ResponseWriter, r *http.Request) {
 		internalError(w, err, "store API token")
 		return
 	}
+	if err := s.recordAuditLog(r, "generated_token", "api_token", token.ID, summarizeAPIToken(token)); err != nil {
+		internalError(w, err, "record API token generation audit log")
+		return
+	}
 	writeJSON(w, http.StatusCreated, map[string]any{"apiToken": summarizeAPIToken(token), "token": value})
 }
 
 func (s *Server) deleteAPIToken(w http.ResponseWriter, r *http.Request) {
-	err := s.store.DeleteAPIToken(r.PathValue("id"), userFromRequest(r).Email)
+	id := r.PathValue("id")
+	token, err := s.store.GetAPIToken(id)
+	if errors.Is(err, store.ErrNotFound) {
+		writeError(w, http.StatusNotFound, "API token not found")
+		return
+	}
+	if err != nil {
+		internalError(w, err, "load API token for deletion")
+		return
+	}
+	err = s.store.DeleteAPIToken(id, userFromRequest(r).Email)
 	if errors.Is(err, store.ErrNotFound) {
 		writeError(w, http.StatusNotFound, "API token not found")
 		return
 	}
 	if err != nil {
 		internalError(w, err, "delete API token")
+		return
+	}
+	if err := s.recordAuditLog(r, "revoked_token", "api_token", id, summarizeAPIToken(token)); err != nil {
+		internalError(w, err, "record API token revocation audit log")
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)

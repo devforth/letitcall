@@ -37,6 +37,7 @@ func (s *Server) updateBranding(w http.ResponseWriter, r *http.Request) {
 		internalError(w, err, "load branding")
 		return
 	}
+	previousBranding := branding
 	previousLogoFilename := branding.LogoPath
 	branding.Name = request.Name
 	var logo content.Logo
@@ -57,6 +58,15 @@ func (s *Server) updateBranding(w http.ResponseWriter, r *http.Request) {
 			_ = s.logos.Remove(logo.Filename)
 		}
 		internalError(w, err, "store branding")
+		return
+	}
+	changes, err := auditDiff(previousBranding, branding)
+	if err != nil {
+		internalError(w, err, "build branding audit payload")
+		return
+	}
+	if err := s.recordAuditLog(r, "edited", "branding", "current", changes); err != nil {
+		internalError(w, err, "record branding audit log")
 		return
 	}
 	if logo.Filename != "" && previousLogoFilename != "" {
