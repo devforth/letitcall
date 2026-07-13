@@ -1,6 +1,58 @@
 @config '../../tailwind.config.ts';
 @import 'tailwindcss';
 
+@layer components {
+	.button-primary,
+	.button-secondary {
+		border-radius: 10px !important;
+		transition: all 0.3s !important;
+		font-weight: 700 !important;
+		cursor: pointer !important;
+	}
+
+	.button-primary {
+		background: rgb(var(--color-primary)) !important;
+		border: 2px solid color-mix(in srgb, rgb(var(--color-primary)), black 10%) !important;
+		color: rgb(var(--color-contrast-text)) !important;
+		padding: 0.875rem !important;
+		min-height: auto !important;
+		font-size: 1rem !important;
+		box-shadow: var(--shadow-small);
+	}
+
+	.button-primary:hover:not(:disabled) {
+		background: color-mix(in srgb, rgb(var(--color-primary)), white 10%) !important;
+		border-color: color-mix(in srgb, rgb(var(--color-primary)), white 10%) !important;
+	}
+
+	.button-primary:active:not(:disabled) {
+		background: color-mix(in srgb, rgb(var(--color-primary)), black 8%) !important;
+		border-color: color-mix(in srgb, rgb(var(--color-primary)), black 15%) !important;
+		box-shadow: none;
+	}
+
+	.button-secondary {
+		border: 2px solid rgb(var(--color-primary)) !important;
+		background-color: rgb(var(--color-foreground)) !important;
+		color: rgb(var(--color-text)) !important;
+		padding: 0.875rem !important;
+		min-height: auto !important;
+		font-size: 1rem !important;
+		box-shadow: var(--shadow-small);
+	}
+
+	.button-secondary:hover:not(:disabled) {
+		background-color: rgb(var(--color-primary) / 0.1) !important;
+		border-color: rgb(var(--color-primary)) !important;
+	}
+
+	.button-secondary:active:not(:disabled) {
+		background-color: rgb(var(--color-primary) / 0.2) !important;
+		border-color: color-mix(in srgb, rgb(var(--color-primary)), black 10%) !important;
+		box-shadow: none;
+	}
+}
+
 @layer base {
 	:root {
 		font-family:
@@ -10,10 +62,9 @@
 		/* Light theme (default) */
 		--color-foreground: 255 255 255;
 		--color-background: 245 245 230; /* White */
-		--color-border: 196 196 196;
+		--color-border: 216 216 216;
 		--color-text: 100 100 100;
 		--color-contrast-text: 255 255 255;
-		--color-border: 222 222 222;
 		--color-muted-foreground: 102 102 102;
 		--color-muted-background: 245 245 245;
 		--color-primary: 0 201 80;
@@ -21,6 +72,10 @@
 		--color-secondary-hover: 0 119 204;
 		--shadow: 0 0px 4vw rgb(0 0 0 / 0.15);
 		--shadow-small: 0 0px 1vw rgb(0 0 0 / 0.15);
+
+		--error: 255 58 58;
+		--success: 0 201 80;
+		--warning: 255 204 0;
 
 		color-scheme: light;
 		color: rgb(var(--color-text));
@@ -31,11 +86,10 @@
 		/* Dark theme */
 		--color-foreground: 100 100 100;
 		--color-background: 51 51 51;
-		--color-border: 77 77 77;
 		--color-muted-foreground: 153 153 153;
 		--color-muted-background: 64 64 64;
 		--color-text: 220 220 220;
-		--color-border: 65 65 66;
+		--color-border: 135 135 135;
 		--shadow: 0 0px 4vw rgb(0 0 0 / 0.5);
 		--shadow-small: 0 0px 1vw rgb(0 0 0 / 0.1);
 

@@ -30,7 +30,11 @@
 <PageTitle title="Google sign-in" />
 
 <main class="grid min-h-screen place-items-center px-4 py-12">
-	<section class="w-full max-w-md border border-black p-6 text-center sm:p-8" aria-live="polite">
+	<section
+		class="w-full max-w-md rounded-2xl border-2 border-border p-8 text-center sm:p-10"
+		style="background: rgb(var(--color-foreground)); box-shadow: var(--shadow);"
+		aria-live="polite"
+	>
 		<Icon icon={googleIcon} width="32" height="32" class="mx-auto" />
 		{#if error}
 			<h1 class="mt-5 text-2xl font-semibold tracking-tight">Google sign-in failed</h1>
