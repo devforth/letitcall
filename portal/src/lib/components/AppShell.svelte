@@ -48,7 +48,7 @@
 
 	<div class="mx-auto grid max-w-7xl md:grid-cols-[14rem_1fr]">
 		<nav class="border-b border-black p-4 md:min-h-[calc(100vh-77px)] md:border-r md:border-b-0 sm:p-6">
-			<ul class="flex gap-2 md:grid">
+			<ul class="flex flex-wrap gap-2 md:grid">
 				<li>
 					<a
 						class={`block border border-black px-4 py-3 text-sm font-medium ${page.url.pathname === appPath('/') ? 'bg-black text-white' : 'bg-white text-black'}`}
@@ -71,6 +71,12 @@
 					<a
 						class={`block border border-black px-4 py-3 text-sm font-medium ${page.url.pathname.startsWith(appPath('/branding')) ? 'bg-black text-white' : 'bg-white text-black'}`}
 						href={appPath('/branding')}>Branding</a
+					>
+				</li>
+				<li>
+					<a
+						class={`block border border-black px-4 py-3 text-sm font-medium ${page.url.pathname.startsWith(appPath('/api-integration')) ? 'bg-black text-white' : 'bg-white text-black'}`}
+						href={appPath('/api-integration')}>API Integration</a
 					>
 				</li>
 			</ul>

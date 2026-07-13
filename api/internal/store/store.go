@@ -25,15 +25,18 @@ var (
 )
 
 type Store struct {
-	users       *leveldb.DB
-	eventTypes  *leveldb.DB
-	bookings    *leveldb.DB
-	secretLinks *leveldb.DB
-	sessions    *leveldb.DB
-	oauthStates *leveldb.DB
-	googleBusy  *leveldb.DB
-	branding    *leveldb.DB
-	mu          sync.Mutex
+	users                *leveldb.DB
+	eventTypes           *leveldb.DB
+	bookings             *leveldb.DB
+	secretLinks          *leveldb.DB
+	sessions             *leveldb.DB
+	oauthStates          *leveldb.DB
+	googleBusy           *leveldb.DB
+	branding             *leveldb.DB
+	apiTokens            *leveldb.DB
+	webhookSubscriptions *leveldb.DB
+	webhookDeliveries    *leveldb.DB
+	mu                   sync.Mutex
 }
 
 func Open(root string) (*Store, error) {
@@ -41,7 +44,7 @@ func Open(root string) (*Store, error) {
 		return nil, fmt.Errorf("create LevelDB root: %w", err)
 	}
 
-	opened := make([]*leveldb.DB, 0, 8)
+	opened := make([]*leveldb.DB, 0, 11)
 	openTable := func(name string) (*leveldb.DB, error) {
 		db, err := leveldb.OpenFile(filepath.Join(root, name+".leveldb"), nil)
 		if err != nil {
@@ -90,6 +93,21 @@ func Open(root string) (*Store, error) {
 		closeAll(opened)
 		return nil, err
 	}
+	apiTokens, err := openTable("api_tokens")
+	if err != nil {
+		closeAll(opened)
+		return nil, err
+	}
+	webhookSubscriptions, err := openTable("webhook_subscriptions")
+	if err != nil {
+		closeAll(opened)
+		return nil, err
+	}
+	webhookDeliveries, err := openTable("webhook_deliveries")
+	if err != nil {
+		closeAll(opened)
+		return nil, err
+	}
 	brandingKey := []byte("current")
 	exists, err := branding.Has(brandingKey, nil)
 	if err != nil {
@@ -103,11 +121,19 @@ func Open(root string) (*Store, error) {
 		}
 	}
 
-	return &Store{users: users, eventTypes: eventTypes, bookings: bookings, secretLinks: secretLinks, sessions: sessions, oauthStates: oauthStates, googleBusy: googleBusy, branding: branding}, nil
+	return &Store{
+		users: users, eventTypes: eventTypes, bookings: bookings, secretLinks: secretLinks,
+		sessions: sessions, oauthStates: oauthStates, googleBusy: googleBusy, branding: branding,
+		apiTokens: apiTokens, webhookSubscriptions: webhookSubscriptions, webhookDeliveries: webhookDeliveries,
+	}, nil
 }
 
 func (s *Store) Close() error {
-	return errors.Join(s.users.Close(), s.eventTypes.Close(), s.bookings.Close(), s.secretLinks.Close(), s.sessions.Close(), s.oauthStates.Close(), s.googleBusy.Close(), s.branding.Close())
+	return errors.Join(
+		s.users.Close(), s.eventTypes.Close(), s.bookings.Close(), s.secretLinks.Close(),
+		s.sessions.Close(), s.oauthStates.Close(), s.googleBusy.Close(), s.branding.Close(),
+		s.apiTokens.Close(), s.webhookSubscriptions.Close(), s.webhookDeliveries.Close(),
+	)
 }
 
 func closeAll(databases []*leveldb.DB) {

@@ -22,6 +22,19 @@ export type Branding = {
 	logoPath?: string;
 };
 
+export type APITokenSummary = {
+	id: string;
+	name: string;
+	createdAt: string;
+};
+
+export type APIIntegration = {
+	baseURL: string;
+	openAPIURL: string;
+	swaggerURL: string;
+	tokens: APITokenSummary[];
+};
+
 export type ApiError = {
 	error: string;
 };

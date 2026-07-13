@@ -1,0 +1,252 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Let It Call Lead Generation API",
+    "version": "1.0.0",
+    "description": "A compatibility API for reading users, event types, availability, scheduled events, invitees, and installing webhooks. All instants use UTC RFC3339 second precision. Webhook delivery is at least once and unordered. Receivers should deduplicate with <event>:<resource URI>:<updated_at>. Signed deliveries use Webhook-Signature: t=<unix>,v1=<HMAC-SHA256(timestamp + '.' + raw body)> and receivers should enforce a 180 second replay tolerance. Routing form subscriptions are accepted, but routing form events are not emitted until routing forms are implemented."
+  },
+  "servers": [{ "url": "__BASE_URL__" }],
+  "security": [{ "bearerAuth": [] }],
+  "tags": [
+    { "name": "Users" },
+    { "name": "Event Types" },
+    { "name": "Availability" },
+    { "name": "Webhooks" },
+    { "name": "Scheduled Events" }
+  ],
+  "paths": {
+    "/users/me": {
+      "get": {
+        "tags": ["Users"],
+        "operationId": "getCurrentUser",
+        "responses": {
+          "200": { "description": "Current token owner", "content": { "application/json": { "schema": { "type": "object", "required": ["resource"], "properties": { "resource": { "$ref": "#/components/schemas/User" } } } } } },
+          "401": { "$ref": "#/components/responses/Unauthenticated" }
+        }
+      }
+    },
+    "/event_types": {
+      "get": {
+        "tags": ["Event Types"],
+        "operationId": "listEventTypes",
+        "parameters": [
+          { "name": "user", "in": "query", "schema": { "type": "string", "format": "uri" } },
+          { "name": "organization", "in": "query", "schema": { "type": "string", "format": "uri" } },
+          { "name": "active", "in": "query", "schema": { "type": "boolean" } },
+          { "name": "admin_managed", "in": "query", "schema": { "type": "boolean" } },
+          { "name": "sort", "in": "query", "schema": { "type": "string", "enum": ["name", "name:asc", "name:desc"] } },
+          { "$ref": "#/components/parameters/Count" },
+          { "$ref": "#/components/parameters/PageToken" }
+        ],
+        "responses": {
+          "200": { "description": "Event types", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/EventTypeCollection" } } } },
+          "400": { "$ref": "#/components/responses/InvalidArgument" },
+          "401": { "$ref": "#/components/responses/Unauthenticated" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      }
+    },
+    "/event_types/{uuid}": {
+      "get": {
+        "tags": ["Event Types"],
+        "operationId": "getEventType",
+        "parameters": [{ "name": "uuid", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "responses": {
+          "200": { "description": "Event type", "content": { "application/json": { "schema": { "type": "object", "required": ["resource"], "properties": { "resource": { "$ref": "#/components/schemas/EventType" } } } } } },
+          "401": { "$ref": "#/components/responses/Unauthenticated" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      }
+    },
+    "/event_type_available_times": {
+      "get": {
+        "tags": ["Availability"],
+        "operationId": "listEventTypeAvailableTimes",
+        "parameters": [
+          { "name": "event_type", "in": "query", "required": true, "schema": { "type": "string", "format": "uri" } },
+          { "name": "start_time", "in": "query", "required": true, "schema": { "type": "string", "format": "date-time" }, "example": "2026-07-13T00:00:00Z" },
+          { "name": "end_time", "in": "query", "required": true, "schema": { "type": "string", "format": "date-time" }, "example": "2026-07-20T00:00:00Z" }
+        ],
+        "responses": {
+          "200": { "description": "Available times", "content": { "application/json": { "schema": { "type": "object", "required": ["collection"], "properties": { "collection": { "type": "array", "items": { "$ref": "#/components/schemas/AvailableTime" } } } } } } },
+          "400": { "$ref": "#/components/responses/InvalidArgument" },
+          "401": { "$ref": "#/components/responses/Unauthenticated" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      }
+    },
+    "/webhook_subscriptions": {
+      "post": {
+        "tags": ["Webhooks"],
+        "operationId": "createWebhookSubscription",
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CreateWebhookSubscription" } } } },
+        "responses": {
+          "201": { "description": "Created subscription", "content": { "application/json": { "schema": { "type": "object", "required": ["resource"], "properties": { "resource": { "$ref": "#/components/schemas/WebhookSubscription" } } } } } },
+          "400": { "$ref": "#/components/responses/InvalidArgument" },
+          "401": { "$ref": "#/components/responses/Unauthenticated" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "409": { "$ref": "#/components/responses/Conflict" }
+        }
+      },
+      "get": {
+        "tags": ["Webhooks"],
+        "operationId": "listWebhookSubscriptions",
+        "parameters": [
+          { "name": "organization", "in": "query", "required": true, "schema": { "type": "string", "format": "uri" } },
+          { "name": "scope", "in": "query", "required": true, "schema": { "type": "string", "enum": ["organization", "user"] } },
+          { "name": "user", "in": "query", "schema": { "type": "string", "format": "uri" } },
+          { "name": "sort", "in": "query", "schema": { "type": "string", "enum": ["created_at:asc", "created_at:desc"] } },
+          { "$ref": "#/components/parameters/Count" },
+          { "$ref": "#/components/parameters/PageToken" }
+        ],
+        "responses": {
+          "200": { "description": "Webhook subscriptions", "content": { "application/json": { "schema": { "type": "object", "required": ["collection", "pagination"], "properties": { "collection": { "type": "array", "items": { "$ref": "#/components/schemas/WebhookSubscription" } }, "pagination": { "$ref": "#/components/schemas/Pagination" } } } } } },
+          "400": { "$ref": "#/components/responses/InvalidArgument" },
+          "401": { "$ref": "#/components/responses/Unauthenticated" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      }
+    },
+    "/scheduled_events": {
+      "get": {
+        "tags": ["Scheduled Events"],
+        "operationId": "listScheduledEvents",
+        "parameters": [
+          { "name": "user", "in": "query", "schema": { "type": "string", "format": "uri" } },
+          { "name": "organization", "in": "query", "schema": { "type": "string", "format": "uri" } },
+          { "name": "invitee_email", "in": "query", "schema": { "type": "string", "format": "email" } },
+          { "name": "status", "in": "query", "schema": { "type": "string", "enum": ["active", "canceled"] } },
+          { "name": "min_start_time", "in": "query", "schema": { "type": "string", "format": "date-time" } },
+          { "name": "max_start_time", "in": "query", "schema": { "type": "string", "format": "date-time" } },
+          { "name": "sort", "in": "query", "schema": { "type": "string", "enum": ["start_time:asc", "start_time:desc"] } },
+          { "$ref": "#/components/parameters/Count" },
+          { "$ref": "#/components/parameters/PageToken" }
+        ],
+        "responses": {
+          "200": { "description": "Scheduled events", "content": { "application/json": { "schema": { "type": "object", "required": ["collection", "pagination"], "properties": { "collection": { "type": "array", "items": { "$ref": "#/components/schemas/ScheduledEvent" } }, "pagination": { "$ref": "#/components/schemas/Pagination" } } } } } },
+          "400": { "$ref": "#/components/responses/InvalidArgument" },
+          "401": { "$ref": "#/components/responses/Unauthenticated" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      }
+    },
+    "/scheduled_events/{event_uuid}/invitees": {
+      "get": {
+        "tags": ["Scheduled Events"],
+        "operationId": "listScheduledEventInvitees",
+        "parameters": [
+          { "name": "event_uuid", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "status", "in": "query", "schema": { "type": "string", "enum": ["active", "canceled"] } },
+          { "name": "email", "in": "query", "schema": { "type": "string", "format": "email" } },
+          { "name": "sort", "in": "query", "schema": { "type": "string", "enum": ["created_at:asc", "created_at:desc"] } },
+          { "$ref": "#/components/parameters/Count" },
+          { "$ref": "#/components/parameters/PageToken" }
+        ],
+        "responses": {
+          "200": { "description": "Event invitees", "content": { "application/json": { "schema": { "type": "object", "required": ["collection", "pagination"], "properties": { "collection": { "type": "array", "items": { "$ref": "#/components/schemas/Invitee" } }, "pagination": { "$ref": "#/components/schemas/Pagination" } } } } } },
+          "400": { "$ref": "#/components/responses/InvalidArgument" },
+          "401": { "$ref": "#/components/responses/Unauthenticated" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": { "bearerAuth": { "type": "http", "scheme": "bearer", "bearerFormat": "personal access token" } },
+    "parameters": {
+      "Count": { "name": "count", "in": "query", "schema": { "type": "integer", "minimum": 1, "maximum": 100, "default": 20 } },
+      "PageToken": { "name": "page_token", "in": "query", "schema": { "type": "string" } }
+    },
+    "responses": {
+      "InvalidArgument": { "description": "Invalid request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+      "Unauthenticated": { "description": "Invalid or missing bearer token", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+      "NotFound": { "description": "Resource not found", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+      "Conflict": { "description": "Resource conflict", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+    },
+    "schemas": {
+      "Error": { "type": "object", "additionalProperties": false, "required": ["error"], "properties": { "error": { "type": "string" } } },
+      "Pagination": {
+        "type": "object",
+        "required": ["count", "next_page", "previous_page", "next_page_token", "previous_page_token"],
+        "properties": {
+          "count": { "type": "integer" },
+          "next_page": { "type": "string", "format": "uri", "nullable": true },
+          "previous_page": { "type": "string", "format": "uri", "nullable": true },
+          "next_page_token": { "type": "string", "nullable": true },
+          "previous_page_token": { "type": "string", "nullable": true }
+        }
+      },
+      "User": {
+        "type": "object",
+        "required": ["uri", "name", "email", "timezone", "avatar_url", "created_at", "updated_at", "current_organization"],
+        "properties": {
+          "uri": { "type": "string", "format": "uri" }, "name": { "type": "string" }, "email": { "type": "string", "format": "email" },
+          "timezone": { "type": "string" }, "avatar_url": { "type": "string", "format": "uri", "nullable": true },
+          "created_at": { "type": "string", "format": "date-time" }, "updated_at": { "type": "string", "format": "date-time" },
+          "current_organization": { "type": "string", "format": "uri" },
+          "slug": { "type": "string", "x-not-implemented": true }, "scheduling_url": { "type": "string", "format": "uri", "x-not-implemented": true }
+        }
+      },
+      "EventTypeCollection": { "type": "object", "required": ["collection", "pagination"], "properties": { "collection": { "type": "array", "items": { "$ref": "#/components/schemas/EventType" } }, "pagination": { "$ref": "#/components/schemas/Pagination" } } },
+      "EventType": {
+        "type": "object",
+        "required": ["uri", "name", "active", "booking_method", "slug", "scheduling_url", "duration", "kind", "pooling_type", "type", "kind_description", "created_at", "updated_at", "profile", "custom_questions"],
+        "properties": {
+          "uri": { "type": "string", "format": "uri" }, "name": { "type": "string" }, "active": { "type": "boolean" },
+          "booking_method": { "type": "string", "enum": ["instant"] }, "slug": { "type": "string" }, "scheduling_url": { "type": "string", "format": "uri" },
+          "duration": { "type": "integer" }, "kind": { "type": "string", "enum": ["solo", "group"] }, "pooling_type": { "type": "string", "enum": ["collective"], "nullable": true },
+          "type": { "type": "string", "enum": ["StandardEventType"] }, "kind_description": { "type": "string" },
+          "created_at": { "type": "string", "format": "date-time" }, "updated_at": { "type": "string", "format": "date-time" },
+          "profile": { "type": "object", "required": ["type", "name", "owner"], "properties": { "type": { "type": "string" }, "name": { "type": "string" }, "owner": { "type": "string", "format": "uri" } } },
+          "custom_questions": { "type": "array", "items": { "type": "object" } },
+          "color": { "type": "string", "x-not-implemented": true }, "internal_note": { "type": "string", "x-not-implemented": true }, "description_plain": { "type": "string", "x-not-implemented": true },
+          "description_html": { "type": "string", "x-not-implemented": true }, "deleted_at": { "type": "string", "format": "date-time", "x-not-implemented": true },
+          "secret": { "type": "boolean", "x-not-implemented": true }, "admin_managed": { "type": "boolean", "x-not-implemented": true }
+        }
+      },
+      "AvailableTime": { "type": "object", "required": ["status", "invitees_remaining", "start_time", "scheduling_url"], "properties": { "status": { "type": "string", "enum": ["available"] }, "invitees_remaining": { "type": "integer" }, "start_time": { "type": "string", "format": "date-time" }, "scheduling_url": { "type": "string", "format": "uri" } } },
+      "CreateWebhookSubscription": {
+        "type": "object", "additionalProperties": false, "required": ["url", "events", "organization", "scope"],
+        "properties": {
+          "url": { "type": "string", "format": "uri" }, "events": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "type": "string", "enum": ["invitee.created", "invitee.canceled", "routing_form_submission.created"] } },
+          "organization": { "type": "string", "format": "uri" }, "user": { "type": "string", "format": "uri" }, "scope": { "type": "string", "enum": ["organization", "user"] },
+          "signing_key": { "type": "string", "minLength": 16, "writeOnly": true }
+        }
+      },
+      "WebhookSubscription": {
+        "type": "object", "required": ["uri", "callback_url", "created_at", "updated_at", "state", "events", "scope", "organization", "user", "creator"],
+        "properties": {
+          "uri": { "type": "string", "format": "uri" }, "callback_url": { "type": "string", "format": "uri" }, "created_at": { "type": "string", "format": "date-time" },
+          "updated_at": { "type": "string", "format": "date-time" }, "state": { "type": "string", "enum": ["active"] }, "events": { "type": "array", "items": { "type": "string" } },
+          "scope": { "type": "string", "enum": ["organization", "user"] }, "organization": { "type": "string", "format": "uri" }, "user": { "type": "string", "format": "uri", "nullable": true },
+          "creator": { "type": "string", "format": "uri" }, "retry_started_at": { "type": "string", "format": "date-time", "x-not-implemented": true }
+        }
+      },
+      "ScheduledEvent": {
+        "type": "object", "required": ["uri", "name", "status", "booking_method", "start_time", "end_time", "event_type", "invitees_counter", "created_at", "updated_at", "event_memberships", "event_guests"],
+        "properties": {
+          "uri": { "type": "string", "format": "uri" }, "name": { "type": "string" }, "status": { "type": "string", "enum": ["active", "canceled"] }, "booking_method": { "type": "string", "enum": ["instant"] },
+          "start_time": { "type": "string", "format": "date-time" }, "end_time": { "type": "string", "format": "date-time" }, "event_type": { "type": "string", "format": "uri" },
+          "invitees_counter": { "type": "object", "required": ["total", "active", "limit"], "properties": { "total": { "type": "integer" }, "active": { "type": "integer" }, "limit": { "type": "integer" } } },
+          "created_at": { "type": "string", "format": "date-time" }, "updated_at": { "type": "string", "format": "date-time" },
+          "event_memberships": { "type": "array", "items": { "type": "object" } }, "event_guests": { "type": "array", "items": { "type": "object" } },
+          "cancellation": { "type": "object", "nullable": true }, "location": { "type": "object", "x-not-implemented": true },
+          "calendar_event": { "type": "object", "x-not-implemented": true }, "meeting_notes_plain": { "type": "string", "x-not-implemented": true }, "meeting_notes_html": { "type": "string", "x-not-implemented": true }
+        }
+      },
+      "Invitee": {
+        "type": "object", "required": ["uri", "email", "first_name", "last_name", "name", "status", "questions_and_answers", "timezone", "event", "created_at", "updated_at", "rescheduled", "cancel_url"],
+        "properties": {
+          "uri": { "type": "string", "format": "uri" }, "email": { "type": "string", "format": "email" }, "first_name": { "type": "string", "nullable": true }, "last_name": { "type": "string", "nullable": true },
+          "name": { "type": "string" }, "status": { "type": "string", "enum": ["active", "canceled"] }, "questions_and_answers": { "type": "array", "items": { "type": "object" } }, "timezone": { "type": "string" },
+          "event": { "type": "string", "format": "uri" }, "created_at": { "type": "string", "format": "date-time" }, "updated_at": { "type": "string", "format": "date-time" },
+          "rescheduled": { "type": "boolean", "enum": [false] }, "cancel_url": { "type": "string", "format": "uri" }, "cancellation": { "type": "object", "nullable": true },
+          "tracking": { "type": "object", "x-not-implemented": true }, "text_reminder_number": { "type": "string", "x-not-implemented": true }, "old_invitee": { "type": "string", "format": "uri", "x-not-implemented": true },
+          "new_invitee": { "type": "string", "format": "uri", "x-not-implemented": true }, "reschedule_url": { "type": "string", "x-not-implemented": true },
+          "routing_form_submission": { "type": "string", "x-not-implemented": true }, "payment": { "type": "object", "x-not-implemented": true }, "no_show": { "type": "object", "x-not-implemented": true }, "reconfirmation": { "type": "object", "x-not-implemented": true },
+          "scheduling_method": { "type": "string", "x-not-implemented": true }, "invitee_scheduled_by": { "type": "string", "x-not-implemented": true }
+        }
+      }
+    }
+  }
+}

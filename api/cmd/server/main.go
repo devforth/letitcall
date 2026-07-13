@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"sync"
 	"syscall"
 	"time"
 	_ "time/tzdata"
@@ -55,10 +56,15 @@ func run() error {
 	}
 	signals, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
-	syncDone := make(chan struct{})
+	var workers sync.WaitGroup
+	workers.Add(2)
 	go func() {
-		defer close(syncDone)
+		defer workers.Done()
 		api.RunCalendarSync(signals)
+	}()
+	go func() {
+		defer workers.Done()
+		api.RunWebhookDelivery(signals)
 	}()
 
 	server := &http.Server{
@@ -80,7 +86,7 @@ func run() error {
 	select {
 	case err := <-serverError:
 		stop()
-		<-syncDone
+		workers.Wait()
 		if !errors.Is(err, http.ErrServerClosed) {
 			return err
 		}
@@ -91,7 +97,7 @@ func run() error {
 	shutdownContext, cancel := context.WithTimeout(context.Background(), shutdownTimeout)
 	defer cancel()
 	shutdownErr := server.Shutdown(shutdownContext)
-	<-syncDone
+	workers.Wait()
 	if shutdownErr != nil {
 		return fmt.Errorf("graceful shutdown: %w", shutdownErr)
 	}

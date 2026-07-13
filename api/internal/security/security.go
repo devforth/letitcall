@@ -4,7 +4,9 @@ import (
 	"crypto/aes"
 	"crypto/cipher"
 	"crypto/rand"
+	"crypto/sha256"
 	"encoding/base64"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"net/mail"
@@ -106,6 +108,11 @@ func RandomToken(bytes int) (string, error) {
 		return "", fmt.Errorf("generate secure token: %w", err)
 	}
 	return base64.RawURLEncoding.EncodeToString(buffer), nil
+}
+
+func TokenDigest(token string) string {
+	digest := sha256.Sum256([]byte(token))
+	return hex.EncodeToString(digest[:])
 }
 
 type TokenCipher struct {
