@@ -81,7 +81,7 @@
 	{#if loading}
 		<p class="border border-black p-6 text-sm">Loading user…</p>
 	{:else if email}
-		<form class="grid gap-5 border border-black p-5 lg:grid-cols-2" onsubmit={saveUser}>
+		<form class="grid gap-5 lg:grid-cols-2" onsubmit={saveUser}>
 			<Input id="edit-email" label="Email" type="email" bind:value={email} readonly autocomplete="email" />
 			<Input id="edit-full-name" label="Full name" bind:value={fullName} autocomplete="name" />
 			<SearchableSelect
@@ -93,7 +93,8 @@
 			/>
 			<Input
 				id="edit-password"
-				label="New password (leave blank to keep current)"
+				label="New password"
+				hint="Leave blank to keep current"
 				type="password"
 				bind:value={password}
 				minlength={12}

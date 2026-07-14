@@ -18,22 +18,94 @@
 	} = $props();
 </script>
 
-<label class="grid gap-2 text-sm" for={id}>
-	<span class="font-medium">{label}</span>
-	<input
-		{id}
-		list={`${id}-options`}
-		type="search"
-		bind:value
-		{placeholder}
-		{required}
-		{disabled}
-		autocomplete="off"
-		class="min-h-11 w-full border border-black bg-white px-3 py-2 text-black outline-none placeholder:text-black/50 focus:ring-2 focus:ring-black focus:ring-offset-2 disabled:opacity-40"
-	/>
+<div class="field">
+	<div class="input-group" class:filled={!!value}>
+		<input
+			{id}
+			list={`${id}-options`}
+			type="search"
+			bind:value
+			{placeholder}
+			{required}
+			{disabled}
+			autocomplete="off"
+			class="input"
+		/>
+		<label class="float-label" for={id}>{label}</label>
+	</div>
 	<datalist id={`${id}-options`}>
 		{#each options as option (option)}
 			<option value={option}></option>
 		{/each}
 	</datalist>
-</label>
+</div>
+
+<style>
+	.field {
+		display: grid;
+		font-size: 0.875rem;
+	}
+
+	.input-group {
+		position: relative;
+	}
+
+	.input {
+		width: 100%;
+		font: inherit;
+		font-size: 0.9rem;
+		color: rgb(var(--color-text));
+		background: rgb(var(--color-foreground));
+		border: 2px solid rgb(var(--color-border));
+		border-radius: 10px;
+		padding: 10px 12px;
+		min-height: 44px;
+		outline: none;
+		transition: border-color 0.18s, box-shadow 0.18s;
+	}
+
+	.input::placeholder {
+		color: transparent;
+	}
+
+	.input:focus::placeholder {
+		color: rgb(var(--color-text) / 0.4);
+	}
+
+	.float-label {
+		position: absolute;
+		left: 12px;
+		top: 50%;
+		transform: translateY(-50%);
+		max-width: calc(100% - 24px);
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+		font-size: 0.9rem;
+		font-weight: 500;
+		color: rgb(var(--color-text) / 0.6);
+		background: rgb(var(--color-foreground));
+		padding: 0 4px;
+		pointer-events: none;
+		transition: top 0.16s, left 0.16s, font-size 0.16s, font-weight 0.16s, color 0.16s;
+	}
+
+	.input:focus ~ .float-label,
+	.filled .float-label {
+		top: 0;
+		left: 10px;
+		font-size: 0.72rem;
+		font-weight: 700;
+		color: rgb(var(--color-primary));
+	}
+
+	.input:focus {
+		border-color: rgb(var(--color-primary));
+		box-shadow: 0 0 0 3px rgb(var(--color-primary) / 0.25);
+	}
+
+	.input:disabled {
+		opacity: 0.4;
+		cursor: not-allowed;
+	}
+</style>

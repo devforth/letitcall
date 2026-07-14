@@ -27,10 +27,10 @@
 	}
 </script>
 
-<div class="overflow-x-auto border border-black">
-	<table class="w-full min-w-[50rem] border-collapse text-left text-sm">
+<div class="overflow-x-auto">
+	<table class="utable w-full min-w-[50rem] text-left text-sm">
 		<thead>
-			<tr class="border-b border-black">
+			<tr>
 				<th class="px-4 py-3 font-semibold">User</th>
 				<th class="px-4 py-3 font-semibold">Email</th>
 				<th class="px-4 py-3 font-semibold">
@@ -45,7 +45,7 @@
 		</thead>
 		<tbody>
 			{#each users as user (user.email)}
-				<tr class="border-b border-black last:border-b-0">
+				<tr>
 					<td class="px-4 py-3">
 						<div class="flex items-center gap-3">
 							{#if user.avatarPath}
@@ -91,11 +91,11 @@
 								<span class="sr-only">Edit {user.email}</span>
 							</Button>
 							<Button
-								variant="danger"
+								variant="secondary"
 								disabled={user.email === currentEmail || checkingEmail === user.email || deletingEmail === user.email}
 								onclick={() => ondelete(user.email)}
 							>
-								<svg class="size-[18px] shrink-0" viewBox="0 0 24 24" fill="currentColor"><path d="M9 3a1 1 0 0 0-1 1v1H4.5a1 1 0 1 0 0 2H5v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7h.5a1 1 0 1 0 0-2H16V4a1 1 0 0 0-1-1H9zm1 6a1 1 0 0 1 1 1v7a1 1 0 1 1-2 0v-7a1 1 0 0 1 1-1zm4 0a1 1 0 0 1 1 1v7a1 1 0 1 1-2 0v-7a1 1 0 0 1 1-1z" /></svg>
+								<svg class="size-[18px] shrink-0" viewBox="0 0 24 24" fill="currentColor" style="color: rgb(var(--color-primary));"><path d="M9 3a1 1 0 0 0-1 1v1H4.5a1 1 0 1 0 0 2H5v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7h.5a1 1 0 1 0 0-2H16V4a1 1 0 0 0-1-1H9zm1 6a1 1 0 0 1 1 1v7a1 1 0 1 1-2 0v-7a1 1 0 0 1 1-1zm4 0a1 1 0 0 1 1 1v7a1 1 0 1 1-2 0v-7a1 1 0 0 1 1-1z" /></svg>
 								<span class="sr-only">{checkingEmail === user.email ? 'Checking…' : deletingEmail === user.email ? 'Deleting…' : `Delete ${user.email}`}</span>
 							</Button>
 						</div>
@@ -109,3 +109,37 @@
 		</tbody>
 	</table>
 </div>
+
+<style>
+	.utable {
+		border-collapse: separate;
+		border-spacing: 0;
+	}
+
+	.utable thead th {
+		background: color-mix(in srgb, rgb(var(--color-border)), black 10%);
+		color: rgb(var(--color-contrast-text));
+	}
+
+	.utable thead th:first-child {
+		border-top-left-radius: 8px;
+		border-bottom-left-radius: 8px;
+	}
+
+	.utable thead th:last-child {
+		border-top-right-radius: 8px;
+		border-bottom-right-radius: 8px;
+	}
+
+	.utable tbody tr:first-child td {
+		padding-top: 16px;
+	}
+
+	.utable tbody tr + tr td {
+		border-top: 1px solid rgb(var(--color-border));
+	}
+
+	.utable tbody tr:hover td {
+		background: rgb(var(--color-muted-background));
+	}
+</style>

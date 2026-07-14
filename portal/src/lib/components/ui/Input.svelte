@@ -13,6 +13,7 @@
 		readonly = false,
 		minlength,
 		error = '',
+		hint = '',
 		icon
 	}: {
 		id: string;
@@ -26,6 +27,7 @@
 		readonly?: boolean;
 		minlength?: number;
 		error?: string;
+		hint?: string;
 		icon?: 'text' | 'email' | 'password' | 'search' | 'user';
 	} = $props();
 
@@ -46,7 +48,7 @@
 			{id}
 			bind:this={inputEl}
 			bind:value
-			placeholder={placeholder || ' '}
+			{placeholder}
 			{required}
 			{autocomplete}
 			{disabled}
@@ -88,6 +90,8 @@
 	</div>
 	{#if error}
 		<span id={`${id}-error`} class="field-error" role="alert">{error}</span>
+	{:else if hint}
+		<span class="field-hint">{hint}</span>
 	{/if}
 </div>
 
@@ -188,7 +192,7 @@
 	}
 
 	.input:focus ~ .float-label,
-	.input:not(:placeholder-shown) ~ .float-label,
+	.input:-webkit-autofill ~ .float-label,
 	.filled .float-label {
 		top: 0;
 		left: 10px;
@@ -247,5 +251,10 @@
 		font-size: 0.75rem;
 		font-weight: 600;
 		color: rgb(var(--error));
+	}
+
+	.field-hint {
+		font-size: 0.75rem;
+		color: rgb(var(--color-text) / 0.6);
 	}
 </style>
