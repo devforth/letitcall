@@ -74,8 +74,8 @@
 
 	:global(input:focus) {
 		outline: none !important;
-		border-color: rgb(var(--color-secondary)) !important;
-		box-shadow: 0 0 0 3px rgb(var(--color-secondary) / 0.15) !important;
+		border-color: rgb(var(--color-primary)) !important;
+		box-shadow: 0 0 0 3px rgb(var(--color-primary) / 0.15) !important;
 	}
 
 	/* Label styling */
@@ -90,9 +90,9 @@
 	}
 
 	:global(html.dark input:focus) {
-		background-color: rgb(var(--color-secondary) / 0.1) !important;
-		border-color: rgb(var(--color-secondary)) !important;
-		box-shadow: 0 0 15px rgb(var(--color-secondary) / 0.3) !important;
+		background-color: rgb(var(--color-primary) / 0.1) !important;
+		border-color: rgb(var(--color-primary)) !important;
+		box-shadow: 0 0 15px rgb(var(--color-primary) / 0.3) !important;
 	}
 
 	:global(html.dark) .bg-red-50 {
@@ -132,7 +132,7 @@
 			<div class="p-8 sm:p-10 rounded-2xl border-2 border-border" style="background: rgb(var(--color-foreground)); box-shadow: var(--shadow);">
 				<div class="mb-8">
 					<BrandLogo class="mb-6 size-20 border border-black object-cover" />
-					<h1 id="login-title" class="text-secondary text-3xl font-normal tracking-tight">Welcome Back</h1>
+					<h1 id="login-title" class="text-3xl font-normal tracking-tight">Welcome Back</h1>
 					<p class="mt-2 text-sm">Sign in to manage your team's schedule</p>
 				</div>
 
@@ -141,7 +141,7 @@
 				{/if}
 
 				<form class="grid gap-5" onsubmit={login}>
-					<Input id="email" label="Email or username" bind:value={email} required autocomplete="username" />
+					<Input id="email" label="Email or username" icon="user" bind:value={email} required autocomplete="username" />
 					<Input
 						id="password"
 						label="Password"
@@ -150,7 +150,7 @@
 						required
 						autocomplete="current-password"
 					/>
-					<Button type="submit" fullWidth class="mt-2" disabled={submitting}>
+					<Button type="submit" fullWidth class="mt-2 lg-pd" disabled={submitting}>
 						{submitting ? 'Signing in…' : 'Sign in'}
 					</Button>
 				</form>
@@ -161,7 +161,7 @@
 						<span class="text-sm font-medium opacity-50">or</span>
 						<div class="h-px flex-1 bg-gray-300"></div>
 					</div>
-					<Button variant="secondary" fullWidth onclick={googleLogin}>
+					<Button variant="secondary" fullWidth class="lg-pd" onclick={googleLogin}>
 						<span class="flex items-center gap-2">
 							<Icon class="self-center" icon={googleIcon} width="28" height="28" />
 							<span class="flex flex-col items-start leading-tight">

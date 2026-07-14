@@ -32,10 +32,10 @@
 <style>
 	.toggle-switch {
 		position: relative !important;
-		width: 68px !important;
-		height: 36px !important;
+		width: 52px !important;
+		height: 28px !important;
 		border: 2px solid rgb(var(--color-border)) !important;
-		border-radius: 20px !important;
+		border-radius: 16px !important;
 		background: rgb(var(--color-foreground)) !important;
 		color: rgb(var(--color-text)) !important;
 		cursor: pointer !important;
@@ -47,23 +47,15 @@
 		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
 	}
 
-	.toggle-switch:hover {
-		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
-	}
-
 	.toggle-switch.dark {
 		justify-content: flex-end !important;
 	}
 
-	.toggle-switch.dark:hover {
-		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
-	}
-
 	.sun-icon {
 		position: absolute !important;
-		left: 6px !important;
-		width: 20px !important;
-		height: 20px !important;
+		left: 5px !important;
+		width: 16px !important;
+		height: 16px !important;
 		transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
 		flex-shrink: 0 !important;
 	}
@@ -75,9 +67,9 @@
 
 	.moon-icon {
 		position: absolute !important;
-		right: 6px !important;
-		width: 20px !important;
-		height: 20px !important;
+		right: 5px !important;
+		width: 16px !important;
+		height: 16px !important;
 		opacity: 0 !important;
 		transform: scale(0.5) translateX(10px) !important;
 		transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) !important;

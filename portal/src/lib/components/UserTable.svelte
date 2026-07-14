@@ -27,7 +27,7 @@
 				<th class="px-4 py-3 font-semibold">Full name</th>
 				<th class="px-4 py-3 font-semibold">Is Google connected</th>
 				<th class="px-4 py-3 font-semibold">Timezone</th>
-				<th class="px-4 py-3 text-right font-semibold"><span class="sr-only">Actions</span></th>
+				<th aria-label="Actions" class="px-4 py-3 text-right font-semibold"></th>
 			</tr>
 		</thead>
 		<tbody>

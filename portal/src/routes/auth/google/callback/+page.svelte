@@ -40,7 +40,7 @@
 			<h1 class="mt-5 text-2xl font-semibold tracking-tight">Google sign-in failed</h1>
 			<p class="mt-3 text-sm" role="alert">{error}</p>
 			<div class="mt-6">
-				<Button variant="secondary" fullWidth onclick={() => goto(appPath('/auth/login'))}>
+				<Button variant="secondary" fullWidth class="lg-pd" onclick={() => goto(appPath('/auth/login'))}>
 					Back to sign in
 				</Button>
 			</div>
