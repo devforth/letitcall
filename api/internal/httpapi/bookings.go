@@ -146,6 +146,11 @@ func (s *Server) createBooking(w http.ResponseWriter, r *http.Request) {
 		internalError(w, err, "create booking")
 		return
 	}
+	if err := s.queueWebhookEvent("invitee.created", eventType, booking); err != nil {
+		_ = s.store.DeleteBooking(booking.ID)
+		internalError(w, err, "queue booking webhook")
+		return
+	}
 	s.deliverBooking(r.Context(), eventType, booking, secretToken)
 	writeJSON(w, http.StatusCreated, map[string]any{"booking": booking, "manageURL": s.bookingManageURL(secretToken)})
 }
@@ -255,7 +260,7 @@ func (s *Server) updateManagedBooking(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) cancelManagedBooking(w http.ResponseWriter, r *http.Request) {
-	booking, _, ok := s.managedBooking(w, r.PathValue("secret"))
+	booking, eventType, ok := s.managedBooking(w, r.PathValue("secret"))
 	if !ok {
 		return
 	}
@@ -292,6 +297,14 @@ func (s *Server) cancelManagedBooking(w http.ResponseWriter, r *http.Request) {
 	}
 	if err != nil {
 		internalError(w, err, "cancel managed booking")
+		return
+	}
+	if err := s.queueWebhookEvent("invitee.canceled", eventType, updated); err != nil {
+		_, rollbackErr := s.store.ModifyBooking(booking.ID, func(candidate *model.Booking, _ []model.Booking) error {
+			*candidate = booking
+			return nil
+		})
+		internalError(w, errors.Join(err, rollbackErr), "queue cancellation webhook")
 		return
 	}
 	manageURL := s.bookingManageURL(r.PathValue("secret"))

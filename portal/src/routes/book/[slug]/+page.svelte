@@ -216,6 +216,7 @@
 								{new Intl.DateTimeFormat(undefined, { dateStyle: 'full', timeStyle: 'short', timeZone: timezone }).format(new Date(booking.time))}
 							</p>
 							<a class="mt-6 inline-block border border-black px-4 py-3 text-sm font-medium hover:bg-black hover:text-white" href={manageURL}>Cancel or update event</a>
+							<a class="mt-4 block text-sm font-medium underline hover:no-underline" href={page.url.pathname} data-sveltekit-reload>Make another booking</a>
 						</div>
 					</div>
 				{:else if selectedTime}

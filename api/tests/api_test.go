@@ -109,6 +109,7 @@ func testConfig(dataPath string) config.Config {
 			PasswordMaxAttempts: 20,
 			PasswordLockout:     time.Minute,
 		},
+		AuditLog: config.AuditLog{MaxItems: config.DefaultAuditLogMaxItems},
 	}
 }
 
@@ -274,19 +275,10 @@ func TestAuthenticationAPIs(t *testing.T) {
 	expectStatus(t, f.request(http.MethodGet, "/api/auth/session", nil), http.StatusUnauthorized)
 }
 
-func TestAuthenticationAllowsConfiguredFirstUserIdentifier(t *testing.T) {
-	f := newFixture(t, false)
-	if err := f.store.DeleteUser(adminEmail); err != nil {
-		t.Fatal(err)
+func TestFirstUserRequiresEmail(t *testing.T) {
+	if _, err := security.NewFirstUser("admin", "admin", time.Now()); err == nil || !strings.Contains(err.Error(), "email must be a valid address") {
+		t.Fatalf("expected invalid first-user email error, got %v", err)
 	}
-	user, err := security.NewFirstUser("admin", "admin", time.Now())
-	if err != nil {
-		t.Fatal(err)
-	}
-	if err := f.store.CreateUser(user); err != nil {
-		t.Fatal(err)
-	}
-	expectStatus(t, f.login("admin", "admin"), http.StatusOK)
 }
 
 func TestAuthenticationRejectsInvalidMediaTypeAndOrigin(t *testing.T) {

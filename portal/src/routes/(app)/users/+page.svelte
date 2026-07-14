@@ -3,12 +3,14 @@
 	import { goto } from '$app/navigation';
 	import { callApi, appPath, getSession } from '$lib/api';
 	import ImageSelector from '$lib/components/ImageSelector.svelte';
+	import UserDeletionDialog from '$lib/components/UserDeletionDialog.svelte';
 	import UserTable from '$lib/components/UserTable.svelte';
 	import PageTitle from '$lib/components/PageTitle.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
+	import ConfirmationDialog from '$lib/components/ui/ConfirmationDialog.svelte';
 	import Input from '$lib/components/ui/Input.svelte';
 	import SearchableSelect from '$lib/components/ui/SearchableSelect.svelte';
-	import type { ManagedUser } from '$lib/types';
+	import type { ManagedUser, UserDeletionImpact } from '$lib/types';
 	import { getLocalTimezones } from '$lib/timezones';
 
 	let users = $state<ManagedUser[]>([]);
@@ -21,7 +23,11 @@
 	let showForm = $state(false);
 	let loading = $state(true);
 	let saving = $state(false);
+	let checkingEmail = $state('');
 	let deletingEmail = $state('');
+	let reassigning = $state(false);
+	let userToDelete = $state<ManagedUser | null>(null);
+	let deletionImpact = $state<UserDeletionImpact | null>(null);
 	let error = $state('');
 	let avatarSelector = $state<ImageSelector | null>(null);
 
@@ -71,18 +77,53 @@
 		void goto(appPath(`/users/${encodeURIComponent(emailToEdit)}`));
 	}
 
-	async function deleteUser(emailToDelete: string) {
-		if (!window.confirm(`Delete ${emailToDelete}?`)) return;
-		deletingEmail = emailToDelete;
-		error = '';
+	async function prepareDelete(emailToDelete: string) {
+		checkingEmail = emailToDelete;
 		try {
-			await callApi(`/api/users/${encodeURIComponent(emailToDelete)}`, { method: 'DELETE' });
-			users = users.filter((user) => user.email !== emailToDelete);
-		} catch (cause) {
-			error = cause instanceof Error ? cause.message : 'Unable to delete user';
+			deletionImpact = await callApi<UserDeletionImpact>(
+				`/api/users/${encodeURIComponent(emailToDelete)}/deletion-impact`
+			);
+			userToDelete = users.find((user) => user.email === emailToDelete) ?? null;
+		} catch {
+			// callApi reports the error globally.
+		} finally {
+			checkingEmail = '';
+		}
+	}
+
+	async function deleteUser() {
+		const user = userToDelete!;
+		deletingEmail = user.email;
+		try {
+			await callApi(`/api/users/${encodeURIComponent(user.email)}`, { method: 'DELETE' });
+			users = users.filter((candidate) => candidate.email !== user.email);
+			closeDeletionDialog();
+		} catch {
+			// callApi reports the error globally.
 		} finally {
 			deletingEmail = '';
 		}
+	}
+
+	async function reassignAndDelete(newHostEmail: string) {
+		const user = userToDelete!;
+		reassigning = true;
+		try {
+			await callApi(`/api/users/${encodeURIComponent(user.email)}/reassign-bookings`, {
+				method: 'POST',
+				body: JSON.stringify({ newHostEmail })
+			});
+			await deleteUser();
+		} catch {
+			// callApi reports the error globally.
+		} finally {
+			reassigning = false;
+		}
+	}
+
+	function closeDeletionDialog() {
+		userToDelete = null;
+		deletionImpact = null;
 	}
 </script>
 
@@ -142,6 +183,29 @@
 	{#if loading}
 		<p class="border border-black p-6 text-sm">Loading users…</p>
 	{:else}
-		<UserTable {users} {currentEmail} {deletingEmail} onedit={editUser} ondelete={deleteUser} />
+		<UserTable {users} {currentEmail} {checkingEmail} {deletingEmail} onedit={editUser} ondelete={prepareDelete} />
 	{/if}
 </section>
+
+{#if userToDelete && deletionImpact?.requiresReassignment}
+	<UserDeletionDialog
+		open
+		user={userToDelete}
+		impact={deletionImpact}
+		candidates={users.filter((user) => user.email !== userToDelete?.email)}
+		confirming={reassigning}
+		onconfirm={reassignAndDelete}
+		oncancel={closeDeletionDialog}
+	/>
+{:else if userToDelete && deletionImpact}
+	<ConfirmationDialog
+		open
+		title="Delete user?"
+		description={`Delete ${userToDelete.email}? This action cannot be undone.`}
+		confirmLabel="Delete user"
+		confirmingLabel="Deleting…"
+		confirming={deletingEmail === userToDelete.email}
+		onconfirm={deleteUser}
+		oncancel={closeDeletionDialog}
+	/>
+{/if}

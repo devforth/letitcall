@@ -48,6 +48,8 @@ type Server struct {
 	mailer      mailing.Sender
 	dummyHash   string
 	now         func() time.Time
+	webhookHTTP *http.Client
+	webhookWake chan struct{}
 }
 
 func New(cfg config.Config, database *store.Store) (*Server, error) {
@@ -71,24 +73,26 @@ func New(cfg config.Config, database *store.Store) (*Server, error) {
 		return nil, err
 	}
 	server := &Server{
-		cfg:       cfg,
-		store:     database,
-		avatars:   avatars,
-		logos:     logos,
-		mailer:    mailing.New(cfg.Mailing.Mailgun, renderer),
-		limiter:   security.NewLoginLimiter(cfg.Login.PasswordMaxAttempts, cfg.Login.PasswordLockout),
-		dummyHash: dummyHash,
-		now:       time.Now,
+		cfg:         cfg,
+		store:       database,
+		avatars:     avatars,
+		logos:       logos,
+		mailer:      mailing.New(cfg.Mailing.Mailgun, renderer),
+		limiter:     security.NewLoginLimiter(cfg.Login.PasswordMaxAttempts, cfg.Login.PasswordLockout),
+		dummyHash:   dummyHash,
+		now:         time.Now,
+		webhookHTTP: &http.Client{Timeout: 10 * time.Second},
+		webhookWake: make(chan struct{}, 1),
+	}
+	key, err := security.LoadGoogleTokenKey(cfg.Storage.LevelDBPath)
+	if err != nil {
+		return nil, err
+	}
+	server.tokenCipher, err = security.NewTokenCipher(key)
+	if err != nil {
+		return nil, err
 	}
 	if cfg.Login.Google.Enabled() {
-		key, err := security.LoadGoogleTokenKey(cfg.Storage.LevelDBPath)
-		if err != nil {
-			return nil, err
-		}
-		server.tokenCipher, err = security.NewTokenCipher(key)
-		if err != nil {
-			return nil, err
-		}
 		server.oauth = &oauth2.Config{
 			ClientID:     cfg.Login.Google.ClientID,
 			ClientSecret: cfg.Login.Google.ClientSecret,
@@ -108,6 +112,18 @@ func (s *Server) Handler() http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /api/health", s.health)
 	mux.HandleFunc("GET /api/config/public", s.publicConfig)
+	mux.HandleFunc("GET "+compatibilityAPIPath+"/openapi.json", s.openAPISpecification)
+	swagger := s.swaggerHandler()
+	mux.Handle("GET "+compatibilityAPIPath+"/swagger/", swagger)
+	mux.Handle("GET "+compatibilityAPIPath+"/swagger/{asset}", swagger)
+	mux.Handle("GET "+compatibilityAPIPath+"/users/me", s.requireAPIToken(http.HandlerFunc(s.compatibilityCurrentUser)))
+	mux.Handle("GET "+compatibilityAPIPath+"/event_types", s.requireAPIToken(http.HandlerFunc(s.compatibilityListEventTypes)))
+	mux.Handle("GET "+compatibilityAPIPath+"/event_types/{uuid}", s.requireAPIToken(http.HandlerFunc(s.compatibilityGetEventType)))
+	mux.Handle("GET "+compatibilityAPIPath+"/event_type_available_times", s.requireAPIToken(http.HandlerFunc(s.compatibilityAvailableTimes)))
+	mux.Handle("POST "+compatibilityAPIPath+"/webhook_subscriptions", s.requireAPIToken(http.HandlerFunc(s.createWebhookSubscription)))
+	mux.Handle("GET "+compatibilityAPIPath+"/webhook_subscriptions", s.requireAPIToken(http.HandlerFunc(s.listWebhookSubscriptions)))
+	mux.Handle("GET "+compatibilityAPIPath+"/scheduled_events", s.requireAPIToken(http.HandlerFunc(s.compatibilityListScheduledEvents)))
+	mux.Handle("GET "+compatibilityAPIPath+"/scheduled_events/{event_uuid}/invitees", s.requireAPIToken(http.HandlerFunc(s.compatibilityListInvitees)))
 	mux.HandleFunc("POST /api/auth/login", s.login)
 	mux.HandleFunc("GET /api/auth/google/start", s.googleStart)
 	mux.HandleFunc("POST "+googleAPICallbackPath, s.googleCallback)
@@ -115,9 +131,15 @@ func (s *Server) Handler() http.Handler {
 	mux.Handle("POST /api/auth/logout", s.requireAuth(http.HandlerFunc(s.logout)))
 	mux.Handle("GET /api/branding", s.requireAuth(http.HandlerFunc(s.getBranding)))
 	mux.Handle("PUT /api/branding", s.requireAuth(http.HandlerFunc(s.updateBranding)))
+	mux.Handle("GET /api/integration", s.requireAuth(http.HandlerFunc(s.getAPIIntegration)))
+	mux.Handle("GET /api/audit-logs", s.requireAuth(http.HandlerFunc(s.listAuditLogs)))
+	mux.Handle("POST /api/integration/tokens", s.requireAuth(http.HandlerFunc(s.createAPIToken)))
+	mux.Handle("DELETE /api/integration/tokens/{id}", s.requireAuth(http.HandlerFunc(s.deleteAPIToken)))
 	mux.Handle("GET /api/users", s.requireAuth(http.HandlerFunc(s.listUsers)))
 	mux.Handle("POST /api/users", s.requireAuth(http.HandlerFunc(s.createUser)))
 	mux.Handle("PATCH /api/users/{email}", s.requireAuth(http.HandlerFunc(s.updateUser)))
+	mux.Handle("GET /api/users/{email}/deletion-impact", s.requireAuth(http.HandlerFunc(s.getUserDeletionImpact)))
+	mux.Handle("POST /api/users/{email}/reassign-bookings", s.requireAuth(http.HandlerFunc(s.reassignUserBookings)))
 	mux.Handle("DELETE /api/users/{email}", s.requireAuth(http.HandlerFunc(s.deleteUser)))
 	mux.Handle("GET /api/bookings", s.requireAuth(http.HandlerFunc(s.listBookings)))
 	mux.HandleFunc("POST /api/bookings", s.createBooking)
@@ -187,6 +209,28 @@ func (s *Server) requireAuth(next http.Handler) http.Handler {
 		}
 		if r.Method != http.MethodGet && r.Method != http.MethodHead && !s.validOrigin(r) {
 			writeError(w, http.StatusForbidden, "request origin is not allowed")
+			return
+		}
+		ctx := context.WithValue(r.Context(), userContextKey, user)
+		next.ServeHTTP(w, r.WithContext(ctx))
+	})
+}
+
+func (s *Server) requireAPIToken(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		parts := strings.Fields(r.Header.Get("Authorization"))
+		if len(parts) != 2 || !strings.EqualFold(parts[0], "Bearer") {
+			writeError(w, http.StatusUnauthorized, "authentication required")
+			return
+		}
+		token, err := s.store.GetAPIToken(security.TokenDigest(parts[1]))
+		if err != nil {
+			writeError(w, http.StatusUnauthorized, "authentication required")
+			return
+		}
+		user, err := s.store.GetUser(token.UserEmail)
+		if err != nil {
+			writeError(w, http.StatusUnauthorized, "authentication required")
 			return
 		}
 		ctx := context.WithValue(r.Context(), userContextKey, user)

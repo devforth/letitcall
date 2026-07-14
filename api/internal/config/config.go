@@ -9,6 +9,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/letitcall/letitcall/api/internal/security"
 )
 
 const (
@@ -22,6 +24,7 @@ const (
 	EnvPasswordLockout     = "LOGIN__PASSWORD__LOCKOUT"
 	EnvGoogleClientID      = "LOGIN__OAUTH__GOOGLE__CLIENT_ID"
 	EnvGoogleClientSecret  = "LOGIN__OAUTH__GOOGLE__CLIENT_SECRET"
+	EnvAuditLogMaxItems    = "AUDITLOG__RETENTION__LEVELDB__MAX_ITEMS"
 	EnvMailgunAPIKey       = "MAILING__SENDING__MAILGUN__API_KEY"
 	EnvMailgunBaseURL      = "MAILING__SENDING__MAILGUN__BASE_URL"
 	EnvMailgunDomain       = "MAILING__SENDING__MAILGUN__DOMAIN"
@@ -33,6 +36,7 @@ type Config struct {
 	Storage   Storage
 	FirstUser FirstUser
 	Login     Login
+	AuditLog  AuditLog
 	Mailing   Mailing
 }
 
@@ -67,6 +71,12 @@ type Login struct {
 type GoogleOAuth struct {
 	ClientID     string
 	ClientSecret string
+}
+
+const DefaultAuditLogMaxItems = 10_000
+
+type AuditLog struct {
+	MaxItems int
 }
 
 type Mailing struct {
@@ -110,6 +120,10 @@ func Load() (Config, error) {
 	if err != nil {
 		return Config{}, err
 	}
+	auditLogMaxItems, err := envInt(EnvAuditLogMaxItems, DefaultAuditLogMaxItems)
+	if err != nil {
+		return Config{}, err
+	}
 
 	cfg := Config{
 		HTTP: HTTP{
@@ -130,6 +144,7 @@ func Load() (Config, error) {
 				ClientSecret: os.Getenv(EnvGoogleClientSecret),
 			},
 		},
+		AuditLog: AuditLog{MaxItems: auditLogMaxItems},
 		Mailing: Mailing{Mailgun: Mailgun{
 			APIKey:  os.Getenv(EnvMailgunAPIKey),
 			BaseURL: strings.TrimRight(strings.TrimSpace(os.Getenv(EnvMailgunBaseURL)), "/"),
@@ -158,6 +173,11 @@ func (c Config) Validate() error {
 	if (c.FirstUser.Email == "") != (c.FirstUser.Password == "") {
 		return fmt.Errorf("%s and %s must be set together", EnvFirstUserEmail, EnvFirstUserPassword)
 	}
+	if c.FirstUser.Email != "" {
+		if _, err := security.NormalizeEmail(c.FirstUser.Email); err != nil {
+			return fmt.Errorf("%s must be a valid email address", EnvFirstUserEmail)
+		}
+	}
 	if c.Login.SessionTTL <= 0 {
 		return fmt.Errorf("%s must be a positive duration", EnvSessionTTL)
 	}
@@ -166,6 +186,9 @@ func (c Config) Validate() error {
 	}
 	if c.Login.PasswordLockout <= 0 {
 		return fmt.Errorf("%s must be a positive duration", EnvPasswordLockout)
+	}
+	if c.AuditLog.MaxItems < 1 {
+		return fmt.Errorf("%s must be at least 1", EnvAuditLogMaxItems)
 	}
 	google := c.Login.Google
 	if (google.ClientID == "") != (google.ClientSecret == "") {

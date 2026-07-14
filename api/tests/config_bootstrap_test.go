@@ -24,8 +24,33 @@ func TestConfigUsesStrictEnvironmentNamesAndDefaults(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if cfg.HTTP.Port != 8080 || cfg.HTTP.BaseURL != config.DefaultBaseURL || cfg.FirstUser.Email != "owner@example.com" {
+	if cfg.HTTP.Port != 8080 || cfg.HTTP.BaseURL != config.DefaultBaseURL || cfg.FirstUser.Email != "owner@example.com" || cfg.AuditLog.MaxItems != config.DefaultAuditLogMaxItems {
 		t.Fatalf("configuration did not load structured environment variables: %#v", cfg)
+	}
+}
+
+func TestConfigLoadsAuditLogRetention(t *testing.T) {
+	clearConfigEnvironment(t)
+	t.Setenv(config.EnvAuditLogMaxItems, "250")
+	cfg, err := config.Load()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cfg.AuditLog.MaxItems != 250 {
+		t.Fatalf("audit log max items = %d, want 250", cfg.AuditLog.MaxItems)
+	}
+	t.Setenv(config.EnvAuditLogMaxItems, "0")
+	if _, err := config.Load(); err == nil || !strings.Contains(err.Error(), "must be at least 1") {
+		t.Fatalf("expected invalid audit log max-items error, got %v", err)
+	}
+}
+
+func TestConfigRejectsInvalidFirstUserEmail(t *testing.T) {
+	clearConfigEnvironment(t)
+	t.Setenv(config.EnvFirstUserEmail, "admin")
+	t.Setenv(config.EnvFirstUserPassword, "admin")
+	if _, err := config.Load(); err == nil || !strings.Contains(err.Error(), config.EnvFirstUserEmail+" must be a valid email address") {
+		t.Fatalf("expected invalid first-user email error, got %v", err)
 	}
 }
 
@@ -150,6 +175,7 @@ func clearConfigEnvironment(t *testing.T) {
 		config.EnvPasswordLockout,
 		config.EnvGoogleClientID,
 		config.EnvGoogleClientSecret,
+		config.EnvAuditLogMaxItems,
 		config.EnvMailgunAPIKey,
 		config.EnvMailgunBaseURL,
 		config.EnvMailgunDomain,
@@ -188,11 +214,11 @@ func TestFirstUserBootstrapSeedsOnlyAnEmptyUsersTable(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer database.Close()
-	credentials := config.FirstUser{Email: "admin", Password: "admin"}
+	credentials := config.FirstUser{Email: "admin@example.com", Password: "admin"}
 	if err := bootstrap.EnsureFirstUser(database, credentials, time.Now()); err != nil {
 		t.Fatal(err)
 	}
-	user, err := database.GetUser("admin")
+	user, err := database.GetUser("admin@example.com")
 	if err != nil || !security.CheckPassword(user.PasswordHash, "admin") {
 		t.Fatalf("configured first-user credentials were not stored: user=%#v err=%v", user, err)
 	}

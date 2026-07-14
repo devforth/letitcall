@@ -2,8 +2,9 @@
 	import { onMount } from 'svelte';
 	import Icon from '@iconify/svelte';
 	import externalLinkIcon from '@iconify-icons/tabler/external-link';
-	import { appPath, avatarURL, callApi } from '$lib/api';
+	import { appPath, callApi } from '$lib/api';
 	import EventTypeActionsMenu from '$lib/components/EventTypeActionsMenu.svelte';
+	import HostBadges from '$lib/components/HostBadges.svelte';
 	import ConfirmationDialog from '$lib/components/ui/ConfirmationDialog.svelte';
 	import PageTitle from '$lib/components/PageTitle.svelte';
 	import type { EventType, ManagedUser } from '$lib/types';
@@ -29,8 +30,11 @@
 		}
 	});
 
-	function user(email: string) {
-		return users.find((candidate) => candidate.email === email);
+	function hosts(eventType: EventType) {
+		return [
+			...eventType.requiredHostEmails.map((email) => ({ email, role: 'Required' as const })),
+			...eventType.optionalHostEmails.map((email) => ({ email, role: 'Optional' as const }))
+		];
 	}
 
 	async function deleteEventType() {
@@ -70,25 +74,8 @@
 					<div class="min-w-0">
 						<h2 class="font-semibold">{eventType.name}</h2>
 						<p class="mt-1 text-xs">{eventType.durationMinutes} minutes</p>
-						<div class="mt-3 flex flex-wrap items-center gap-2">
-							{#each eventType.requiredHostEmails as email (email)}
-								{@const recipient = user(email)}
-								<span class="inline-flex items-center gap-2 border border-black px-2 py-1 text-xs">
-									{#if recipient?.avatarPath}
-										<img src={avatarURL(recipient.avatarPath)} alt="" class="size-6 border border-black object-cover" />
-									{/if}
-									{email} · Required
-								</span>
-							{/each}
-							{#each eventType.optionalHostEmails as email (email)}
-								{@const recipient = user(email)}
-								<span class="inline-flex items-center gap-2 border border-black px-2 py-1 text-xs">
-									{#if recipient?.avatarPath}
-										<img src={avatarURL(recipient.avatarPath)} alt="" class="size-6 border border-black object-cover" />
-									{/if}
-									{email} · Optional
-								</span>
-							{/each}
+						<div class="mt-3">
+							<HostBadges hosts={hosts(eventType)} {users} />
 						</div>
 					</div>
 					<div class="flex gap-2">

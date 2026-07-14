@@ -6,10 +6,13 @@
 	import historyIcon from '@iconify-icons/tabler/history';
 	import externalLinkIcon from '@iconify-icons/tabler/external-link';
 	import { callApi } from '$lib/api';
-	import type { Booking } from '$lib/types';
+	import type { Booking, EventType, ManagedUser } from '$lib/types';
+	import HostBadges from '$lib/components/HostBadges.svelte';
 	import PageTitle from '$lib/components/PageTitle.svelte';
 
 	let bookings = $state<Booking[]>([]);
+	let eventTypes = $state<EventType[]>([]);
+	let users = $state<ManagedUser[]>([]);
 	let loading = $state(true);
 	let now = $state(new Date());
 	let clock: number | undefined;
@@ -28,7 +31,14 @@
 	onMount(async () => {
 		clock = window.setInterval(() => (now = new Date()), 60_000);
 		try {
-			bookings = (await callApi<{ bookings: Booking[] }>('/api/bookings')).bookings;
+			const [bookingsResponse, eventTypesResponse, usersResponse] = await Promise.all([
+				callApi<{ bookings: Booking[] }>('/api/bookings'),
+				callApi<{ eventTypes: EventType[] }>('/api/event-types'),
+				callApi<{ users: ManagedUser[] }>('/api/users')
+			]);
+			bookings = bookingsResponse.bookings;
+			eventTypes = eventTypesResponse.eventTypes;
+			users = usersResponse.users;
 		} catch {
 			// callApi reports the error globally.
 		} finally {
@@ -53,6 +63,18 @@
 			dateStyle: 'full',
 			timeStyle: 'short'
 		}).format(new Date(value));
+	}
+
+	function bookingHosts(booking: Booking) {
+		const eventType = eventTypes.find((candidate) => candidate.eventSlug === booking.eventSlug);
+		return booking.recipientEmails.map((email) => ({
+			email,
+			role: eventType?.requiredHostEmails.includes(email)
+				? ('Required' as const)
+				: eventType?.optionalHostEmails.includes(email)
+					? ('Optional' as const)
+					: ('Host' as const)
+		}));
 	}
 </script>
 
@@ -86,6 +108,7 @@
 							<h3 class="font-semibold">{booking.title}</h3>
 							<p class="mt-1 text-sm">{booking.attendeeName} · {booking.attendeeEmail}</p>
 							<p class="mt-2 text-xs">{localDate(booking.time)}</p>
+							<div class="mt-3"><HostBadges hosts={bookingHosts(booking)} {users} /></div>
 						</div>
 						<div class="flex items-center gap-2">
 							<p class="w-fit border border-black px-3 py-2 text-sm font-medium">{relativeTime(booking.time)}</p>
@@ -115,6 +138,7 @@
 								<h3 class="font-semibold">{booking.title}</h3>
 								<p class="mt-1 text-sm">{booking.attendeeName} · {booking.attendeeEmail}</p>
 								<p class="mt-2 text-xs">{localDate(booking.time)}</p>
+								<div class="mt-3"><HostBadges hosts={bookingHosts(booking)} {users} /></div>
 							</div>
 							<div class="flex items-center gap-3">
 								<p class="text-sm">{booking.canceledAt ? 'Canceled' : relativeTime(booking.time)}</p>

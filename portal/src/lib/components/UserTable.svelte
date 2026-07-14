@@ -6,12 +6,14 @@
 	let {
 		users,
 		currentEmail,
+		checkingEmail = '',
 		deletingEmail = '',
 		onedit,
 		ondelete
 	}: {
 		users: ManagedUser[];
 		currentEmail: string;
+		checkingEmail?: string;
 		deletingEmail?: string;
 		onedit: (email: string) => void;
 		ondelete: (email: string) => void;
@@ -90,11 +92,11 @@
 							</Button>
 							<Button
 								variant="danger"
-								disabled={user.email === currentEmail || deletingEmail === user.email}
+								disabled={user.email === currentEmail || checkingEmail === user.email || deletingEmail === user.email}
 								onclick={() => ondelete(user.email)}
 							>
 								<svg class="size-[18px] shrink-0" viewBox="0 0 24 24" fill="currentColor"><path d="M9 3a1 1 0 0 0-1 1v1H4.5a1 1 0 1 0 0 2H5v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7h.5a1 1 0 1 0 0-2H16V4a1 1 0 0 0-1-1H9zm1 6a1 1 0 0 1 1 1v7a1 1 0 1 1-2 0v-7a1 1 0 0 1 1-1zm4 0a1 1 0 0 1 1 1v7a1 1 0 1 1-2 0v-7a1 1 0 0 1 1-1z" /></svg>
-								<span class="sr-only">{deletingEmail === user.email ? 'Deleting…' : `Delete ${user.email}`}</span>
+								<span class="sr-only">{checkingEmail === user.email ? 'Checking…' : deletingEmail === user.email ? 'Deleting…' : `Delete ${user.email}`}</span>
 							</Button>
 						</div>
 					</td>

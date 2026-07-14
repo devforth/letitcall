@@ -25,15 +25,19 @@ var (
 )
 
 type Store struct {
-	users       *leveldb.DB
-	eventTypes  *leveldb.DB
-	bookings    *leveldb.DB
-	secretLinks *leveldb.DB
-	sessions    *leveldb.DB
-	oauthStates *leveldb.DB
-	googleBusy  *leveldb.DB
-	branding    *leveldb.DB
-	mu          sync.Mutex
+	users                *leveldb.DB
+	eventTypes           *leveldb.DB
+	bookings             *leveldb.DB
+	secretLinks          *leveldb.DB
+	sessions             *leveldb.DB
+	oauthStates          *leveldb.DB
+	googleBusy           *leveldb.DB
+	branding             *leveldb.DB
+	apiTokens            *leveldb.DB
+	webhookSubscriptions *leveldb.DB
+	webhookDeliveries    *leveldb.DB
+	auditLogs            *leveldb.DB
+	mu                   sync.Mutex
 }
 
 func Open(root string) (*Store, error) {
@@ -41,7 +45,7 @@ func Open(root string) (*Store, error) {
 		return nil, fmt.Errorf("create LevelDB root: %w", err)
 	}
 
-	opened := make([]*leveldb.DB, 0, 8)
+	opened := make([]*leveldb.DB, 0, 12)
 	openTable := func(name string) (*leveldb.DB, error) {
 		db, err := leveldb.OpenFile(filepath.Join(root, name+".leveldb"), nil)
 		if err != nil {
@@ -90,6 +94,26 @@ func Open(root string) (*Store, error) {
 		closeAll(opened)
 		return nil, err
 	}
+	apiTokens, err := openTable("api_tokens")
+	if err != nil {
+		closeAll(opened)
+		return nil, err
+	}
+	webhookSubscriptions, err := openTable("webhook_subscriptions")
+	if err != nil {
+		closeAll(opened)
+		return nil, err
+	}
+	webhookDeliveries, err := openTable("webhook_deliveries")
+	if err != nil {
+		closeAll(opened)
+		return nil, err
+	}
+	auditLogs, err := openTable(AuditLogsTableName)
+	if err != nil {
+		closeAll(opened)
+		return nil, err
+	}
 	brandingKey := []byte("current")
 	exists, err := branding.Has(brandingKey, nil)
 	if err != nil {
@@ -103,11 +127,21 @@ func Open(root string) (*Store, error) {
 		}
 	}
 
-	return &Store{users: users, eventTypes: eventTypes, bookings: bookings, secretLinks: secretLinks, sessions: sessions, oauthStates: oauthStates, googleBusy: googleBusy, branding: branding}, nil
+	return &Store{
+		users: users, eventTypes: eventTypes, bookings: bookings, secretLinks: secretLinks,
+		sessions: sessions, oauthStates: oauthStates, googleBusy: googleBusy, branding: branding,
+		apiTokens: apiTokens, webhookSubscriptions: webhookSubscriptions, webhookDeliveries: webhookDeliveries,
+		auditLogs: auditLogs,
+	}, nil
 }
 
 func (s *Store) Close() error {
-	return errors.Join(s.users.Close(), s.eventTypes.Close(), s.bookings.Close(), s.secretLinks.Close(), s.sessions.Close(), s.oauthStates.Close(), s.googleBusy.Close(), s.branding.Close())
+	return errors.Join(
+		s.users.Close(), s.eventTypes.Close(), s.bookings.Close(), s.secretLinks.Close(),
+		s.sessions.Close(), s.oauthStates.Close(), s.googleBusy.Close(), s.branding.Close(),
+		s.apiTokens.Close(), s.webhookSubscriptions.Close(), s.webhookDeliveries.Close(),
+		s.auditLogs.Close(),
+	)
 }
 
 func closeAll(databases []*leveldb.DB) {
@@ -356,6 +390,39 @@ func (s *Store) RemoveEventTypeHost(email string, updatedAt time.Time) error {
 			eventType.RequiredHostEmails = append(eventType.RequiredHostEmails[:requiredIndex], eventType.RequiredHostEmails[requiredIndex+1:]...)
 		}
 		if optionalIndex >= 0 {
+			eventType.OptionalHostEmails = append(eventType.OptionalHostEmails[:optionalIndex], eventType.OptionalHostEmails[optionalIndex+1:]...)
+		}
+		eventType.UpdatedAt = updatedAt
+		encoded, err := json.Marshal(eventType)
+		if err != nil {
+			return err
+		}
+		batch.Put(append([]byte(nil), iterator.Key()...), encoded)
+	}
+	if err := iterator.Error(); err != nil {
+		return err
+	}
+	return s.eventTypes.Write(batch, nil)
+}
+
+func (s *Store) ReassignSoleRequiredHost(oldEmail, newEmail string, updatedAt time.Time) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	oldNormalized := normalizeEmail(oldEmail)
+	newNormalized := normalizeEmail(newEmail)
+	iterator := s.eventTypes.NewIterator(nil, nil)
+	defer iterator.Release()
+	batch := new(leveldb.Batch)
+	for iterator.Next() {
+		var eventType model.EventType
+		if err := json.Unmarshal(iterator.Value(), &eventType); err != nil {
+			return err
+		}
+		if len(eventType.RequiredHostEmails) != 1 || normalizeEmail(eventType.RequiredHostEmails[0]) != oldNormalized {
+			continue
+		}
+		eventType.RequiredHostEmails[0] = newNormalized
+		if optionalIndex := emailIndex(eventType.OptionalHostEmails, newNormalized); optionalIndex >= 0 {
 			eventType.OptionalHostEmails = append(eventType.OptionalHostEmails[:optionalIndex], eventType.OptionalHostEmails[optionalIndex+1:]...)
 		}
 		eventType.UpdatedAt = updatedAt

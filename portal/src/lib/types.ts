@@ -11,6 +11,18 @@ export type ManagedUser = SessionUser & {
 	updatedAt: string;
 };
 
+export type UserDeletionImpact =
+	| {
+			requiresReassignment: false;
+			futureBookingCount: 0;
+	  }
+	| {
+			requiresReassignment: true;
+			futureBookingCount: number;
+			earliestBookingAt: string;
+			latestBookingAt: string;
+	  };
+
 export type PublicConfig = {
 	brandName: string;
 	logoPath: string;
@@ -22,8 +34,35 @@ export type Branding = {
 	logoPath?: string;
 };
 
+export type APITokenSummary = {
+	id: string;
+	name: string;
+	createdAt: string;
+};
+
+export type APIIntegration = {
+	baseURL: string;
+	openAPIURL: string;
+	swaggerURL: string;
+	tokens: APITokenSummary[];
+};
+
 export type ApiError = {
 	error: string;
+};
+
+export type AuditLog = {
+	id: string;
+	actor: {
+		email: string;
+		fullName: string;
+		avatarPath?: string;
+	};
+	action: string;
+	resource: string;
+	resourceId: string;
+	createdAt: string;
+	payload: Record<string, unknown>;
 };
 
 export type EventType = {

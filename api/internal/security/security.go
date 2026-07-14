@@ -4,7 +4,9 @@ import (
 	"crypto/aes"
 	"crypto/cipher"
 	"crypto/rand"
+	"crypto/sha256"
 	"encoding/base64"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"net/mail"
@@ -81,12 +83,16 @@ func NewUser(email, password, timezone string, now time.Time) (model.User, error
 	return newUser(normalizedEmail, passwordHash, normalizedTimezone, now), nil
 }
 
-func NewFirstUser(identifier, password string, now time.Time) (model.User, error) {
+func NewFirstUser(email, password string, now time.Time) (model.User, error) {
+	normalizedEmail, err := NormalizeEmail(email)
+	if err != nil {
+		return model.User{}, err
+	}
 	passwordHash, err := hashPassword(password)
 	if err != nil {
 		return model.User{}, err
 	}
-	return newUser(strings.ToLower(strings.TrimSpace(identifier)), passwordHash, "UTC", now), nil
+	return newUser(normalizedEmail, passwordHash, "UTC", now), nil
 }
 
 func newUser(email, passwordHash, timezone string, now time.Time) model.User {
@@ -106,6 +112,11 @@ func RandomToken(bytes int) (string, error) {
 		return "", fmt.Errorf("generate secure token: %w", err)
 	}
 	return base64.RawURLEncoding.EncodeToString(buffer), nil
+}
+
+func TokenDigest(token string) string {
+	digest := sha256.Sum256([]byte(token))
+	return hex.EncodeToString(digest[:])
 }
 
 type TokenCipher struct {
