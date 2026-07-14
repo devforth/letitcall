@@ -82,12 +82,13 @@
 		text-overflow: ellipsis;
 		white-space: nowrap;
 		font-size: 0.9rem;
-		font-weight: 500;
-		color: rgb(var(--color-text) / 0.6);
+		font-weight: 400;
+		color: rgb(var(--color-text));
+		opacity: 0.4;
 		background: rgb(var(--color-foreground));
 		padding: 0 4px;
 		pointer-events: none;
-		transition: top 0.16s, left 0.16s, font-size 0.16s, font-weight 0.16s, color 0.16s;
+		transition: top 0.16s, left 0.16s, font-size 0.16s, color 0.16s, opacity 0.16s;
 	}
 
 	.input:focus ~ .float-label,
@@ -95,8 +96,8 @@
 		top: 0;
 		left: 10px;
 		font-size: 0.72rem;
-		font-weight: 700;
 		color: rgb(var(--color-primary));
+		opacity: 1;
 	}
 
 	.input:focus {

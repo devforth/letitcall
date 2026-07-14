@@ -73,8 +73,6 @@
 		--color-muted-foreground: 102 102 102;
 		--color-muted-background: 245 245 245;
 		--color-primary: 0 201 80;
-		--color-secondary: 0 153 255;
-		--color-secondary-hover: 0 119 204;
 		--shadow: 0 0px 4vw rgb(0 0 0 / 0.15);
 		--shadow-small: 0 0px 1vw rgb(0 0 0 / 0.15);
 
@@ -93,7 +91,7 @@
 		--color-background: 51 51 51;
 		--color-muted-foreground: 153 153 153;
 		--color-muted-background: 64 64 64;
-		--color-text: 240 240 240;
+		--color-text: 255 255 255;
 		--color-border: 120 120 120;
 		--shadow: 0 0px 4vw rgb(0 0 0 / 0.5);
 		--shadow-small: 0 0px 1vw rgb(0 0 0 / 0.2);

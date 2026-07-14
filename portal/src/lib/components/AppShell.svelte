@@ -1,11 +1,21 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
-	import type { Snippet } from 'svelte';
+	import { onMount, type Snippet } from 'svelte';
+	import Icon from '@iconify/svelte';
+	import calendarIcon from '@iconify-icons/tabler/calendar-filled';
+	import clockIcon from '@iconify-icons/tabler/clock-filled';
+	import functionIcon from '@iconify-icons/tabler/function-filled';
+	import moonIcon from '@iconify-icons/tabler/moon';
+	import paintIcon from '@iconify-icons/tabler/paint-filled';
+	import timelineIcon from '@iconify-icons/tabler/timeline-event-filled';
+	import xIcon from '@iconify-icons/tabler/x';
 	import { callApi, appPath, avatarURL } from '$lib/api';
+	import addUserIcon from '$lib/icons/add-user';
 	import type { SessionUser } from '$lib/types';
 	import ThemeToggle from '$lib/components/ThemeToggle.svelte';
 	import BrandLogo from '$lib/components/BrandLogo.svelte';
+	import MenuToggleIcon from '$lib/components/ui/MenuToggleIcon.svelte';
 	import { branding } from '$lib/stores/branding.svelte';
 
 	let {
@@ -18,6 +28,22 @@
 
 	let loggingOut = $state(false);
 	let menuOpen = $state(false);
+	let navOpen = $state(false);
+	let navCollapsed = $state(false);
+	let isMobile = $state(false);
+
+	onMount(() => {
+		const mq = window.matchMedia('(max-width: 767px)');
+		isMobile = mq.matches;
+
+		const onChange = (e: MediaQueryListEvent) => {
+			isMobile = e.matches;
+			navOpen = false;
+			navCollapsed = false;
+		};
+		mq.addEventListener('change', onChange);
+		return () => mq.removeEventListener('change', onChange);
+	});
 
 	const initials = $derived.by(() => {
 		const parts = user.fullName?.trim().split(/\s+/).filter(Boolean) ?? [];
@@ -27,12 +53,12 @@
 	});
 
 	const navItems = [
-		{ label: 'Bookings', href: '/', exact: true },
-		{ label: 'Scheduling', href: '/scheduling', exact: false },
-		{ label: 'Users', href: '/users', exact: false },
-		{ label: 'Branding', href: '/branding', exact: false },
-		{ label: 'API Integration', href: '/api-integration', exact: false },
-		{ label: 'Audit log', href: '/audit-log', exact: false }
+		{ label: 'Bookings', href: '/', exact: true, icon: calendarIcon },
+		{ label: 'Scheduling', href: '/scheduling', exact: false, icon: clockIcon },
+		{ label: 'Users', href: '/users', exact: false, icon: addUserIcon },
+		{ label: 'Branding', href: '/branding', exact: false, icon: paintIcon },
+		{ label: 'API Integration', href: '/api-integration', exact: false, icon: functionIcon },
+		{ label: 'Audit log', href: '/audit-log', exact: false, icon: timelineIcon }
 	];
 
 	function isActive(item: { href: string; exact: boolean }) {
@@ -57,28 +83,66 @@
 	function closeMenu() {
 		menuOpen = false;
 	}
+
+	function toggleSidebar() {
+		if (isMobile) {
+			navOpen = !navOpen;
+			return;
+		}
+		navCollapsed = !navCollapsed;
+	}
+
+	function collapseOnMobile() {
+		if (isMobile) navOpen = false;
+	}
 </script>
 
 <svelte:window
 	onclick={closeMenu}
 	onkeydown={(e) => {
-		if (e.key === 'Escape') closeMenu();
+		if (e.key === 'Escape') {
+			closeMenu();
+			collapseOnMobile();
+		}
 	}}
 />
 
-<div class="min-h-screen">
+<div
+	class="min-h-screen transition-[padding-left] duration-300 ease-out motion-reduce:transition-none md:pl-[var(--sidebar-w)]"
+	style="--sidebar-w: {navCollapsed ? '4.5rem' : '16rem'};"
+>
 	<header
-		class="border-b-2"
-		style="background: rgb(var(--color-foreground)); border-color: rgb(var(--color-border)); box-shadow: var(--shadow);"
+		class="relative z-20 border-b-2 md:h-[66px]"
+		style="background: rgb(var(--color-foreground)); border-color: rgb(var(--color-border)); box-shadow: 0 0.75rem 1rem -0.75rem rgb(0 0 0 / 0.2);"
 	>
-		<div class="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-4 px-4 py-2 sm:px-6 lg:px-8">
-			<a class="flex items-center gap-3 tracking-tight" href={appPath('/')}>
-				<BrandLogo class="size-10 rounded-lg border-2 border-black object-cover" />
-				<span class="flex flex-col leading-tight">
-					<span class="text-lg font-bold" style="color: rgb(var(--color-primary));">{branding.name}</span>
-					<span class="text-sm font-bold">Scheduling Admin Panel</span>
-				</span>
-			</a>
+		<div
+			class="mx-auto flex w-full max-w-[76rem] flex-wrap items-center justify-between gap-4 px-4 py-2 sm:px-6 lg:px-8"
+		>
+			<div class="flex min-w-0 items-center gap-3">
+				<button
+					type="button"
+					class="menu-toggle-button flex size-10 shrink-0 items-center justify-center rounded-lg md:hidden"
+					aria-label={isMobile
+						? navOpen
+							? 'Hide navigation'
+							: 'Show navigation'
+						: navCollapsed
+							? 'Expand navigation'
+							: 'Collapse navigation'}
+					aria-expanded={isMobile ? navOpen : !navCollapsed}
+					aria-controls="app-sidebar"
+					onclick={toggleSidebar}
+				>
+					<MenuToggleIcon open={navOpen} />
+				</button>
+				<a class="flex min-w-0 items-center gap-3 tracking-tight" href={appPath('/')}>
+					<BrandLogo class="size-10 shrink-0 rounded-lg border-2 border-black object-cover" />
+					<span class="flex min-w-0 flex-col leading-tight">
+						<span class="truncate text-lg font-bold" style="color: rgb(var(--color-primary));">{branding.name}</span>
+						<span class="hidden text-sm font-bold sm:block">Scheduling Admin Panel</span>
+					</span>
+				</a>
+			</div>
 			<div class="flex items-center gap-3">
 				<div class="relative">
 					<button
@@ -185,7 +249,7 @@
 							</div>
 
 							<div class="flex items-center gap-3 rounded-lg px-2 py-2">
-								<svg class="size-4 shrink-0" style="color: rgb(var(--color-muted-foreground));" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 3a9 9 0 0 0 0 18z" fill="currentColor" stroke="none" /></svg>
+								<Icon icon={moonIcon} width="16" height="16" class="shrink-0" style="color: rgb(var(--color-muted-foreground));" />
 								<span class="text-sm font-medium" style="color: rgb(var(--color-text));">Theme</span>
 								<div class="ml-auto">
 									<ThemeToggle />
@@ -214,45 +278,89 @@
 		</div>
 	</header>
 
-	<div class="mx-auto grid max-w-7xl md:grid-cols-[14rem_minmax(0,1fr)]">
-		<nav class="pt-4 pb-0 pl-4 pr-4 sm:pt-6 sm:pl-6 sm:pr-6 md:min-h-[calc(100vh-77px)] md:pb-6 md:pr-0">
-			<ul
-				class="inline-flex gap-1 rounded-xl p-2 md:grid"
-				style="background: rgb(var(--color-foreground)); border: 2px solid rgb(var(--color-border)); box-shadow: var(--shadow-small);"
+	{#if navOpen && isMobile}
+		<button
+			type="button"
+			class="fixed inset-0 z-30 cursor-default bg-black/20"
+			aria-label="Close navigation"
+			onclick={collapseOnMobile}
+		></button>
+	{/if}
+
+	<div
+		aria-hidden="true"
+		class="pointer-events-none fixed bottom-0 top-[66px] z-30 hidden w-4 transition-[left] duration-300 ease-out motion-reduce:transition-none md:block"
+		style="left: var(--sidebar-w); background: linear-gradient(90deg, rgb(0 0 0 / 0.06), transparent);"
+	></div>
+
+	<div class="contents">
+		<nav
+			id="app-sidebar"
+			class={`fixed inset-y-0 left-0 z-40 w-72 overflow-y-auto border-r-2 p-4 transition-[transform,width] duration-300 ease-out motion-reduce:transition-none ${navOpen ? 'translate-x-0' : '-translate-x-full'} md:flex md:min-h-screen md:w-[var(--sidebar-w)] md:min-w-0 md:flex-col md:p-0 md:translate-x-0 md:overflow-hidden`}
+			style="background: rgb(var(--color-foreground)); border-color: rgb(var(--color-border));"
+			aria-label="Primary navigation"
+			inert={isMobile && !navOpen}
+		>
+			<div class="mb-8 flex items-center justify-between md:hidden">
+				<span class="text-sm font-semibold" style="color: rgb(var(--color-text));">Navigation</span>
+				<button
+					type="button"
+					class="flex size-10 items-center justify-center rounded-lg"
+					style="border: 2px solid rgb(var(--color-border)); color: rgb(var(--color-text));"
+					aria-label="Close navigation"
+					onclick={collapseOnMobile}
+				>
+					<Icon icon={xIcon} width="20" height="20" />
+				</button>
+			</div>
+
+			<div
+				class="hidden h-[66px] items-center border-b-2 px-4 md:flex"
+				style="border-color: rgb(var(--color-border));"
 			>
-				{#each navItems as item (item.href)}
-					{@const active = isActive(item)}
-					<li>
-						<a
-							class="flex items-center gap-3 rounded-lg px-4 py-2 text-sm font-medium transition-colors"
-							style={active
-								? 'background: rgb(var(--color-primary) / 0.1); color: rgb(var(--color-primary)); font-weight: 700;'
-								: 'color: rgb(var(--color-text));'}
-							href={appPath(item.href)}
-						>
-							{#if item.label === 'Bookings'}
-								<svg class="size-[18px] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="2" /><path d="M3 9h18M8 2v4M16 2v4" /></svg>
-							{:else if item.label === 'Scheduling'}
-								<svg class="size-[18px] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></svg>
-							{:else if item.label === 'Users'}
-								<svg class="size-[18px] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2" /><path d="M3.5 20a5.5 5.5 0 0 1 11 0M16 5.2a3.2 3.2 0 0 1 0 6M18 20a5.5 5.5 0 0 0-3-4.9" /></svg>
-							{:else if item.label === 'API Integration'}
-								<svg class="size-[18px] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3M16 3h3a2 2 0 0 1 2 2v3M8 21H5a2 2 0 0 1-2-2v-3M16 21h3a2 2 0 0 0 2-2v-3" /><circle cx="12" cy="12" r="2.5" /></svg>
-							{:else if item.label === 'Audit log'}
-								<svg class="size-[18px] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z" /><path d="M14 3v5h5M9 13h6M9 17h4" /></svg>
-							{:else}
-								<svg class="size-[18px] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a9 9 0 1 0 0 18c1.2 0 2-.9 2-2 0-.6-.3-1-.6-1.4-.3-.4-.5-.8-.5-1.3 0-1 .8-1.8 1.8-1.8H16a5 5 0 0 0 5-5c0-3.9-4-6.5-9-6.5z" /><circle cx="7.5" cy="10.5" r="1" /><circle cx="12" cy="7.5" r="1" /><circle cx="16.5" cy="10.5" r="1" /></svg>
-							{/if}
-							{item.label}
-						</a>
-					</li>
-				{/each}
-			</ul>
+				<button
+					type="button"
+					class="menu-toggle-button flex size-10 shrink-0 items-center justify-center rounded-lg"
+					aria-label={navCollapsed ? 'Expand navigation' : 'Collapse navigation'}
+					aria-expanded={!navCollapsed}
+					aria-controls="app-sidebar"
+					onclick={toggleSidebar}
+				>
+					<MenuToggleIcon open={!navCollapsed} />
+				</button>
+				{#if !navCollapsed}
+					<div class="ml-auto">
+						<ThemeToggle />
+					</div>
+				{/if}
+			</div>
+
+			<div class="w-full md:px-4 md:pt-4">
+				<ul class="flex flex-col gap-3">
+					{#each navItems as item (item.href)}
+						{@const active = isActive(item)}
+						<li>
+							<a
+								class={`nav-link flex items-center rounded-lg text-sm font-medium ${navCollapsed ? 'mx-auto size-10 justify-center p-0' : 'gap-3 px-3 py-2.5'}`}
+								href={appPath(item.href)}
+								aria-current={active ? 'page' : undefined}
+								aria-label={navCollapsed ? item.label : undefined}
+								title={navCollapsed ? item.label : undefined}
+								onclick={collapseOnMobile}
+							>
+								<Icon icon={item.icon} width="22" height="22" class="shrink-0" />
+								<span class={navCollapsed ? 'hidden' : 'whitespace-nowrap'}>{item.label}</span>
+							</a>
+						</li>
+					{/each}
+				</ul>
+			</div>
+
 		</nav>
 
-		<main class="min-w-0 p-4 sm:p-6 lg:p-6">
+		<main class="min-w-0 p-4 sm:p-6 lg:p-8">
 			<div
-				class="min-w-0 rounded-xl p-3 sm:p-4 lg:p-5"
+				class="mx-auto w-full min-w-0 max-w-6xl rounded-xl p-3 sm:p-4 lg:p-5"
 				style="background: rgb(var(--color-foreground)); border: 2px solid rgb(var(--color-border)); box-shadow: var(--shadow-small);"
 			>
 				{@render children()}
@@ -260,3 +368,43 @@
 		</main>
 	</div>
 </div>
+
+<style>
+	.menu-toggle-button {
+		border: 0;
+		background: transparent;
+		color: rgb(var(--color-text));
+		cursor: pointer;
+		transition: background 0.18s;
+	}
+
+	.menu-toggle-button:hover {
+		background: rgb(var(--color-muted-background));
+	}
+
+	.menu-toggle-button:focus-visible {
+		outline: 2px solid rgb(var(--color-text));
+		outline-offset: 2px;
+	}
+
+	.nav-link {
+		color: rgb(var(--color-text));
+		transition: background 0.18s, color 0.18s;
+	}
+
+	.nav-link:hover:not([aria-current='page']) {
+		background: rgb(var(--color-primary) / 0.08);
+		color: rgb(var(--color-primary));
+	}
+
+	.nav-link[aria-current='page'] {
+		background: transparent;
+		color: rgb(var(--color-primary));
+		font-weight: 700;
+	}
+
+	.nav-link:focus-visible {
+		outline: 2px solid rgb(var(--color-text));
+		outline-offset: 2px;
+	}
+</style>
