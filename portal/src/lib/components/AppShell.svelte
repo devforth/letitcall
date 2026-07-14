@@ -66,6 +66,9 @@
 		return item.exact ? page.url.pathname === target : page.url.pathname.startsWith(target);
 	}
 
+	// Pages that render their own blocks instead of the shared content card.
+	const bareContent = $derived(page.url.pathname === appPath('/users'));
+
 	async function logout() {
 		loggingOut = true;
 		try {
@@ -359,12 +362,18 @@
 		</nav>
 
 		<main class="min-w-0 p-4 sm:p-6 lg:p-8">
-			<div
-				class="mx-auto w-full min-w-0 max-w-6xl rounded-xl p-3 sm:p-4 lg:p-5"
-				style="background: rgb(var(--color-foreground)); border: 2px solid rgb(var(--color-border)); box-shadow: var(--shadow-small);"
-			>
-				{@render children()}
-			</div>
+			{#if bareContent}
+				<div class="mx-auto w-full min-w-0 max-w-6xl">
+					{@render children()}
+				</div>
+			{:else}
+				<div
+					class="mx-auto w-full min-w-0 max-w-6xl rounded-xl p-3 sm:p-4 lg:p-5"
+					style="background: rgb(var(--color-foreground)); border: 2px solid rgb(var(--color-border)); box-shadow: var(--shadow-small);"
+				>
+					{@render children()}
+				</div>
+			{/if}
 		</main>
 	</div>
 </div>

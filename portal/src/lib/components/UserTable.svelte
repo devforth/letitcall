@@ -1,4 +1,11 @@
 <script lang="ts">
+	import Icon from '@iconify/svelte';
+	import checkIcon from '@iconify-icons/tabler/circle-check-filled';
+	import editIcon from '@iconify-icons/tabler/edit';
+	import trashIcon from '@iconify-icons/tabler/trash';
+	import usersIcon from '@iconify-icons/tabler/users';
+	import worldIcon from '@iconify-icons/tabler/world';
+	import xIcon from '@iconify-icons/tabler/circle-x-filled';
 	import type { ManagedUser } from '$lib/types';
 	import Button from '$lib/components/ui/Button.svelte';
 	import { avatarURL } from '$lib/api';
@@ -28,74 +35,79 @@
 </script>
 
 <div class="overflow-x-auto">
-	<table class="utable w-full min-w-[50rem] text-left text-sm">
+	<table class="user-table w-full min-w-[42rem] text-left text-sm">
 		<thead>
 			<tr>
-				<th class="px-4 py-3 font-semibold">User</th>
-				<th class="px-4 py-3 font-semibold">Email</th>
-				<th class="px-4 py-3 font-semibold">
-					<span class="flex items-center gap-2">
-						Google
-						<svg class="size-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.07 0l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" /><path d="M14 11a5 5 0 0 0-7.07 0l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" /></svg>
-					</span>
-				</th>
-				<th class="px-4 py-3 font-semibold">Timezone</th>
-				<th aria-label="Actions" class="px-4 py-3 text-right font-semibold"></th>
+				<th class="px-5 py-3.5 font-semibold">User</th>
+				<th class="px-4 py-3.5 font-semibold">Calendar</th>
+				<th class="px-4 py-3.5 font-semibold">Timezone</th>
+				<th aria-label="Actions" class="px-5 py-3.5 text-right font-semibold"></th>
 			</tr>
 		</thead>
 		<tbody>
 			{#each users as user (user.email)}
-				<tr>
-					<td class="px-4 py-3">
-						<div class="flex items-center gap-3">
+				<tr class:current-user={user.email === currentEmail}>
+					<td class="px-5 py-4">
+						<div class="flex min-w-0 items-center gap-3">
 							{#if user.avatarPath}
 								<img
 									src={avatarURL(user.avatarPath)}
 									alt=""
-									class="size-11 shrink-0 rounded-full object-cover"
+									class="size-10 shrink-0 rounded-xl object-cover"
 									style="border: 2px solid rgb(var(--color-border));"
 								/>
 							{:else}
 								<span
-									class="flex size-11 shrink-0 items-center justify-center rounded-full text-sm font-bold leading-none"
-									style="background: rgb(var(--color-primary)); color: rgb(var(--color-contrast-text));"
+									class="flex size-10 shrink-0 items-center justify-center rounded-xl text-sm font-bold leading-none"
+									style="background: rgb(var(--color-primary) / 0.14); color: rgb(var(--color-primary));"
 									aria-label="No avatar"
 								>
 									{initialsFor(user)}
 								</span>
 							{/if}
-							{#if user.fullName?.trim()}
-								<span class="flex flex-col font-medium leading-tight">
-									{#each user.fullName.trim().split(/\s+/) as part, i (i)}
-										<span>{part}</span>
-									{/each}
-								</span>
-							{:else}
-								<span class="font-medium">—</span>
-							{/if}
+							<div class="min-w-0">
+								<div class="flex items-center gap-2">
+									<p class="truncate font-semibold" style="color: rgb(var(--color-text));">{user.fullName?.trim() || 'Unnamed user'}</p>
+									{#if user.email === currentEmail}
+										<span class="current-badge">You</span>
+									{/if}
+								</div>
+								<p class="mt-0.5 truncate text-xs" style="color: rgb(var(--color-muted-foreground));">{user.email}</p>
+							</div>
 						</div>
 					</td>
-					<td class="px-4 py-3 font-medium">{user.email}</td>
-					<td class="px-4 py-3">
+					<td class="px-4 py-4">
 						{#if user.googleConnected}
-							<svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="color: rgb(var(--success));" aria-label="Connected"><path d="M5 13l4 4L19 7" /></svg>
+							<span class="connection-state is-connected">
+								<Icon icon={checkIcon} width="16" height="16" class="shrink-0" />
+								Connected
+							</span>
 						{:else}
-							<svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="color: rgb(var(--error));" aria-label="Not connected"><path d="M6 6l12 12M18 6L6 18" /></svg>
+							<span class="connection-state">
+								<Icon icon={xIcon} width="16" height="16" class="shrink-0" />
+								Not connected
+							</span>
 						{/if}
 					</td>
-					<td class="px-4 py-3">{user.timezone}</td>
-					<td class="px-4 py-3">
+					<td class="px-4 py-4">
+						<span class="timezone-chip">
+							<Icon icon={worldIcon} width="15" height="15" class="shrink-0" />
+							{user.timezone}
+						</span>
+					</td>
+					<td class="px-5 py-4">
 						<div class="flex justify-end gap-2">
-							<Button variant="primary" onclick={() => onedit(user.email)}>
-								<svg class="size-[18px] shrink-0" viewBox="0 0 24 24" fill="currentColor"><path d="M13.5 6.5 17.5 10.5 8 20H4v-4l9.5-9.5z" /><path d="M15 5 19 9l1.6-1.6a2 2 0 0 0 0-2.8l-1.2-1.2a2 2 0 0 0-2.8 0L15 5z" /></svg>
+							<Button class="size-9 !min-h-0 !p-0" variant="primary" onclick={() => onedit(user.email)}>
+								<Icon icon={editIcon} width="17" height="17" />
 								<span class="sr-only">Edit {user.email}</span>
 							</Button>
 							<Button
+								class="size-9 !min-h-0 !p-0"
 								variant="secondary"
 								disabled={user.email === currentEmail || checkingEmail === user.email || deletingEmail === user.email}
 								onclick={() => ondelete(user.email)}
 							>
-								<svg class="size-[18px] shrink-0" viewBox="0 0 24 24" fill="currentColor" style="color: rgb(var(--color-primary));"><path d="M9 3a1 1 0 0 0-1 1v1H4.5a1 1 0 1 0 0 2H5v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7h.5a1 1 0 1 0 0-2H16V4a1 1 0 0 0-1-1H9zm1 6a1 1 0 0 1 1 1v7a1 1 0 1 1-2 0v-7a1 1 0 0 1 1-1zm4 0a1 1 0 0 1 1 1v7a1 1 0 1 1-2 0v-7a1 1 0 0 1 1-1z" /></svg>
+								<Icon icon={trashIcon} width="17" height="17" style="color: rgb(var(--color-primary));" />
 								<span class="sr-only">{checkingEmail === user.email ? 'Checking…' : deletingEmail === user.email ? 'Deleting…' : `Delete ${user.email}`}</span>
 							</Button>
 						</div>
@@ -103,7 +115,13 @@
 				</tr>
 			{:else}
 				<tr>
-					<td class="px-4 py-8 text-center" colspan="5">No users found.</td>
+					<td class="px-5 py-14 text-center" colspan="4">
+						<div class="mx-auto flex max-w-xs flex-col items-center">
+							<Icon icon={usersIcon} width="30" height="30" style="color: rgb(var(--color-muted-foreground));" />
+							<p class="mt-3 font-semibold" style="color: rgb(var(--color-text));">No users found</p>
+							<p class="mt-1 text-xs" style="color: rgb(var(--color-muted-foreground));">Try a different search or connection filter.</p>
+						</div>
+					</td>
 				</tr>
 			{/each}
 		</tbody>
@@ -111,35 +129,63 @@
 </div>
 
 <style>
-	.utable {
-		border-collapse: separate;
-		border-spacing: 0;
+	.user-table {
+		border-collapse: collapse;
 	}
 
-	.utable thead th {
-		background: color-mix(in srgb, rgb(var(--color-border)), black 10%);
-		color: rgb(var(--color-contrast-text));
-	}
-
-	.utable thead th:first-child {
-		border-top-left-radius: 8px;
-		border-bottom-left-radius: 8px;
-	}
-
-	.utable thead th:last-child {
-		border-top-right-radius: 8px;
-		border-bottom-right-radius: 8px;
-	}
-
-	.utable tbody tr:first-child td {
-		padding-top: 16px;
-	}
-
-	.utable tbody tr + tr td {
-		border-top: 1px solid rgb(var(--color-border));
-	}
-
-	.utable tbody tr:hover td {
+	.user-table thead {
 		background: rgb(var(--color-muted-background));
+	}
+
+	.user-table thead th {
+		border-bottom: 2px solid rgb(var(--color-border));
+		color: rgb(var(--color-muted-foreground));
+		font-size: 0.6875rem;
+		letter-spacing: 0.1em;
+		text-transform: uppercase;
+	}
+
+	.user-table tbody td {
+		border-bottom: 1px solid rgb(var(--color-border));
+	}
+
+	.user-table tbody tr:last-child td {
+		border-bottom: 0;
+	}
+
+	.user-table tbody tr {
+		transition: background 0.15s ease;
+	}
+
+	.user-table tbody tr:hover,
+	.user-table tbody tr.current-user {
+		background: rgb(var(--color-primary) / 0.045);
+	}
+
+	.current-badge,
+	.connection-state,
+	.timezone-chip {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.375rem;
+		border: 1px solid rgb(var(--color-border));
+		border-radius: 999px;
+		padding: 0.25rem 0.5rem;
+		font-size: 0.75rem;
+		font-weight: 600;
+		line-height: 1;
+		white-space: nowrap;
+	}
+
+	.current-badge,
+	.connection-state.is-connected {
+		border-color: rgb(var(--color-primary) / 0.35);
+		background: rgb(var(--color-primary) / 0.1);
+		color: rgb(var(--color-primary));
+	}
+
+	.connection-state,
+	.timezone-chip {
+		color: rgb(var(--color-muted-foreground));
 	}
 </style>

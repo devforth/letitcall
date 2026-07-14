@@ -13,7 +13,7 @@
 		children: Snippet;
 		type?: 'button' | 'submit' | 'reset';
 		disabled?: boolean;
-		variant?: 'primary' | 'secondary' | 'danger';
+		variant?: 'primary' | 'secondary' | 'danger' | 'ghost';
 		fullWidth?: boolean;
 		class?: string;
 		onclick?: (event: MouseEvent) => void;
@@ -22,7 +22,8 @@
 	const variants = {
 		primary: 'button-primary',
 		secondary: 'button-secondary',
-		danger: 'button-secondary'
+		danger: 'button-secondary',
+		ghost: 'button-ghost'
 	};
 </script>
 
