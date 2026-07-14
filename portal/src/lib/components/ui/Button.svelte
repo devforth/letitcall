@@ -22,7 +22,7 @@
 	const variants = {
 		primary: 'button-primary',
 		secondary: 'button-secondary',
-		danger: 'button-secondary underline'
+		danger: 'button-secondary'
 	};
 </script>
 

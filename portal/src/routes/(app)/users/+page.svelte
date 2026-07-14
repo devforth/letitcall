@@ -94,7 +94,17 @@
 			<h1 id="users-title" class="text-2xl font-semibold tracking-tight">Users</h1>
 			<p class="mt-2 text-sm">Manage who can sign in and schedule events.</p>
 		</div>
-		<Button onclick={() => (showForm = !showForm)}>{showForm ? 'Cancel' : 'Add user'}</Button>
+		<Button onclick={() => (showForm = !showForm)}>
+			<span class="flex items-center gap-2">
+				{#if showForm}
+					<svg class="size-[18px] shrink-0" viewBox="0 0 24 24" fill="currentColor"><path fill-rule="evenodd" clip-rule="evenodd" d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zM8.5 8.5a1 1 0 0 1 1.4 0L12 10.6l2.1-2.1a1 1 0 1 1 1.4 1.4L13.4 12l2.1 2.1a1 1 0 0 1-1.4 1.4L12 13.4l-2.1 2.1a1 1 0 0 1-1.4-1.4L10.6 12 8.5 9.9a1 1 0 0 1 0-1.4z" /></svg>
+					Cancel
+				{:else}
+					<svg class="size-[18px] shrink-0" viewBox="0 0 24 24" fill="currentColor"><circle cx="8" cy="7.5" r="3.8" /><path d="M8 13c-3.6 0-6.5 2.2-6.5 4.9V20a1 1 0 0 0 1 1H13a1 1 0 0 0 1-1v-2.1C14 15.2 11.1 13 8 13z" /><circle cx="17" cy="8.5" r="3" /><path d="M17 13.2c-1 0-1.9.2-2.7.6 1.3 1.1 2.1 2.6 2.2 4.2H21a1 1 0 0 0 1-1v-.9c0-1.6-2.2-2.9-5-2.9z" /></svg>
+					Add user
+				{/if}
+			</span>
+		</Button>
 	</div>
 
 	{#if error}

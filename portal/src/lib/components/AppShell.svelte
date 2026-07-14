@@ -71,7 +71,7 @@
 	>
 		<div class="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-4 px-4 py-2 sm:px-6 lg:px-8">
 			<a class="flex items-center gap-3 tracking-tight" href={appPath('/')}>
-				<BrandLogo class="size-10 border-2 border-black object-cover" />
+				<BrandLogo class="size-10 rounded-lg border-2 border-black object-cover" />
 				<span class="flex flex-col leading-tight">
 					<span class="text-lg font-bold" style="color: rgb(var(--color-primary));">{branding.name}</span>
 					<span class="text-sm font-bold">Scheduling Admin Panel</span>

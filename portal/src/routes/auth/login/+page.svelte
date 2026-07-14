@@ -123,7 +123,10 @@
 	<main class="relative z-10 grid min-h-screen grid-cols-1 lg:grid-cols-4 items-center gap-8 lg:gap-0">
 		<div class="hidden lg:flex lg:col-span-2 flex-col justify-center px-12 xl:px-20">
 			<h2 class="mb-8 text-3xl xl:text-4xl font-bold leading-tight">
-				<span class="block text-primary">{branding.name.toUpperCase()}</span>
+				<span class="mb-3 text-3xl xl:text-5xl flex flex-col items-start gap-4 text-primary leading-none">
+					<BrandLogo class="size-16 rounded-xl border-2 border-border object-cover" />
+					{branding.name.toUpperCase()}
+				</span>
 				<span>Scheduling Admin Panel</span>
 			</h2>
 		</div>
@@ -131,7 +134,6 @@
 		<section class="w-full max-w-md mx-auto lg:mx-0 lg:col-span-2 px-4 lg:pl-8 xl:pl-12" aria-labelledby="login-title">
 			<div class="p-8 sm:p-10 rounded-2xl border-2 border-border" style="background: rgb(var(--color-foreground)); box-shadow: var(--shadow);">
 				<div class="mb-8">
-					<BrandLogo class="mb-6 size-20 border border-black object-cover" />
 					<h1 id="login-title" class="text-3xl font-normal tracking-tight">Welcome Back</h1>
 					<p class="mt-2 text-sm">Sign in to manage your team's schedule</p>
 				</div>
