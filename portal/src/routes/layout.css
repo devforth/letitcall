@@ -117,6 +117,7 @@
 		--color-muted-foreground: 102 102 102;
 		--color-muted-background: 245 245 245;
 		--color-primary: 0 201 80;
+		--color-shadow: 0 0 0;
 		--shadow: 0 0px 4vw rgb(0 0 0 / 0.15);
 		--shadow-small: 0 0px 1vw rgb(0 0 0 / 0.15);
 
@@ -128,6 +129,16 @@
 		color: rgb(var(--color-text));
 		background: rgb(var(--color-background));
 	}
+
+	/* 
+	--color-primary - brand color
+	--color-foreground - background color of the containers + header + sidebar 
+	--color-background - background color of the page
+	--color-text - color of the text
+	--color-contrast-text - color of the text on primary color
+	--color-shadow - color of the shadow
+	--color-border - color of the border
+	*/
 
 	html.dark {
 		/* Dark theme */
