@@ -4,7 +4,8 @@
 @layer components {
 	.button-primary,
 	.button-secondary,
-	.button-ghost {
+	.button-ghost,
+	.button-soft {
 		border-radius: 10px !important;
 		transition: all 0.3s !important;
 		font-weight: 700 !important;
@@ -47,6 +48,10 @@
 		box-shadow: var(--shadow-small);
 	}
 
+	.button-secondary svg {
+		color: rgb(var(--color-primary));
+	}
+
 	.button-secondary:hover:not(:disabled) {
 		background-color: rgb(var(--color-primary) / 0.1) !important;
 		border-color: rgb(var(--color-primary)) !important;
@@ -76,6 +81,25 @@
 	.button-ghost:active:not(:disabled) {
 		background: rgb(var(--color-primary) / 0.18) !important;
 	}
+
+	.button-soft {
+		border: 2px solid transparent !important;
+		background: rgb(var(--color-primary) / 0.12) !important;
+		color: rgb(var(--color-primary)) !important;
+		padding: 0.375rem 0.75rem !important;
+		min-height: auto !important;
+		font-size: 1rem !important;
+		box-shadow: none;
+	}
+
+	.button-soft:hover:not(:disabled) {
+		background: rgb(var(--color-primary) / 0.2) !important;
+	}
+
+	.button-soft:active:not(:disabled) {
+		background: rgb(var(--color-primary) / 0.28) !important;
+	}
+
 }
 
 @layer base {

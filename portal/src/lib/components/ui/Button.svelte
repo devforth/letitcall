@@ -13,7 +13,7 @@
 		children: Snippet;
 		type?: 'button' | 'submit' | 'reset';
 		disabled?: boolean;
-		variant?: 'primary' | 'secondary' | 'danger' | 'ghost';
+		variant?: 'primary' | 'secondary' | 'danger' | 'ghost' | 'soft';
 		fullWidth?: boolean;
 		class?: string;
 		onclick?: (event: MouseEvent) => void;
@@ -23,7 +23,8 @@
 		primary: 'button-primary',
 		secondary: 'button-secondary',
 		danger: 'button-secondary',
-		ghost: 'button-ghost'
+		ghost: 'button-ghost',
+		soft: 'button-soft'
 	};
 </script>
 

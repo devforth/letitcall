@@ -1,6 +1,9 @@
 <script lang="ts">
 	import Icon from '@iconify/svelte';
+	import arrowsSortIcon from '@iconify-icons/tabler/arrows-sort';
 	import checkIcon from '@iconify-icons/tabler/circle-check-filled';
+	import chevronDownIcon from '@iconify-icons/tabler/chevron-down';
+	import chevronUpIcon from '@iconify-icons/tabler/chevron-up';
 	import editIcon from '@iconify-icons/tabler/edit';
 	import trashIcon from '@iconify-icons/tabler/trash';
 	import usersIcon from '@iconify-icons/tabler/users';
@@ -9,6 +12,15 @@
 	import type { ManagedUser } from '$lib/types';
 	import Button from '$lib/components/ui/Button.svelte';
 	import { avatarURL } from '$lib/api';
+
+	type SortKey = 'name' | 'calendar' | 'timezone';
+	type SortDirection = 'ascending' | 'descending';
+
+	const sortableColumns: { key: SortKey; label: string; padding: string }[] = [
+		{ key: 'name', label: 'User', padding: 'px-5' },
+		{ key: 'calendar', label: 'Calendar', padding: 'px-4' },
+		{ key: 'timezone', label: 'Timezone', padding: 'px-4' }
+	];
 
 	let {
 		users,
@@ -26,11 +38,37 @@
 		ondelete: (email: string) => void;
 	} = $props();
 
+	let sortKey = $state<SortKey>('name');
+	let sortDirection = $state<SortDirection>('ascending');
+
+	const sortedUsers = $derived([...users].sort(compareUsers));
+
 	function initialsFor(user: ManagedUser) {
 		const parts = user.fullName?.trim().split(/\s+/).filter(Boolean) ?? [];
 		if (parts.length >= 2) return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 		if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
 		return user.email.slice(0, 2).toUpperCase();
+	}
+
+	function compareUsers(first: ManagedUser, second: ManagedUser) {
+		const comparison = sortValue(first).localeCompare(sortValue(second)) || first.email.localeCompare(second.email);
+		return sortDirection === 'ascending' ? comparison : -comparison;
+	}
+
+	function sortValue(user: ManagedUser) {
+		if (sortKey === 'calendar') return user.googleConnected ? 'Connected' : 'Not connected';
+		if (sortKey === 'timezone') return user.timezone;
+		return user.fullName?.trim() || 'Unnamed user';
+	}
+
+	function toggleSort(key: SortKey) {
+		if (sortKey === key) {
+			sortDirection = sortDirection === 'ascending' ? 'descending' : 'ascending';
+			return;
+		}
+
+		sortKey = key;
+		sortDirection = 'ascending';
 	}
 </script>
 
@@ -38,38 +76,59 @@
 	<table class="user-table w-full min-w-[42rem] text-left text-sm">
 		<thead>
 			<tr>
-				<th class="px-5 py-3.5 font-semibold">User</th>
-				<th class="px-4 py-3.5 font-semibold">Calendar</th>
-				<th class="px-4 py-3.5 font-semibold">Timezone</th>
+				{#each sortableColumns as column (column.key)}
+					<th
+						aria-sort={sortKey === column.key ? sortDirection : 'none'}
+						class={`${column.padding} py-3.5 font-semibold`}
+					>
+						<button
+							type="button"
+							class:active-sort={sortKey === column.key}
+							class="sort-button"
+							onclick={() => toggleSort(column.key)}
+						>
+							{column.label}
+							{#if sortKey === column.key}
+								<Icon icon={sortDirection === 'ascending' ? chevronUpIcon : chevronDownIcon} width="15" height="15" aria-hidden="true" />
+							{:else}
+								<Icon icon={arrowsSortIcon} width="15" height="15" aria-hidden="true" />
+							{/if}
+						</button>
+					</th>
+				{/each}
 				<th aria-label="Actions" class="px-5 py-3.5 text-right font-semibold"></th>
 			</tr>
 		</thead>
 		<tbody>
-			{#each users as user (user.email)}
-				<tr class:current-user={user.email === currentEmail}>
+			{#each sortedUsers as user (user.email)}
+				<tr>
 					<td class="px-5 py-4">
 						<div class="flex min-w-0 items-center gap-3">
-							{#if user.avatarPath}
-								<img
-									src={avatarURL(user.avatarPath)}
-									alt=""
-									class="size-10 shrink-0 rounded-xl object-cover"
-									style="border: 2px solid rgb(var(--color-border));"
-								/>
-							{:else}
-								<span
-									class="flex size-10 shrink-0 items-center justify-center rounded-xl text-sm font-bold leading-none"
-									style="background: rgb(var(--color-primary) / 0.14); color: rgb(var(--color-primary));"
-									aria-label="No avatar"
-								>
-									{initialsFor(user)}
-								</span>
-							{/if}
+							<span class="avatar-wrap">
+								{#if user.avatarPath}
+									<img
+										src={avatarURL(user.avatarPath)}
+										alt=""
+										class="size-10 rounded-xl object-cover"
+										style="border: 2px solid rgb(var(--color-border));"
+									/>
+								{:else}
+									<span
+										class="flex size-10 items-center justify-center rounded-xl text-sm font-bold leading-none"
+										style="background: rgb(var(--color-primary) / 0.14); color: rgb(var(--color-primary));"
+										aria-label="No avatar"
+									>
+										{initialsFor(user)}
+									</span>
+								{/if}
+							</span>
 							<div class="min-w-0">
 								<div class="flex items-center gap-2">
 									<p class="truncate font-semibold" style="color: rgb(var(--color-text));">{user.fullName?.trim() || 'Unnamed user'}</p>
 									{#if user.email === currentEmail}
-										<span class="current-badge">You</span>
+										<span class="current-user-marker">
+											<Icon icon={checkIcon} width="16" height="16" aria-label="Current user" />
+										</span>
 									{/if}
 								</div>
 								<p class="mt-0.5 truncate text-xs" style="color: rgb(var(--color-muted-foreground));">{user.email}</p>
@@ -97,17 +156,17 @@
 					</td>
 					<td class="px-5 py-4">
 						<div class="flex justify-end gap-2">
-							<Button class="size-9 !min-h-0 !p-0" variant="primary" onclick={() => onedit(user.email)}>
-								<Icon icon={editIcon} width="17" height="17" />
+							<Button class="size-10 !min-h-0 !p-0" variant="primary" onclick={() => onedit(user.email)}>
+								<Icon icon={editIcon} width="22" height="22" />
 								<span class="sr-only">Edit {user.email}</span>
 							</Button>
 							<Button
-								class="size-9 !min-h-0 !p-0"
+								class="size-10 !min-h-0 !p-0"
 								variant="secondary"
 								disabled={user.email === currentEmail || checkingEmail === user.email || deletingEmail === user.email}
 								onclick={() => ondelete(user.email)}
 							>
-								<Icon icon={trashIcon} width="17" height="17" style="color: rgb(var(--color-primary));" />
+								<Icon icon={trashIcon} width="22" height="22" />
 								<span class="sr-only">{checkingEmail === user.email ? 'Checking…' : deletingEmail === user.email ? 'Deleting…' : `Delete ${user.email}`}</span>
 							</Button>
 						</div>
@@ -139,10 +198,36 @@
 
 	.user-table thead th {
 		border-bottom: 2px solid rgb(var(--color-border));
-		color: rgb(var(--color-muted-foreground));
-		font-size: 0.6875rem;
-		letter-spacing: 0.1em;
-		text-transform: uppercase;
+		color: rgb(var(--color-text));
+		font-size: 0.75rem;
+		font-weight: 700;
+		letter-spacing: 0.025em;
+		text-transform: none;
+	}
+
+	.sort-button {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.25rem;
+		border: 0;
+		padding: 0;
+		background: transparent;
+		color: inherit;
+		font: inherit;
+		letter-spacing: inherit;
+		text-transform: inherit;
+		cursor: pointer;
+		transition: color 0.15s ease;
+	}
+
+	.sort-button:hover,
+	.sort-button.active-sort {
+		color: rgb(var(--color-primary));
+	}
+
+	.sort-button:focus-visible {
+		outline: 2px solid rgb(var(--color-primary));
+		outline-offset: 3px;
 	}
 
 	.user-table tbody td {
@@ -157,12 +242,10 @@
 		transition: background 0.15s ease;
 	}
 
-	.user-table tbody tr:hover,
-	.user-table tbody tr.current-user {
+	.user-table tbody tr:hover {
 		background: rgb(var(--color-primary) / 0.045);
 	}
 
-	.current-badge,
 	.connection-state,
 	.timezone-chip {
 		display: inline-flex;
@@ -177,7 +260,6 @@
 		white-space: nowrap;
 	}
 
-	.current-badge,
 	.connection-state.is-connected {
 		border-color: rgb(var(--color-primary) / 0.35);
 		background: rgb(var(--color-primary) / 0.1);
@@ -187,5 +269,19 @@
 	.connection-state,
 	.timezone-chip {
 		color: rgb(var(--color-muted-foreground));
+	}
+
+	.current-user-marker {
+		display: inline-flex;
+		transform: translateY(1px);
+		color: rgb(var(--color-primary));
+	}
+
+	.avatar-wrap {
+		display: block;
+		position: relative;
+		width: 2.5rem;
+		height: 2.5rem;
+		flex: none;
 	}
 </style>

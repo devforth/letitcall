@@ -2,6 +2,8 @@
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
 	import Icon from '@iconify/svelte';
+	import checkIcon from '@iconify-icons/tabler/check';
+	import plusIcon from '@iconify-icons/tabler/plus';
 	import xIcon from '@iconify-icons/tabler/x';
 	import { callApi, appPath, getSession } from '$lib/api';
 	import addUserIcon from '$lib/icons/add-user';
@@ -44,6 +46,7 @@
 
 	const blockStyle =
 		'background: rgb(var(--color-foreground)); border-color: rgb(var(--color-border)); box-shadow: var(--shadow-small);';
+	const newUserContainerStyle = `${blockStyle} background: rgb(var(--color-primary));`;
 
 	const filteredUsers = $derived(
 		users.filter((candidate) => {
@@ -157,7 +160,7 @@
 
 <PageTitle title="Users" />
 
-<section aria-labelledby="users-title" class="flex flex-col gap-5">
+<section aria-labelledby="users-title" class="flex flex-col gap-4">
 	<div class="rounded-lg border-2 p-4 sm:p-5" style={blockStyle}>
 		<div class="flex flex-wrap items-center justify-between gap-5">
 			<div class="flex min-w-0 items-center gap-4">
@@ -177,27 +180,22 @@
 					<p class="text-sm" style="color: rgb(var(--color-muted-foreground));">Manage who can sign in and host events.</p>
 				</div>
 			</div>
-			<div>
-				{#if showForm}
-					<Button variant="ghost" class="size-10 !min-h-0 !p-0" onclick={() => (showForm = false)}>
-						<Icon icon={xIcon} width="20" height="20" />
-						<span class="sr-only">Close new user form</span>
-					</Button>
-				{:else}
-					<Button onclick={() => (showForm = true)}>
-						<span class="flex items-center gap-2">
-							<Icon icon={addUserIcon} width="18" height="18" class="shrink-0" />
-							Add user
-						</span>
-					</Button>
-				{/if}
-			</div>
+			{#if !showForm}
+				<Button onclick={() => (showForm = true)}>
+					<span class="flex items-center gap-2">
+						<Icon icon={plusIcon} width="18" height="18" class="add-user-plus shrink-0" />
+						Add user
+					</span>
+				</Button>
+			{/if}
 		</div>
+	</div>
 
-		{#if showForm}
+	{#if showForm}
+		<div class="rounded-[0.625rem] border-2" style={newUserContainerStyle}>
 			<form
-				class="mt-6 grid gap-5 border-t-2 pt-5 lg:grid-cols-3"
-				style="border-color: rgb(var(--color-border));"
+				class="ml-1 grid gap-5 rounded-md rounded-l-lg p-4 sm:p-5 lg:grid-cols-3"
+				style="background: rgb(var(--color-foreground));"
 				onsubmit={createUser}
 			>
 				<div class="lg:col-span-3">
@@ -224,12 +222,23 @@
 				<div class="lg:col-span-3">
 					<ImageSelector id="new-avatar" legend="Avatar" bind:this={avatarSelector} />
 				</div>
-				<div class="flex items-end lg:col-span-3">
-					<Button type="submit" disabled={saving}>{saving ? 'Creating…' : 'Create user'}</Button>
+				<div class="flex items-end gap-3 lg:col-span-3">
+					<Button variant="secondary" onclick={() => (showForm = false)}>
+						<span class="flex items-center gap-2">
+							<Icon icon={xIcon} width="18" height="18" class="cancel-icon shrink-0" />
+							Cancel
+						</span>
+					</Button>
+					<Button type="submit" disabled={saving}>
+						<span class="flex items-center gap-2">
+							<Icon icon={checkIcon} width="18" height="18" class="create-user-icon shrink-0" />
+							{saving ? 'Creating…' : 'Create user'}
+						</span>
+					</Button>
 				</div>
 			</form>
-		{/if}
-	</div>
+		</div>
+	{/if}
 
 	<div class="overflow-hidden rounded-lg border-2" style={blockStyle}>
 		<div class="flex flex-wrap items-end justify-between gap-4 border-b-2 p-3 sm:p-4" style="border-color: rgb(var(--color-border));">
@@ -240,12 +249,8 @@
 				</p>
 			</div>
 			<div class="flex w-full flex-wrap gap-3 lg:w-auto lg:flex-nowrap">
-				<div class="min-w-[220px] flex-1 lg:w-72 lg:flex-none">
-					<Input id="user-search" label="Search users" type="search" bind:value={search} />
-				</div>
 				<div
-					class="flex shrink-0 overflow-hidden rounded-md border-2"
-					style="border-color: rgb(var(--color-border));"
+					class="connection-filter flex shrink-0"
 					role="group"
 					aria-label="Filter by Google connection"
 				>
@@ -260,6 +265,9 @@
 							{filter.label}
 						</button>
 					{/each}
+				</div>
+				<div class="min-w-[220px] flex-1 lg:w-72 lg:flex-none">
+					<Input id="user-search" label="Search users" type="search" bind:value={search} />
 				</div>
 			</div>
 		</div>
@@ -299,27 +307,52 @@
 {/if}
 
 <style>
-	.filter-seg {
-		background: transparent;
-		color: rgb(var(--color-muted-foreground));
-		border-right: 2px solid rgb(var(--color-border));
-		cursor: pointer;
-		transition:
-			background 0.15s,
-			color 0.15s;
+	.connection-filter {
+		gap: 0;
+		border-bottom: 1px solid rgb(var(--color-border));
 	}
 
-	.filter-seg:last-child {
-		border-right: 0;
+	:global(.cancel-icon path) {
+		stroke-width: 3;
+	}
+
+	:global(.create-user-icon path) {
+		stroke-width: 3;
+	}
+
+	:global(.add-user-plus path) {
+		stroke-width: 3;
+	}
+
+	.filter-seg {
+		position: relative;
+		border: 0;
+		background: transparent;
+		color: rgb(var(--color-muted-foreground));
+		cursor: pointer;
+		transition: color 0.15s;
+	}
+
+	.filter-seg::after {
+		position: absolute;
+		right: 0.75rem;
+		bottom: -1px;
+		left: 0.75rem;
+		height: 2px;
+		background: transparent;
+		content: '';
+		transition: background 0.15s;
 	}
 
 	.filter-seg:hover:not(.on) {
-		background: rgb(var(--color-primary) / 0.08);
-		color: rgb(var(--color-primary));
+		color: rgb(var(--color-text));
 	}
 
 	.filter-seg.on {
+		color: rgb(var(--color-primary));
+	}
+
+	.filter-seg.on::after {
 		background: rgb(var(--color-primary));
-		color: rgb(var(--color-contrast-text));
 	}
 </style>
