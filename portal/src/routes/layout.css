@@ -135,7 +135,7 @@
 	--color-foreground - background color of the containers + header + sidebar 
 	--color-background - background color of the page
 	--color-text - color of the text
-	--color-contrast-text - color of the text on primary color
+	--color-primary-contrast - color of the text on primary color
 	--color-shadow - color of the shadow
 	--color-border - color of the border
 	*/
