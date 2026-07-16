@@ -66,7 +66,7 @@
 	.button-ghost {
 		border: 2px solid transparent !important;
 		background: transparent !important;
-		color: rgb(var(--color-muted-foreground)) !important;
+		color: rgb(var(--color-text) / 0.65) !important;
 		padding: 0.375rem 0.75rem !important;
 		min-height: auto !important;
 		font-size: 1rem !important;
@@ -114,8 +114,6 @@
 		--color-border: 216 216 216;
 		--color-text: 100 100 100;
 		--color-contrast-text: 255 255 255;
-		--color-muted-foreground: 102 102 102;
-		--color-muted-background: 245 245 245;
 		--color-primary: 0 201 80;
 		--color-shadow: 0 0 0;
 		--shadow: 0 0px 4vw rgb(0 0 0 / 0.15);
@@ -144,8 +142,6 @@
 		/* Dark theme */
 		--color-foreground: 100 100 100;
 		--color-background: 51 51 51;
-		--color-muted-foreground: 153 153 153;
-		--color-muted-background: 64 64 64;
 		--color-text: 255 255 255;
 		--color-border: 120 120 120;
 		--shadow: 0 0px 4vw rgb(0 0 0 / 0.5);

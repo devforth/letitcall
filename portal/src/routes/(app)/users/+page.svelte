@@ -48,18 +48,29 @@
 		'background: rgb(var(--color-foreground)); border-color: rgb(var(--color-border)); box-shadow: var(--shadow-small);';
 	const newUserContainerStyle = `${blockStyle} background: rgb(var(--color-primary));`;
 
-	const filteredUsers = $derived(
+	const searchMatches = $derived(
 		users.filter((candidate) => {
 			const q = search.trim().toLowerCase();
-			const matchesQuery =
+			return (
 				!q ||
 				candidate.email.toLowerCase().includes(q) ||
-				(candidate.fullName ?? '').toLowerCase().includes(q);
-			const matchesConnection =
-				connFilter === 'all' ||
-				(connFilter === 'connected' ? candidate.googleConnected : !candidate.googleConnected);
-			return matchesQuery && matchesConnection;
+				(candidate.fullName ?? '').toLowerCase().includes(q)
+			);
 		})
+	);
+
+	const connCounts = $derived({
+		all: searchMatches.length,
+		connected: searchMatches.filter((candidate) => candidate.googleConnected).length,
+		notConnected: searchMatches.filter((candidate) => !candidate.googleConnected).length
+	});
+
+	const filteredUsers = $derived(
+		searchMatches.filter(
+			(candidate) =>
+				connFilter === 'all' ||
+				(connFilter === 'connected' ? candidate.googleConnected : !candidate.googleConnected)
+		)
 	);
 
 	onMount(async () => {
@@ -177,7 +188,7 @@
 							{loading ? 'Loading…' : `${users.length} ${users.length === 1 ? 'member' : 'members'}`}
 						</span>
 					</div>
-					<p class="text-sm" style="color: rgb(var(--color-muted-foreground));">Manage who can sign in and host events.</p>
+					<p class="text-sm" style="color: rgb(var(--color-text) / 0.65);">Manage who can sign in and host events.</p>
 				</div>
 			</div>
 			{#if !showForm}
@@ -200,7 +211,7 @@
 			>
 				<div class="lg:col-span-3">
 					<h2 class="font-semibold" style="color: rgb(var(--color-text));">New user</h2>
-					<p class="mt-1 text-sm" style="color: rgb(var(--color-muted-foreground));">Add their details and optional sign-in password.</p>
+					<p class="mt-1 text-sm" style="color: rgb(var(--color-text) / 0.65);">Add their details and optional sign-in password.</p>
 				</div>
 				<Input id="new-email" label="Email" type="email" bind:value={email} required autocomplete="off" />
 				<Input id="new-full-name" label="Full name (optional)" bind:value={fullName} autocomplete="name" />
@@ -244,31 +255,30 @@
 		<div class="flex flex-wrap items-end justify-between gap-4 border-b-2 p-3 sm:p-4" style="border-color: rgb(var(--color-border));">
 			<div>
 				<h2 class="font-semibold" style="color: rgb(var(--color-text));">People</h2>
-				<p class="mt-1 text-sm" style="color: rgb(var(--color-muted-foreground));">
+				<p class="mt-1 text-sm" style="color: rgb(var(--color-text) / 0.65);">
 					{loading ? 'Loading your team…' : `${filteredUsers.length} of ${users.length} shown`}
 				</p>
 			</div>
-			<div class="flex w-full flex-wrap gap-3 lg:w-auto lg:flex-nowrap">
-				<div
-					class="connection-filter flex shrink-0"
-					role="group"
-					aria-label="Filter by Google connection"
-				>
-					{#each connFilters as filter (filter.value)}
-						<button
-							type="button"
-							class="filter-seg px-3 py-2 text-sm font-semibold"
-							class:on={connFilter === filter.value}
-							aria-pressed={connFilter === filter.value}
-							onclick={() => (connFilter = filter.value)}
-						>
-							{filter.label}
-						</button>
-					{/each}
-				</div>
-				<div class="min-w-[220px] flex-1 lg:w-72 lg:flex-none">
-					<Input id="user-search" label="Search users" type="search" bind:value={search} />
-				</div>
+			<div
+				class="connection-filter lg:self-center"
+				role="group"
+				aria-label="Filter by Google connection"
+			>
+				{#each connFilters as filter (filter.value)}
+					<button
+						type="button"
+						class="filter-seg"
+						class:on={connFilter === filter.value}
+						aria-pressed={connFilter === filter.value}
+						onclick={() => (connFilter = filter.value)}
+					>
+						{filter.label}
+						<span class="filter-count">· {connCounts[filter.value]}</span>
+					</button>
+				{/each}
+			</div>
+			<div class="min-w-[220px] flex-1 lg:w-72 lg:flex-none">
+				<Input id="user-search" label="Search users" type="search" bind:value={search} />
 			</div>
 		</div>
 
@@ -276,7 +286,7 @@
 			<p class="m-3 rounded-md border-2 p-3 text-sm" style="border-color: rgb(var(--error)); color: rgb(var(--error));" role="alert">{error}</p>
 		{/if}
 		{#if loading}
-			<p class="p-8 text-sm" style="color: rgb(var(--color-muted-foreground));">Loading users…</p>
+			<p class="p-8 text-sm" style="color: rgb(var(--color-text) / 0.65);">Loading users…</p>
 		{:else}
 			<UserTable users={filteredUsers} {currentEmail} {checkingEmail} {deletingEmail} onedit={editUser} ondelete={prepareDelete} />
 		{/if}
@@ -308,8 +318,14 @@
 
 <style>
 	.connection-filter {
-		gap: 0;
-		border-bottom: 1px solid rgb(var(--color-border));
+		display: inline-flex;
+		flex-shrink: 0;
+		align-items: center;
+		gap: 0.25rem;
+		border: 1px solid rgb(var(--color-border));
+		border-radius: 999px;
+		padding: 0.25rem;
+		background: rgb(var(--color-text) / 0.06);
 	}
 
 	:global(.cancel-icon path) {
@@ -325,23 +341,20 @@
 	}
 
 	.filter-seg {
-		position: relative;
 		border: 0;
+		border-radius: 999px;
+		padding: 0.4rem 0.9rem;
 		background: transparent;
-		color: rgb(var(--color-muted-foreground));
+		color: rgb(var(--color-text) / 0.65);
+		font-size: 0.8125rem;
+		font-weight: 600;
 		cursor: pointer;
-		transition: color 0.15s;
+		transition: color 0.15s, background 0.15s;
 	}
 
-	.filter-seg::after {
-		position: absolute;
-		right: 0.75rem;
-		bottom: -1px;
-		left: 0.75rem;
-		height: 2px;
-		background: transparent;
-		content: '';
-		transition: background 0.15s;
+	.filter-count {
+		opacity: 0.45;
+		font-variant-numeric: tabular-nums;
 	}
 
 	.filter-seg:hover:not(.on) {
@@ -349,10 +362,8 @@
 	}
 
 	.filter-seg.on {
-		color: rgb(var(--color-primary));
-	}
-
-	.filter-seg.on::after {
 		background: rgb(var(--color-primary));
+		color: rgb(var(--color-contrast-text));
+		box-shadow: 0 1px 3px rgb(0 0 0 / 0.12);
 	}
 </style>

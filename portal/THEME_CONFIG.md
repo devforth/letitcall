@@ -79,8 +79,6 @@ border-color: rgb(var(--color-border));
 | `--color-text` | Standard text, matching the foreground color |
 | `--color-contrast-text` | Text contrasting with the standard text color |
 | `--color-border` | Borders and dividers |
-| `--color-muted-foreground` | Secondary text |
-| `--color-muted-background` | Subtle backgrounds |
 | `--color-primary` | Primary actions and highlights |
 | `--color-secondary` | Secondary actions and highlights |
 | `--color-secondary-hover` | Hover state for secondary actions |
@@ -91,7 +89,7 @@ Use the custom color classes in Tailwind (these use CSS variables):
 
 ```html
 <div class="bg-background text-foreground border border-border">
-	<span class="text-muted-foreground">Muted text</span>
+	<span class="text-text/65">Secondary text</span>
 </div>
 ```
 

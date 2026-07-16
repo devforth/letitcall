@@ -190,7 +190,7 @@
 		padding: 0.75rem;
 		border: 1px dashed rgb(var(--color-border));
 		border-radius: 8px;
-		background: rgb(var(--color-muted-background));
+		background: rgb(var(--color-text) / 0.06);
 		transition: background 0.18s, border-color 0.18s;
 	}
 
@@ -220,7 +220,7 @@
 	.crop-hint {
 		margin: 0.1875rem 0 0;
 		font-size: 0.75rem;
-		color: rgb(var(--color-muted-foreground));
+		color: rgb(var(--color-text) / 0.65);
 	}
 
 	.file-trigger {

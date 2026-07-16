@@ -176,8 +176,6 @@ Edit `src/routes/layout.css` to match your brand colors:
 	--color-foreground: 10 20% 5%;      /* Dark blue-ish black */
 	--color-background: 240 100% 98%;   /* Light blue tint */
 	--color-border: 220 10% 85%;        /* Blue-gray border */
-	--color-muted-foreground: 220 10% 40%;
-	--color-muted-background: 240 100% 95%;
 }
 
 html.dark {
@@ -185,8 +183,6 @@ html.dark {
 	--color-foreground: 240 100% 98%;
 	--color-background: 220 15% 12%;
 	--color-border: 220 15% 25%;
-	--color-muted-foreground: 220 10% 60%;
-	--color-muted-background: 220 15% 22%;
 }
 ```
 

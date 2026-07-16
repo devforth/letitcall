@@ -210,7 +210,7 @@
 		border: 0;
 		border-radius: 999px;
 		background: transparent;
-		color: rgb(var(--color-muted-foreground));
+		color: rgb(var(--color-text) / 0.65);
 		cursor: pointer;
 		transition: background 0.18s, color 0.18s;
 	}
@@ -240,7 +240,7 @@
 		place-items: center;
 		border: 0;
 		background: transparent;
-		color: rgb(var(--color-muted-foreground));
+		color: rgb(var(--color-text) / 0.65);
 		cursor: pointer;
 	}
 
@@ -323,6 +323,6 @@
 		margin: 0;
 		padding: 0.625rem 0.75rem;
 		font-size: 0.8125rem;
-		color: rgb(var(--color-muted-foreground));
+		color: rgb(var(--color-text) / 0.65);
 	}
 </style>

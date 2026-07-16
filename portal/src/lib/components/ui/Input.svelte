@@ -131,7 +131,7 @@
 		border: 0;
 		border-radius: 8px;
 		background: transparent;
-		color: rgb(var(--color-muted-foreground));
+		color: rgb(var(--color-text) / 0.65);
 		cursor: pointer;
 		transition: color 0.18s, background 0.18s;
 	}

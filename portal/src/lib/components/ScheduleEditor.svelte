@@ -142,7 +142,7 @@
 										value={range.end}
 										onchange={(value) => updateRange(day, index, 'end', value)}
 									/>
-									<IconButton label={`Remove ${labels[day.day]} range ${index + 1}`} onclick={() => removeRange(day, index)}>
+									<IconButton tone="danger" label={`Remove ${labels[day.day]} range ${index + 1}`} onclick={() => removeRange(day, index)}>
 										<Icon icon={xIcon} width="22" height="22" />
 									</IconButton>
 								</div>
@@ -153,7 +153,7 @@
 					{/if}
 
 					<div class="flex gap-2 lg:pt-6">
-						<IconButton label={`Add ${labels[day.day]} range`} onclick={() => addRange(day)}>
+						<IconButton tone="primary" label={`Add ${labels[day.day]} range`} onclick={() => addRange(day)}>
 							<Icon icon={plusIcon} width="22" height="22" />
 						</IconButton>
 						{#if day.enabled}

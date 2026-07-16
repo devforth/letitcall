@@ -1,5 +1,6 @@
 <script lang="ts">
 	import Button from '$lib/components/ui/Button.svelte';
+	import Dialog from '$lib/components/ui/Dialog.svelte';
 
 	let {
 		open,
@@ -21,33 +22,18 @@
 		oncancel: () => void;
 	} = $props();
 
-	let dialog: HTMLDialogElement;
-
-	$effect(() => {
-		if (open && !dialog.open) dialog.showModal();
-		if (!open && dialog.open) dialog.close();
-	});
-
-	function cancel(event?: Event) {
-		event?.preventDefault();
+	function cancel() {
 		if (!confirming) oncancel();
 	}
 </script>
 
-<dialog
-	bind:this={dialog}
-	class="m-auto w-[min(32rem,calc(100%-2rem))] border border-black bg-white p-0 text-black shadow-[6px_6px_0_0_#000] backdrop:bg-black/50"
-	aria-label={title}
-	oncancel={cancel}
->
-	<div class="p-6">
-		<h2 class="text-xl font-semibold tracking-tight">{title}</h2>
-		<p class="mt-3 text-sm leading-6">{description}</p>
-		<div class="mt-6 flex flex-wrap justify-end gap-2">
-			<Button variant="secondary" disabled={confirming} onclick={() => cancel()}>Cancel</Button>
-			<Button variant="danger" disabled={confirming} onclick={onconfirm}>
-				{confirming ? confirmingLabel : confirmLabel}
-			</Button>
-		</div>
+<Dialog {open} label={title} oncancel={cancel}>
+	<h2 class="text-xl font-semibold tracking-tight">{title}</h2>
+	<p class="mt-3 text-sm leading-6">{description}</p>
+	<div class="mt-6 flex flex-wrap justify-end gap-2">
+		<Button variant="secondary" class="dialog-cancel" disabled={confirming} onclick={cancel}>Cancel</Button>
+		<Button variant="danger" class="dialog-confirm" disabled={confirming} onclick={onconfirm}>
+			{confirming ? confirmingLabel : confirmLabel}
+		</Button>
 	</div>
-</dialog>
+</Dialog>

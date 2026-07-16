@@ -179,7 +179,7 @@
 						</span>
 						<svg
 							class="size-4 shrink-0 transition-transform"
-							style="color: rgb(var(--color-muted-foreground)); {menuOpen ? 'transform: rotate(180deg);' : ''}"
+							style="{menuOpen ? 'transform: rotate(180deg);' : ''}"
 							viewBox="0 0 24 24"
 							fill="none"
 							stroke="currentColor"
@@ -221,7 +221,7 @@
 										{user.fullName || user.email}
 									</span>
 									{#if user.fullName}
-										<span class="truncate text-xs" style="color: rgb(var(--color-muted-foreground));">
+										<span class="truncate text-xs" style="color: rgb(var(--color-text) / 0.65);">
 											{user.email}
 										</span>
 									{/if}
@@ -239,20 +239,20 @@
 								onmouseenter={(e) => (e.currentTarget.style.background = 'rgb(var(--color-primary) / 0.1)')}
 								onmouseleave={(e) => (e.currentTarget.style.background = 'transparent')}
 							>
-								<svg class="size-4 shrink-0" style="color: rgb(var(--color-muted-foreground));" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H5a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2h13a2 2 0 0 0 2-2v-6" /><path d="M18.5 2.5a2.1 2.1 0 0 1 3 3L12 15l-4 1 1-4z" /></svg>
+								<svg class="size-4 shrink-0" style="color: rgb(var(--color-text) / 0.65);" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H5a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2h13a2 2 0 0 0 2-2v-6" /><path d="M18.5 2.5a2.1 2.1 0 0 1 3 3L12 15l-4 1 1-4z" /></svg>
 								Edit profile
 							</a>
 
 							<div class="my-1 h-px" style="background: rgb(var(--color-border));"></div>
 
 							<div class="flex items-center gap-3 rounded-lg px-2 py-2">
-								<svg class="size-4 shrink-0" style="color: rgb(var(--color-muted-foreground));" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><path d="M3 12h18M12 3a15 15 0 0 1 0 18 15 15 0 0 1 0-18z" /></svg>
+								<svg class="size-4 shrink-0" style="color: rgb(var(--color-text) / 0.65);" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><path d="M3 12h18M12 3a15 15 0 0 1 0 18 15 15 0 0 1 0-18z" /></svg>
 								<span class="text-sm font-medium" style="color: rgb(var(--color-text));">Timezone</span>
-								<span class="ml-auto truncate text-xs" style="color: rgb(var(--color-muted-foreground));">{user.timezone}</span>
+								<span class="ml-auto truncate text-xs" style="color: rgb(var(--color-text) / 0.65);">{user.timezone}</span>
 							</div>
 
 							<div class="flex items-center gap-3 rounded-lg px-2 py-2">
-								<Icon icon={moonIcon} width="16" height="16" class="shrink-0" style="color: rgb(var(--color-muted-foreground));" />
+								<Icon icon={moonIcon} width="16" height="16" class="shrink-0" style="color: rgb(var(--color-text) / 0.65);" />
 								<span class="text-sm font-medium" style="color: rgb(var(--color-text));">Theme</span>
 								<div class="ml-auto">
 									<ThemeToggle />
@@ -388,7 +388,7 @@
 	}
 
 	.menu-toggle-button:hover {
-		background: rgb(var(--color-muted-background));
+		background: rgb(var(--color-text) / 0.06);
 	}
 
 	.menu-toggle-button:focus-visible {

@@ -8,6 +8,7 @@
 	import { callApi } from '$lib/api';
 	import type { Booking } from '$lib/types';
 	import Button from '$lib/components/ui/Button.svelte';
+	import ConfirmationDialog from '$lib/components/ui/ConfirmationDialog.svelte';
 	import GuestEmailFields from '$lib/components/GuestEmailFields.svelte';
 	import PageTitle from '$lib/components/PageTitle.svelte';
 	import { branding } from '$lib/stores/branding.svelte';
@@ -24,6 +25,7 @@
 	let reason = $state('');
 	let saving = $state(false);
 	let canceling = $state(false);
+	let showCancelDialog = $state(false);
 
 	const secret = $derived(page.params.secret!);
 
@@ -72,7 +74,6 @@
 	}
 
 	async function cancelBooking() {
-		if (!window.confirm('Cancel this event?')) return;
 		canceling = true;
 		try {
 			const response = await callApi<{ booking: Booking }>(`/api/events/${encodeURIComponent(secret)}/cancel`, {
@@ -80,6 +81,7 @@
 				body: JSON.stringify({ reason })
 			});
 			booking = response.booking;
+			showCancelDialog = false;
 		} catch {
 			// callApi reports the error globally.
 		} finally {
@@ -138,9 +140,20 @@
 					<h2 class="text-xl font-semibold">Cancel event</h2>
 					<p class="mt-2 text-sm">Enter a reason before confirming cancellation. The reason is optional.</p>
 					<div class="mt-5"><Textarea id="cancellation-reason" label="Cancellation reason" bind:value={reason} maxlength={2000} /></div>
-					<div class="mt-5"><Button variant="secondary" disabled={canceling} onclick={cancelBooking}>{canceling ? 'Canceling…' : 'Cancel event'}</Button></div>
+					<div class="mt-5"><Button variant="secondary" disabled={canceling} onclick={() => (showCancelDialog = true)}>Cancel event</Button></div>
 				</section>
 			{/if}
 		</div>
 	</main>
+
+	<ConfirmationDialog
+		open={showCancelDialog}
+		title="Cancel event?"
+		description="This action cannot be undone."
+		confirmLabel="Cancel event"
+		confirmingLabel="Canceling…"
+		confirming={canceling}
+		onconfirm={cancelBooking}
+		oncancel={() => (showCancelDialog = false)}
+	/>
 {/if}
