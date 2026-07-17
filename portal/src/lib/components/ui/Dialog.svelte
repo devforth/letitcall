@@ -5,12 +5,14 @@
 		open,
 		label,
 		wide = false,
+		bare = false,
 		children,
 		oncancel
 	}: {
 		open: boolean;
 		label: string;
 		wide?: boolean;
+		bare?: boolean;
 		children: Snippet;
 		oncancel: () => void;
 	} = $props();
@@ -28,8 +30,8 @@
 	}
 </script>
 
-<dialog bind:this={dialog} class:wide class="dialog" aria-label={label} oncancel={cancel}>
-	<div class="p-6">{@render children()}</div>
+<dialog bind:this={dialog} class:wide class:bare class="dialog" aria-label={label} oncancel={cancel}>
+	<div class={bare ? '' : 'p-6'}>{@render children()}</div>
 </dialog>
 
 <style>
@@ -45,6 +47,13 @@
 
 	.dialog.wide {
 		width: min(38rem, calc(100% - 2rem));
+	}
+
+	.dialog.bare {
+		width: min(23rem, calc(100% - 2rem));
+		border: none;
+		background: transparent;
+		box-shadow: none;
 	}
 
 	.dialog::backdrop {

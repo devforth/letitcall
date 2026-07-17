@@ -9,7 +9,7 @@
 	import worldIcon from '@iconify-icons/tabler/world';
 	import type { ManagedUser } from '$lib/types';
 	import IconButton from '$lib/components/ui/IconButton.svelte';
-	import { avatarURL } from '$lib/api';
+	import Avatar from '$lib/components/ui/Avatar.svelte';
 
 	type SortKey = 'name' | 'calendar' | 'timezone';
 	type SortDirection = 'ascending' | 'descending';
@@ -40,13 +40,6 @@
 	let sortDirection = $state<SortDirection>('ascending');
 
 	const sortedUsers = $derived([...users].sort(compareUsers));
-
-	function initialsFor(user: ManagedUser) {
-		const parts = user.fullName?.trim().split(/\s+/).filter(Boolean) ?? [];
-		if (parts.length >= 2) return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
-		if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
-		return user.email.slice(0, 2).toUpperCase();
-	}
 
 	function compareUsers(first: ManagedUser, second: ManagedUser) {
 		const comparison = sortValue(first).localeCompare(sortValue(second)) || first.email.localeCompare(second.email);
@@ -124,22 +117,7 @@
 					<td class="px-5 py-4">
 						<div class="flex min-w-0 items-center gap-3">
 							<span class="avatar-wrap">
-								{#if user.avatarPath}
-									<img
-										src={avatarURL(user.avatarPath)}
-										alt=""
-										class="size-10 rounded-xl object-cover"
-										style="border: 2px solid rgb(var(--color-border));"
-									/>
-								{:else}
-									<span
-										class="flex size-10 items-center justify-center rounded-xl text-sm font-bold leading-none"
-										style="background: rgb(var(--color-primary) / 0.14); color: rgb(var(--color-primary));"
-										aria-label="No avatar"
-									>
-										{initialsFor(user)}
-									</span>
-								{/if}
+								<Avatar name={user.fullName} email={user.email} avatarPath={user.avatarPath} size={40} ring />
 							</span>
 							<div class="min-w-0">
 								<div class="flex items-center gap-2">

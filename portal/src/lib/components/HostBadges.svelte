@@ -1,6 +1,6 @@
 <script lang="ts">
-	import { avatarURL } from '$lib/api';
 	import type { ManagedUser } from '$lib/types';
+	import Avatar from '$lib/components/ui/Avatar.svelte';
 
 	let {
 		hosts,
@@ -18,11 +18,17 @@
 <div class="flex flex-wrap items-center gap-2">
 	{#each hosts as host (host.email)}
 		{@const recipient = user(host.email)}
-		<span class="inline-flex items-center gap-2 border border-black px-2 py-1 text-xs">
-			{#if recipient?.avatarPath}
-				<img src={avatarURL(recipient.avatarPath)} alt="" class="size-6 border border-black object-cover" />
-			{/if}
+		<span class="host-badge inline-flex items-center gap-2 rounded-md px-2 py-1 text-xs">
+			<Avatar name={recipient?.fullName} email={host.email} avatarPath={recipient?.avatarPath} size={24} rounded="md" />
 			{host.email} · {host.role}
 		</span>
 	{/each}
 </div>
+
+<style>
+	.host-badge {
+		border: 1px solid rgb(var(--color-border));
+		background: rgb(var(--color-text) / 0.06);
+		color: rgb(var(--color-text) / 0.75);
+	}
+</style>

@@ -8,16 +8,25 @@
 	import uploadIcon from '@iconify-icons/tabler/upload';
 	import zoomInIcon from '@iconify-icons/tabler/zoom-in';
 	import zoomOutIcon from '@iconify-icons/tabler/zoom-out';
+	import editIcon from '@iconify-icons/tabler/edit';
+	import trashIcon from '@iconify-icons/tabler/trash';
 	import Button from '$lib/components/ui/Button.svelte';
+	import IconButton from '$lib/components/ui/IconButton.svelte';
 
-	let { id, legend }: { id: string; legend: string } = $props();
+	let {
+		id,
+		legend,
+		current = '',
+		ondelete
+	}: { id: string; legend: string; current?: string; ondelete?: () => void } = $props();
+
+	let editing = $state(false);
 
 	const imageTemplate = `
 		<cropper-canvas background scale-step="0.1">
 			<cropper-image initial-center-size="cover" rotatable scalable translatable></cropper-image>
 			<cropper-handle action="move" plain></cropper-handle>
-			<cropper-selection initial-aspect-ratio="1" aspect-ratio="1" initial-coverage="0.8" theme-color="#000" outlined>
-				<cropper-grid role="grid" covered theme-color="rgba(0, 0, 0, 0.45)"></cropper-grid>
+			<cropper-selection class="round-selection" initial-aspect-ratio="1" aspect-ratio="1" initial-coverage="0.8" theme-color="#000" outlined>
 				<cropper-crosshair centered theme-color="#000"></cropper-crosshair>
 				<cropper-handle action="move" theme-color="rgba(0, 0, 0, 0.35)"></cropper-handle>
 			</cropper-selection>
@@ -68,8 +77,8 @@
 		cropper?.getCropperImage()?.$zoom(amount);
 	}
 
-	function rotate(amount: number) {
-		cropper?.getCropperImage()?.$rotate(amount);
+	function rotate(degrees: number) {
+		cropper?.getCropperImage()?.$rotate(`${degrees}deg`);
 	}
 
 	function resetCrop() {
@@ -86,6 +95,7 @@
 	export async function exportImage(): Promise<string> {
 		const selection = cropper?.getCropperSelection();
 		if (!selection) return '';
+		// Backend requires a 512×512 JPEG; the round look is applied cosmetically in the UI.
 		const canvas = await selection.$toCanvas({
 			width: 512,
 			height: 512,
@@ -102,6 +112,20 @@
 
 <fieldset class="image-selector">
 	<legend class="selector-legend">{legend}</legend>
+	{#if current && !source && !editing}
+		<div class="current-avatar">
+			<img src={current} alt={`Current ${legend.toLowerCase()}`} />
+			<div class="current-actions">
+				<IconButton tone="primary" label={`Edit ${legend.toLowerCase()}`} onclick={() => (editing = true)}>
+					<Icon icon={editIcon} width="20" height="20" />
+				</IconButton>
+				<IconButton tone="danger" label={`Delete ${legend.toLowerCase()}`} onclick={() => ondelete?.()}>
+					<Icon icon={trashIcon} width="20" height="20" />
+				</IconButton>
+			</div>
+		</div>
+	{:else}
+	<div class="selector-body" class:has-image={source}>
 	<div
 		role="group"
 		aria-label={`${legend} image upload`}
@@ -165,6 +189,8 @@
 			</div>
 		</div>
 	{/if}
+	</div>
+	{/if}
 </fieldset>
 
 <style>
@@ -181,7 +207,37 @@
 		color: rgb(var(--color-text));
 	}
 
+	.current-avatar {
+		display: flex;
+		align-items: center;
+		gap: 1rem;
+		margin-bottom: 1rem;
+		font-size: 0.8125rem;
+		color: rgb(var(--color-text) / 0.75);
+	}
+
+	.current-actions {
+		display: flex;
+		gap: 0.5rem;
+	}
+
+	.current-avatar img {
+		width: 6rem;
+		height: 6rem;
+		border-radius: 50%;
+		object-fit: cover;
+		box-shadow: 0 0 0 1px rgb(var(--color-border));
+	}
+
+	.selector-body {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: flex-start;
+		gap: 1rem;
+	}
+
 	.upload-surface {
+		flex: 1 1 16rem;
 		display: grid;
 		grid-template-columns: auto minmax(0, 1fr) auto;
 		align-items: center;
@@ -246,9 +302,9 @@
 	}
 
 	.crop-editor {
-		margin-top: 1rem;
-		border-top: 1px solid rgb(var(--color-border));
-		padding-top: 1rem;
+		flex: 1 1 20rem;
+		min-width: 0;
+		max-width: 26rem;
 	}
 
 	.crop-editor-header {
@@ -268,6 +324,11 @@
 
 	.cropper-host :global(cropper-canvas) {
 		height: 100%;
+	}
+
+	.cropper-host :global(cropper-selection.round-selection) {
+		border-radius: 50%;
+		overflow: hidden;
 	}
 
 	@media (max-width: 480px) {

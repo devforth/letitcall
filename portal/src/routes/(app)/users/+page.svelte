@@ -45,8 +45,8 @@
 	];
 
 	const blockStyle =
-		'background: rgb(var(--color-foreground)); border-color: rgb(var(--color-border)); box-shadow: var(--shadow-small);';
-	const newUserContainerStyle = `${blockStyle} background: rgb(var(--color-primary));`;
+		'background: rgb(var(--color-foreground)); box-shadow: var(--shadow-small);';
+	const newUserContainerStyle = `${blockStyle} background: rgb(var(--color-primary)); border-color: rgb(var(--color-primary));`;
 
 	const searchMatches = $derived(
 		users.filter((candidate) => {
@@ -172,7 +172,7 @@
 <PageTitle title="Users" />
 
 <section aria-labelledby="users-title" class="flex flex-col gap-4">
-	<div class="rounded-lg border-2 p-4 sm:p-5" style={blockStyle}>
+	<div class="rounded-lg p-4 sm:p-5" style={blockStyle}>
 		<div class="flex flex-wrap items-center justify-between gap-5">
 			<div class="flex min-w-0 items-center gap-4">
 				<div
@@ -251,7 +251,7 @@
 		</div>
 	{/if}
 
-	<div class="overflow-hidden rounded-lg border-2" style={blockStyle}>
+	<div class="overflow-hidden rounded-lg" style={blockStyle}>
 		<div class="flex flex-wrap items-end justify-between gap-4 border-b-2 p-3 sm:p-4" style="border-color: rgb(var(--color-border));">
 			<div>
 				<h2 class="font-semibold" style="color: rgb(var(--color-text));">People</h2>

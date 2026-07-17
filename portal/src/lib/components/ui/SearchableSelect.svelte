@@ -78,30 +78,32 @@
 			class="input"
 		/>
 		<label class="float-label" for={id}>{label}</label>
-		{#if value}
+		<div class="actions">
+			{#if value}
+				<button
+					type="button"
+					class="clear-button"
+					aria-label={`Clear ${label.toLowerCase()}`}
+					{disabled}
+					onclick={clearValue}
+				>
+					<Icon icon={xIcon} width="16" height="16" class="clear-icon" />
+				</button>
+			{/if}
 			<button
 				type="button"
-				class="clear-button"
-				aria-label={`Clear ${label.toLowerCase()}`}
-				{disabled}
-				onclick={clearValue}
+				class="select-toggle"
+				aria-label={`Show ${label.toLowerCase()} options`}
+				aria-expanded={open}
+				disabled={disabled}
+				onclick={() => {
+					open = !open;
+					query = '';
+				}}
 			>
-				<Icon icon={xIcon} width="16" height="16" class="clear-icon" />
+				<Icon icon={chevronDownIcon} width="18" height="18" class={open ? 'open' : ''} />
 			</button>
-		{/if}
-		<button
-			type="button"
-			class="select-toggle"
-			aria-label={`Show ${label.toLowerCase()} options`}
-			aria-expanded={open}
-			disabled={disabled}
-			onclick={() => {
-				open = !open;
-				query = '';
-			}}
-		>
-			<Icon icon={chevronDownIcon} width="18" height="18" class={open ? 'open' : ''} />
-		</button>
+		</div>
 		{#if open}
 			<div id={`${id}-options`} class="options" role="listbox" aria-label={`${label} options`}>
 				{#each matchingOptions as option (option)}
@@ -126,11 +128,13 @@
 <style>
 	.field {
 		display: grid;
+		align-self: start;
 		font-size: 0.875rem;
 	}
 
 	.input-group {
 		position: relative;
+		align-self: start;
 	}
 
 	.input {
@@ -198,15 +202,19 @@
 		-webkit-appearance: none;
 	}
 
+	.actions {
+		display: flex;
+		position: absolute;
+		inset-block: 0;
+		right: 0;
+		align-items: center;
+	}
+
 	.clear-button {
 		display: grid;
-		position: absolute;
-		top: 50%;
-		right: 2.5rem;
 		width: 2rem;
 		height: 2rem;
 		place-items: center;
-		transform: translateY(-50%);
 		border: 0;
 		border-radius: 999px;
 		background: transparent;
@@ -232,11 +240,8 @@
 
 	.select-toggle {
 		display: grid;
-		position: absolute;
-		top: 0;
-		right: 0;
 		width: 2.75rem;
-		height: 100%;
+		height: 2rem;
 		place-items: center;
 		border: 0;
 		background: transparent;

@@ -32,14 +32,14 @@
 
 <details class="relative" bind:open>
 	<summary
-		class="grid size-11 cursor-pointer list-none place-items-center border border-black bg-white text-black transition hover:bg-black hover:text-white focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2"
+		class="copy-trigger grid size-10 cursor-pointer list-none place-items-center rounded-[10px] transition focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
 		aria-label={`Copy ${sourceDay} ranges to other days`}
 		title="Copy ranges to other days"
 	>
 		<Icon icon={copyIcon} width="22" height="22" />
 	</summary>
-	<div class="absolute right-0 z-10 mt-2 w-64 border border-black bg-white p-4 shadow-[4px_4px_0_0_#000]">
-		<p class="text-sm font-semibold">Copy ranges to</p>
+	<div class="absolute right-0 z-10 mt-2 w-64 rounded-lg border-2 p-4 shadow-[var(--shadow-small)]" style="background: rgb(var(--color-foreground)); border-color: rgb(var(--color-border));">
+		<p class="text-sm font-semibold" style="color: rgb(var(--color-text));">Copy ranges to</p>
 		<div class="mt-2 grid">
 			{#each days as target (target.day)}
 				<Checkbox
@@ -54,3 +54,15 @@
 		</div>
 	</div>
 </details>
+
+<style>
+	.copy-trigger {
+		color: rgb(var(--color-text));
+		--tw-ring-color: rgb(var(--color-primary));
+	}
+
+	.copy-trigger:hover {
+		background: rgb(var(--color-primary) / 0.14);
+		color: rgb(var(--color-primary));
+	}
+</style>

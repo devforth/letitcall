@@ -93,14 +93,18 @@
 	}
 </script>
 
-<section class="grid gap-4 border border-black p-4" aria-labelledby="schedule-title">
+<section
+	class="grid gap-4 rounded-lg border-2 p-4 sm:p-5"
+	aria-labelledby="schedule-title"
+	style="background: rgb(var(--color-foreground)); border-color: rgb(var(--color-border)); box-shadow: var(--shadow-small);"
+>
 	<div>
-		<h2 id="schedule-title" class="font-semibold">Weekly schedule</h2>
-		<p class="mt-1 text-xs">Start with one range, then customize only the days that differ.</p>
+		<h2 id="schedule-title" class="font-semibold" style="color: rgb(var(--color-text));">Weekly schedule</h2>
+		<p class="mt-1 text-sm" style="color: rgb(var(--color-text) / 0.65);">Start with one range, then customize only the days that differ.</p>
 	</div>
 
-	<div class="grid gap-4 border border-black p-4">
-		<h3 class="text-sm font-semibold">Quick setup</h3>
+	<div class="grid gap-4 rounded-md border p-4" style="border-color: rgb(var(--color-border)); background: rgb(var(--color-text) / 0.035);">
+		<h3 class="text-sm font-semibold" style="color: rgb(var(--color-text));">Quick setup</h3>
 		<div class="flex flex-wrap gap-x-6">
 			<Checkbox id="quick-weekdays" label="Weekdays" bind:checked={applyWeekdays} />
 			<Checkbox id="quick-weekends" label="Weekends" bind:checked={applyWeekends} />
@@ -112,17 +116,17 @@
 		</div>
 	</div>
 
-	<details class="border border-black">
-		<summary class="cursor-pointer px-4 py-3 text-sm font-medium">Customize individual days</summary>
-		<div class="grid border-t border-black">
+	<details class="overflow-hidden rounded-md border" style="border-color: rgb(var(--color-border));">
+		<summary class="cursor-pointer px-4 py-3 text-sm font-semibold" style="color: rgb(var(--color-text)); background: rgb(var(--color-text) / 0.035);">Customize individual days</summary>
+		<div class="grid border-t" style="border-color: rgb(var(--color-border));">
 			{#each schedule as day (day.day)}
 				{@const ranges = availabilityRanges(day)}
-				<div class="grid gap-4 border-b border-black p-4 last:border-b-0 lg:grid-cols-[9rem_1fr_auto] lg:items-start">
+				<div class="grid gap-4 border-b p-4 last:border-b-0 lg:grid-cols-[9rem_1fr_auto] lg:items-start" style="border-color: rgb(var(--color-border));">
 					<div class="flex min-h-11 items-center gap-3">
-						<span class="grid size-9 shrink-0 place-items-center rounded-full bg-black text-xs font-semibold text-white" aria-hidden="true">
+						<span class="grid size-9 shrink-0 place-items-center rounded-full text-xs font-semibold" style="background: rgb(var(--color-primary) / 0.14); color: rgb(var(--color-primary));" aria-hidden="true">
 							{labels[day.day].slice(0, 1)}
 						</span>
-						<span class="text-sm font-medium">{labels[day.day]}</span>
+						<span class="text-sm font-medium" style="color: rgb(var(--color-text));">{labels[day.day]}</span>
 					</div>
 
 					{#if day.enabled}
@@ -149,7 +153,7 @@
 							{/each}
 						</div>
 					{:else}
-						<p class="flex min-h-11 items-center text-sm">Unavailable</p>
+						<p class="flex min-h-11 items-center text-sm" style="color: rgb(var(--color-text) / 0.65);">Unavailable</p>
 					{/if}
 
 					<div class="flex gap-2 lg:pt-6">

@@ -100,14 +100,14 @@
 				minlength={12}
 				autocomplete="new-password"
 			/>
-			{#if avatarPath}
-				<div class="grid gap-2 text-sm">
-					<span class="font-medium">Current avatar</span>
-					<img src={avatarURL(avatarPath)} alt="" class="size-24 border border-black object-cover" />
-				</div>
-			{/if}
 			<div class="lg:col-span-2">
-				<ImageSelector id="edit-avatar" legend="Avatar" bind:this={avatarSelector} />
+				<ImageSelector
+					id="edit-avatar"
+					legend="Avatar"
+					current={avatarPath ? avatarURL(avatarPath) : ''}
+					ondelete={() => (avatarPath = '')}
+					bind:this={avatarSelector}
+				/>
 			</div>
 			<div class="flex flex-wrap gap-2 lg:col-span-2">
 				<Button type="submit" disabled={saving}>{saving ? 'Saving…' : 'Save changes'}</Button>

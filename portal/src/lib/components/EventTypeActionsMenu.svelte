@@ -22,16 +22,16 @@
 
 <details class="relative" bind:open>
 	<summary
-		class="grid size-11 cursor-pointer list-none place-items-center border border-black bg-white text-black transition hover:bg-black hover:text-white focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2"
+		class="event-type-actions-trigger grid size-10 cursor-pointer list-none place-items-center rounded-[10px] transition focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
 		aria-label={`Actions for ${name}`}
 		title="More actions"
 	>
 		<Icon icon={dotsVerticalIcon} width="22" height="22" />
 	</summary>
-	<div class="absolute right-0 z-10 mt-2 w-48 border border-black bg-white p-2 shadow-[4px_4px_0_0_#000]">
+	<div class="absolute right-0 z-10 mt-2 w-48 rounded-lg border-2 p-2 shadow-[var(--shadow-small)]" style="background: rgb(var(--color-foreground)); border-color: rgb(var(--color-border));">
 		<button
 			type="button"
-			class="button-secondary min-h-11 w-full px-3 py-2 text-left underline disabled:cursor-not-allowed disabled:opacity-40"
+			class="delete-action min-h-11 w-full rounded-md px-3 py-2 text-left text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-40"
 			disabled={deleting}
 			onclick={deleteEventType}
 		>
@@ -39,3 +39,25 @@
 		</button>
 	</div>
 </details>
+
+<style>
+	.event-type-actions-trigger {
+		color: rgb(var(--color-text));
+		--tw-ring-color: rgb(var(--color-primary));
+	}
+
+	.event-type-actions-trigger:hover {
+		background: rgb(var(--error) / 0.14);
+		color: rgb(var(--error));
+	}
+
+	.delete-action {
+		background: transparent;
+		color: rgb(var(--error));
+		cursor: pointer;
+	}
+
+	.delete-action:hover:not(:disabled) {
+		background: rgb(var(--error) / 0.12);
+	}
+</style>

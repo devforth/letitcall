@@ -13,7 +13,7 @@
 		type="checkbox"
 		bind:checked
 		{disabled}
-		class="size-5 appearance-none border border-black bg-white checked:bg-black focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2 disabled:opacity-40"
+		class="size-5 appearance-none rounded-md border-2 border-[rgb(var(--color-border))] bg-[rgb(var(--color-foreground))] checked:border-[rgb(var(--color-primary))] checked:bg-[rgb(var(--color-primary))] focus:outline-none focus:ring-2 focus:ring-[rgb(var(--color-primary))]/25 disabled:cursor-not-allowed disabled:opacity-40"
 	/>
-	<span>{label}</span>
+	<span style="color: rgb(var(--color-text));">{label}</span>
 </label>

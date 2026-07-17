@@ -6,7 +6,7 @@
 	import arrowLeftIcon from '@iconify-icons/tabler/arrow-left';
 	import calendarIcon from '@iconify-icons/tabler/calendar';
 	import worldIcon from '@iconify-icons/tabler/world';
-	import { avatarURL, callApi } from '$lib/api';
+	import { callApi } from '$lib/api';
 	import { generateBookingSlots, timezoneDateKey } from '$lib/booking';
 	import type { Booking, PublicEventType } from '$lib/types';
 	import { getLocalTimezones } from '$lib/timezones';
@@ -19,6 +19,7 @@
 	import SearchableSelect from '$lib/components/ui/SearchableSelect.svelte';
 	import BrandLogo from '$lib/components/BrandLogo.svelte';
 	import Textarea from '$lib/components/ui/Textarea.svelte';
+	import Avatar from '$lib/components/ui/Avatar.svelte';
 
 	let eventType = $state<PublicEventType | null>(null);
 	let loading = $state(true);
@@ -48,6 +49,7 @@
 	const availableDates = $derived(Object.keys(slotsByDate));
 	const selectedSlots = $derived(selectedDate ? (slotsByDate[selectedDate] ?? []) : []);
 	const hosts = $derived(eventType ? [...eventType.requiredHosts, ...eventType.optionalHosts] : []);
+
 	const guestLimit = $derived.by(() => {
 		if (!eventType || eventType.inviteeLimit === null || !selectedTime) return null;
 		const remaining = eventType.remainingInvitees[selectedTime] ?? eventType.inviteeLimit;
@@ -176,9 +178,7 @@
 				{/if}
 				<div class="flex -space-x-3">
 					{#each hosts as host (host.email)}
-						{#if host.avatarPath}
-							<img src={avatarURL(host.avatarPath)} alt="" class="size-20 border border-black bg-white object-cover" />
-						{/if}
+						<Avatar name={host.fullName} email={host.email} avatarPath={host.avatarPath} size={80} rounded="none" class="border border-black bg-white" />
 					{/each}
 				</div>
 				<p class="mt-6 text-sm font-medium">{eventType.requiredHosts.map((host) => host.fullName || host.email).join(', ')}</p>

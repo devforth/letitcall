@@ -10,12 +10,13 @@
 	import paintIcon from '@iconify-icons/tabler/paint-filled';
 	import timelineIcon from '@iconify-icons/tabler/timeline-event-filled';
 	import xIcon from '@iconify-icons/tabler/x';
-	import { callApi, appPath, avatarURL } from '$lib/api';
+	import { callApi, appPath } from '$lib/api';
 	import addUserIcon from '$lib/icons/add-user';
 	import type { SessionUser } from '$lib/types';
 	import ThemeToggle from '$lib/components/ThemeToggle.svelte';
 	import BrandLogo from '$lib/components/BrandLogo.svelte';
 	import MenuToggleIcon from '$lib/components/ui/MenuToggleIcon.svelte';
+	import Avatar from '$lib/components/ui/Avatar.svelte';
 	import { branding } from '$lib/stores/branding.svelte';
 
 	let {
@@ -45,13 +46,6 @@
 		return () => mq.removeEventListener('change', onChange);
 	});
 
-	const initials = $derived.by(() => {
-		const parts = user.fullName?.trim().split(/\s+/).filter(Boolean) ?? [];
-		if (parts.length >= 2) return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
-		if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
-		return user.email.slice(0, 2).toUpperCase();
-	});
-
 	const navItems = [
 		{ label: 'Bookings', href: '/', exact: true, icon: calendarIcon },
 		{ label: 'Scheduling', href: '/scheduling', exact: false, icon: clockIcon },
@@ -78,6 +72,8 @@
 		}
 	}
 
+	let menuHoverTimer: number | undefined;
+
 	function toggleMenu(event: MouseEvent) {
 		event.stopPropagation();
 		menuOpen = !menuOpen;
@@ -85,6 +81,18 @@
 
 	function closeMenu() {
 		menuOpen = false;
+	}
+
+	function openMenuOnHover() {
+		if (isMobile) return;
+		if (menuHoverTimer !== undefined) window.clearTimeout(menuHoverTimer);
+		menuOpen = true;
+	}
+
+	function scheduleMenuClose() {
+		if (isMobile) return;
+		if (menuHoverTimer !== undefined) window.clearTimeout(menuHoverTimer);
+		menuHoverTimer = window.setTimeout(() => (menuOpen = false), 150);
 	}
 
 	function toggleSidebar() {
@@ -115,7 +123,7 @@
 	style="--sidebar-w: {navCollapsed ? '4.5rem' : '16rem'};"
 >
 	<header
-		class="relative z-20 border-b-2 md:h-[66px]"
+		class="sticky top-0 z-20 border-b-2 md:h-[66px]"
 		style="background: rgb(var(--color-foreground)); border-color: rgb(var(--color-border)); box-shadow: 0 0.75rem 1rem -0.75rem rgb(0 0 0 / 0.2);"
 	>
 		<div
@@ -147,33 +155,22 @@
 				</a>
 			</div>
 			<div class="flex items-center gap-3">
-				<div class="relative">
+				<!-- svelte-ignore a11y_no_static_element_interactions -->
+				<div
+					class="relative"
+					onmouseenter={openMenuOnHover}
+					onmouseleave={scheduleMenuClose}
+				>
 					<button
 						type="button"
-						class="flex items-center gap-2 rounded-full py-1 pl-1 pr-3 transition-colors"
+						class="flex items-center gap-2 rounded-full py-1 pl-1 pr-3"
 						style="background: rgb(var(--color-foreground)); border: 2px solid rgb(var(--color-border)); box-shadow: var(--shadow-small); outline: none;"
 						aria-haspopup="menu"
 						aria-expanded={menuOpen}
 						aria-label="Account menu"
 						onclick={toggleMenu}
-						onmouseenter={(e) => (e.currentTarget.style.background = 'rgb(var(--color-primary) / 0.1)')}
-						onmouseleave={(e) => (e.currentTarget.style.background = 'rgb(var(--color-foreground))')}
 					>
-						{#if user.avatarPath}
-							<img
-								src={avatarURL(user.avatarPath)}
-								alt=""
-								class="size-9 rounded-full object-cover"
-								style="border: 2px solid rgb(var(--color-border));"
-							/>
-						{:else}
-							<span
-								class="flex size-9 items-center justify-center rounded-full text-sm font-bold leading-none"
-								style="background: rgb(var(--color-primary)); color: rgb(var(--color-contrast-text)); border: 2px solid rgb(var(--color-border));"
-							>
-								{initials}
-							</span>
-						{/if}
+						<Avatar name={user.fullName} email={user.email} avatarPath={user.avatarPath} size={36} variant="solid" ring />
 						<span class="hidden max-w-[10rem] truncate text-sm font-bold sm:inline" style="color: rgb(var(--color-text));">
 							{user.fullName || user.email}
 						</span>
@@ -201,21 +198,7 @@
 							onclick={(e) => e.stopPropagation()}
 						>
 							<div class="flex items-center gap-3 px-2 py-2">
-								{#if user.avatarPath}
-									<img
-										src={avatarURL(user.avatarPath)}
-										alt=""
-										class="size-11 rounded-full object-cover"
-										style="border: 2px solid rgb(var(--color-border));"
-									/>
-								{:else}
-									<span
-										class="flex size-11 items-center justify-center rounded-full text-base font-bold leading-none"
-										style="background: rgb(var(--color-primary)); color: rgb(var(--color-contrast-text));"
-									>
-										{initials}
-									</span>
-								{/if}
+								<Avatar name={user.fullName} email={user.email} avatarPath={user.avatarPath} size={44} variant="solid" />
 								<span class="flex min-w-0 flex-col leading-tight">
 									<span class="truncate text-sm font-bold" style="color: rgb(var(--color-text));">
 										{user.fullName || user.email}
@@ -369,7 +352,7 @@
 			{:else}
 				<div
 					class="mx-auto w-full min-w-0 max-w-6xl rounded-xl p-3 sm:p-4 lg:p-5"
-					style="background: rgb(var(--color-foreground)); border: 2px solid rgb(var(--color-border)); box-shadow: var(--shadow-small);"
+					style="background: rgb(var(--color-foreground)); box-shadow: var(--shadow-small);"
 				>
 					{@render children()}
 				</div>
