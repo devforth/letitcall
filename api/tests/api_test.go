@@ -191,19 +191,26 @@ func TestPublicConfigAndPortalUseStoredBrandName(t *testing.T) {
 
 func TestBrandingAPIsStoreAndServeLogo(t *testing.T) {
 	f := newFixture(t, false)
-	expectStatus(t, f.request(http.MethodGet, "/api/branding", nil), http.StatusUnauthorized)
-	expectStatus(t, f.login(adminEmail, adminPassword), http.StatusOK)
-
 	initial := expectStatus(t, f.request(http.MethodGet, "/api/branding", nil), http.StatusOK)
-	if !strings.Contains(string(initial), `"name":"Let It Call"`) {
+	if !strings.Contains(string(initial), `"name":"Let It Call"`) ||
+		!strings.Contains(string(initial), `"light":{"primary":"#00C950"`) ||
+		!strings.Contains(string(initial), `"border":"#D8D8D8"`) ||
+		!strings.Contains(string(initial), `"dark":{"primary":"#00C950"`) ||
+		!strings.Contains(string(initial), `"border":"#787878"`) {
 		t.Fatalf("unexpected initial branding: %s", initial)
 	}
-	updated := expectStatus(t, f.request(http.MethodPut, "/api/branding", map[string]string{
-		"name": "DevForth", "logo": jpegDataURL(t, 512, 512),
+	expectStatus(t, f.request(http.MethodPut, "/api/branding", map[string]string{"name": "DevForth"}), http.StatusUnauthorized)
+	expectStatus(t, f.login(adminEmail, adminPassword), http.StatusOK)
+
+	theme := model.DefaultBrandingTheme()
+	theme.Light.Primary = "#123abc"
+	theme.Light.Border = "#abcdef"
+	updated := expectStatus(t, f.request(http.MethodPut, "/api/branding", map[string]any{
+		"name": "DevForth", "logo": jpegDataURL(t, 512, 512), "theme": theme,
 	}), http.StatusOK)
 	logoFilename := logoFilenameFromResponse(t, updated)
 	branding, err := f.store.GetBranding()
-	if err != nil || branding.Name != "DevForth" || branding.LogoPath != logoFilename {
+	if err != nil || branding.Name != "DevForth" || branding.LogoPath != logoFilename || branding.Theme.Light.Primary != "#123ABC" || branding.Theme.Light.Border != "#ABCDEF" {
 		t.Fatalf("branding was not stored: branding=%#v err=%v", branding, err)
 	}
 	if _, err := os.Stat(filepath.Join(f.dataPath, "branding.leveldb")); err != nil {
@@ -221,6 +228,10 @@ func TestBrandingAPIsStoreAndServeLogo(t *testing.T) {
 	publicConfig := expectStatus(t, f.request(http.MethodGet, "/api/config/public", nil), http.StatusOK)
 	if !strings.Contains(string(publicConfig), `"brandName":"DevForth"`) || !strings.Contains(string(publicConfig), `"logoPath":"`+logoFilename+`"`) {
 		t.Fatalf("public config did not include stored branding: %s", publicConfig)
+	}
+	publicBranding := expectStatus(t, f.request(http.MethodGet, "/api/branding", nil), http.StatusOK)
+	if !strings.Contains(string(publicBranding), `"primary":"#123ABC"`) {
+		t.Fatalf("public branding did not include stored theme: %s", publicBranding)
 	}
 
 	reuploaded := expectStatus(t, f.request(http.MethodPut, "/api/branding", map[string]string{
@@ -243,6 +254,14 @@ func TestBrandingAPIValidatesNameAndLogo(t *testing.T) {
 	expectStatus(t, f.request(http.MethodPut, "/api/branding", map[string]string{
 		"name": "DevForth", "logo": jpegDataURL(t, 64, 64),
 	}), http.StatusBadRequest)
+	invalidTheme := model.DefaultBrandingTheme()
+	invalidTheme.Dark.Text = "white"
+	invalidColor := expectStatus(t, f.request(http.MethodPut, "/api/branding", map[string]any{
+		"name": "DevForth", "theme": invalidTheme,
+	}), http.StatusBadRequest)
+	if string(invalidColor) != "{\"error\":\"dark text must be a six-digit hex color\"}\n" {
+		t.Fatalf("unexpected invalid color response: %s", invalidColor)
+	}
 	branding, err := f.store.GetBranding()
 	if err != nil || branding.Name != model.DefaultBrandName || branding.LogoPath != "" {
 		t.Fatalf("invalid branding update was stored: branding=%#v err=%v", branding, err)

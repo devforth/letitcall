@@ -32,6 +32,22 @@ export type PublicConfig = {
 export type Branding = {
 	name: string;
 	logoPath?: string;
+	theme: BrandingTheme;
+};
+
+export type ThemeColors = {
+	primary: string;
+	primaryContrast: string;
+	foreground: string;
+	text: string;
+	background: string;
+	border: string;
+	shadow: string;
+};
+
+export type BrandingTheme = {
+	light: ThemeColors;
+	dark: ThemeColors;
 };
 
 export type APITokenSummary = {

@@ -17,6 +17,16 @@
 		padding: 0.875rem 1.25rem !important;
 	}
 
+	.button-primary.button-small,
+	.button-secondary.button-small,
+	.button-ghost.button-small,
+	.button-soft.button-small {
+		min-height: 2rem !important;
+		padding: 0.25rem 0.5rem !important;
+		border-radius: 8px !important;
+		font-size: 0.75rem !important;
+	}
+
 	.button-primary {
 		background: rgb(var(--color-primary)) !important;
 		border: 2px solid color-mix(in srgb, rgb(var(--color-primary)), black 3%) !important;
@@ -109,17 +119,17 @@
 		font-synthesis: none;
 
 		/* Light theme (default) */
-		--color-foreground: 255 255 255;
-		--color-background: 245 245 240;
-		--color-border: 216 216 216;
-		--color-text: 100 100 100;
-		--color-contrast-text: 255 255 255;
+		--color-foreground: var(--branding-light-foreground, 255 255 255);
+		--color-background: var(--branding-light-background, 245 245 240);
+		--color-border: var(--branding-light-border, 216 216 216);
+		--color-text: var(--branding-light-text, 100 100 100);
+		--color-contrast-text: var(--branding-light-contrast-text, 255 255 255);
 		--color-muted-foreground: 102 102 102;
 		--color-muted-background: 245 245 245;
-		--color-primary: 0 201 80;
-		--color-shadow: 0 0 0;
-		--shadow: 0 0px 4vw rgb(0 0 0 / 0.15);
-		--shadow-small: 0 0px 1vw rgb(0 0 0 / 0.15);
+		--color-primary: var(--branding-light-primary, 0 201 80);
+		--color-shadow: var(--branding-light-shadow, 0 0 0);
+		--shadow: 0 0px 4vw rgb(var(--color-shadow) / 0.15);
+		--shadow-small: 0 0px 1vw rgb(var(--color-shadow) / 0.15);
 
 		--error: 255 77 77;
 		--success: 0 201 80;
@@ -142,14 +152,17 @@
 
 	html.dark {
 		/* Dark theme */
-		--color-foreground: 100 100 100;
-		--color-background: 51 51 51;
+		--color-foreground: var(--branding-dark-foreground, 100 100 100);
+		--color-background: var(--branding-dark-background, 51 51 51);
 		--color-muted-foreground: 153 153 153;
 		--color-muted-background: 64 64 64;
-		--color-text: 255 255 255;
-		--color-border: 120 120 120;
-		--shadow: 0 0px 4vw rgb(0 0 0 / 0.5);
-		--shadow-small: 0 0px 1vw rgb(0 0 0 / 0.2);
+		--color-text: var(--branding-dark-text, 255 255 255);
+		--color-contrast-text: var(--branding-dark-contrast-text, 255 255 255);
+		--color-border: var(--branding-dark-border, 120 120 120);
+		--color-primary: var(--branding-dark-primary, 0 201 80);
+		--color-shadow: var(--branding-dark-shadow, 0 0 0);
+		--shadow: 0 0px 4vw rgb(var(--color-shadow) / 0.5);
+		--shadow-small: 0 0px 1vw rgb(var(--color-shadow) / 0.2);
 
 
 		color-scheme: dark;

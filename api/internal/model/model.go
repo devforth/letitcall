@@ -4,9 +4,48 @@ import "time"
 
 const DefaultBrandName = "Let It Call"
 
+type ThemeColors struct {
+	Primary         string `json:"primary"`
+	PrimaryContrast string `json:"primaryContrast"`
+	Foreground      string `json:"foreground"`
+	Text            string `json:"text"`
+	Background      string `json:"background"`
+	Border          string `json:"border"`
+	Shadow          string `json:"shadow"`
+}
+
+type BrandingTheme struct {
+	Light ThemeColors `json:"light"`
+	Dark  ThemeColors `json:"dark"`
+}
+
+func DefaultBrandingTheme() BrandingTheme {
+	return BrandingTheme{
+		Light: ThemeColors{
+			Primary:         "#00C950",
+			PrimaryContrast: "#FFFFFF",
+			Foreground:      "#FFFFFF",
+			Text:            "#646464",
+			Background:      "#F5F5F0",
+			Border:          "#D8D8D8",
+			Shadow:          "#000000",
+		},
+		Dark: ThemeColors{
+			Primary:         "#00C950",
+			PrimaryContrast: "#FFFFFF",
+			Foreground:      "#646464",
+			Text:            "#FFFFFF",
+			Background:      "#333333",
+			Border:          "#787878",
+			Shadow:          "#000000",
+		},
+	}
+}
+
 type Branding struct {
-	Name     string `json:"name"`
-	LogoPath string `json:"logoPath,omitempty"`
+	Name     string        `json:"name"`
+	LogoPath string        `json:"logoPath,omitempty"`
+	Theme    BrandingTheme `json:"theme"`
 }
 
 type User struct {
