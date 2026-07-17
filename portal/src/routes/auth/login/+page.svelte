@@ -29,8 +29,6 @@
 		try {
 			const config = await getPublicConfig();
 			googleEnabled = config.googleLoginEnabled;
-			branding.name = config.brandName;
-			branding.logoPath = config.logoPath;
 		} catch (cause) {
 			error = cause instanceof Error ? cause.message : 'Unable to load login settings';
 		}

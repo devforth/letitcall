@@ -2,8 +2,7 @@
 	import './layout.css';
 	import NotificationStack from '$lib/components/NotificationStack.svelte';
 	import { theme } from '$lib/stores/theme';
-	import { branding } from '$lib/stores/branding.svelte';
-	import { getPublicConfig } from '$lib/api';
+	import { loadBranding } from '$lib/stores/branding.svelte';
 	import PageTitle from '$lib/components/PageTitle.svelte';
 	import { onMount } from 'svelte';
 
@@ -18,10 +17,7 @@
 				document.documentElement.classList.remove('dark');
 			}
 		});
-		void getPublicConfig(false).then((config) => {
-			branding.name = config.brandName;
-			branding.logoPath = config.logoPath;
-		}).catch(() => {});
+		void loadBranding(false).catch(() => {});
 
 		return unsubscribe;
 	});

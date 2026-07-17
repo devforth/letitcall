@@ -1,3 +1,5 @@
+import { loadCachedBranding } from '$lib/stores/branding.svelte';
+
 // Prevent theme flash on page load by applying theme before rendering
 function applyThemeBeforeRender() {
 	if (typeof window === 'undefined') return;
@@ -18,3 +20,4 @@ function applyThemeBeforeRender() {
 }
 
 applyThemeBeforeRender();
+loadCachedBranding();
