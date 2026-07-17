@@ -68,6 +68,9 @@ export function loadCachedBranding() {
 	const cached = localStorage.getItem(cacheKey);
 	if (cached) {
 		const value = JSON.parse(cached) as Branding;
+		if (!value.theme) {
+			value.theme = structuredClone(defaultBrandingTheme);
+		}
 		value.theme.light.border ||= defaultBrandingTheme.light.border;
 		value.theme.dark.border ||= defaultBrandingTheme.dark.border;
 		applyBranding(value);
