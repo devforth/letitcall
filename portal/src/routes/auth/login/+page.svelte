@@ -66,14 +66,23 @@
 	:global(input) {
 		border-color: #e5e5e5 !important;
 		border-radius: 10px !important;
-		background-color: white !important;
+		background-color: rgb(var(--color-foreground)) !important;
 		transition: all 0.2s !important;
 	}
 
 	:global(input:focus) {
 		outline: none !important;
 		border-color: rgb(var(--color-primary)) !important;
-		box-shadow: 0 0 0 3px rgb(var(--color-primary) / 0.15) !important;
+		box-shadow: none !important;
+	}
+
+	/* Browser autofill re-adds a focus glow via !important and paints its own
+	   background — strip the glow and match the field background so it never
+	   changes. Scoped to .login-bg to win specificity. */
+	:global(.login-bg input:-webkit-autofill),
+	:global(.login-bg input:-webkit-autofill:focus) {
+		-webkit-box-shadow: 0 0 0 1000px rgb(var(--color-foreground)) inset !important;
+		-webkit-text-fill-color: rgb(var(--color-text)) !important;
 	}
 
 	/* Label styling */
@@ -83,14 +92,12 @@
 
 	/* Dark mode overrides */
 	:global(html.dark input) {
-		background-color: rgba(255, 255, 255, 0.05) !important;
 		border-color: rgb(var(--color-primary) / 0.3) !important;
 	}
 
 	:global(html.dark input:focus) {
-		background-color: rgb(var(--color-primary) / 0.1) !important;
 		border-color: rgb(var(--color-primary)) !important;
-		box-shadow: 0 0 15px rgb(var(--color-primary) / 0.3) !important;
+		box-shadow: none !important;
 	}
 
 	:global(html.dark) .bg-red-50 {

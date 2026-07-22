@@ -1,5 +1,5 @@
 <script lang="ts">
-	import Icon from '@iconify/svelte';
+	import Icon, { type IconifyIcon } from '@iconify/svelte';
 	import chevronDownIcon from '@iconify-icons/tabler/chevron-down';
 	import xIcon from '@iconify-icons/tabler/x';
 
@@ -10,7 +10,8 @@
 		value = $bindable(''),
 		placeholder = 'Search…',
 		required = false,
-		disabled = false
+		disabled = false,
+		icon
 	}: {
 		id: string;
 		label: string;
@@ -19,6 +20,7 @@
 		placeholder?: string;
 		required?: boolean;
 		disabled?: boolean;
+		icon?: IconifyIcon;
 		} = $props();
 
 	let open = $state(false);
@@ -57,7 +59,7 @@
 </script>
 
 <div class="field" onfocusout={closeOptions}>
-	<div class="input-group" class:filled={!!value}>
+	<div class="input-group" class:filled={!!value} class:has-icon={!!icon}>
 		<input
 			{id}
 			type="search"
@@ -78,6 +80,9 @@
 			class="input"
 		/>
 		<label class="float-label" for={id}>{label}</label>
+		{#if icon}
+			<span class="lead-icon"><Icon {icon} width="18" height="18" /></span>
+		{/if}
 		<div class="actions">
 			{#if value}
 				<button
@@ -151,6 +156,28 @@
 		transition: border-color 0.18s, box-shadow 0.18s;
 	}
 
+	.has-icon .input {
+		padding-left: 40px;
+	}
+
+	.lead-icon {
+		position: absolute;
+		left: 12px;
+		top: 50%;
+		transform: translateY(-50%);
+		display: grid;
+		place-items: center;
+		width: 18px;
+		height: 18px;
+		color: rgb(var(--color-text));
+		pointer-events: none;
+		transition: color 0.18s;
+	}
+
+	.input:focus ~ .lead-icon {
+		color: rgb(var(--color-primary));
+	}
+
 	.input::placeholder {
 		color: transparent;
 	}
@@ -176,6 +203,11 @@
 		padding: 0 4px;
 		pointer-events: none;
 		transition: top 0.16s, left 0.16s, font-size 0.16s, color 0.16s, opacity 0.16s;
+	}
+
+	.has-icon .float-label {
+		left: 40px;
+		max-width: calc(100% - 40px - 4.75rem);
 	}
 
 	.input:focus ~ .float-label,

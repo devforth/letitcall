@@ -2,6 +2,7 @@
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
 	import { onMount } from 'svelte';
+	import worldIcon from '@iconify-icons/tabler/world';
 	import { callApi, appPath, avatarURL } from '$lib/api';
 	import ImageSelector from '$lib/components/ImageSelector.svelte';
 	import PageTitle from '$lib/components/PageTitle.svelte';
@@ -87,6 +88,7 @@
 			<SearchableSelect
 				id="edit-timezone"
 				label="Timezone"
+				icon={worldIcon}
 				options={timezones}
 				bind:value={timezone}
 				required

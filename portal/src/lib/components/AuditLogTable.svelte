@@ -2,10 +2,10 @@
 	import Icon from '@iconify/svelte';
 	import chevronDownIcon from '@iconify-icons/tabler/chevron-down';
 	import chevronUpIcon from '@iconify-icons/tabler/chevron-up';
-	import { avatarURL } from '$lib/api';
 	import type { AuditLog } from '$lib/types';
 	import AuditPayload from '$lib/components/AuditPayload.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
+	import Avatar from '$lib/components/ui/Avatar.svelte';
 
 	let { auditLogs }: { auditLogs: AuditLog[] } = $props();
 	let expanded = $state(new Set<string>());
@@ -50,11 +50,7 @@
 			{#each auditLogs as auditLog (auditLog.id)}
 				<tr class="border-b border-black">
 					<td class="px-4 py-3 align-top">
-						{#if auditLog.actor.avatarPath}
-							<img src={avatarURL(auditLog.actor.avatarPath)} alt="" class="size-11 border border-black object-cover" />
-						{:else}
-							<span class="grid size-11 place-items-center border border-black" aria-label="No avatar">—</span>
-						{/if}
+						<Avatar name={auditLog.actor.fullName} email={auditLog.actor.email} avatarPath={auditLog.actor.avatarPath} size={44} rounded="none" class="border border-black" />
 					</td>
 					<td class="px-4 py-3 align-top">
 						<div class="font-medium">{auditLog.actor.fullName || '—'}</div>

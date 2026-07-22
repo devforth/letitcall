@@ -4,6 +4,7 @@
 	import Icon from '@iconify/svelte';
 	import checkIcon from '@iconify-icons/tabler/check';
 	import plusIcon from '@iconify-icons/tabler/plus';
+	import worldIcon from '@iconify-icons/tabler/world';
 	import xIcon from '@iconify-icons/tabler/x';
 	import { callApi, appPath, getSession } from '$lib/api';
 	import addUserIcon from '$lib/icons/add-user';
@@ -226,6 +227,7 @@
 				<SearchableSelect
 					id="new-timezone"
 					label="Timezone"
+					icon={worldIcon}
 					options={timezones}
 					bind:value={timezone}
 					required

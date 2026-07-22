@@ -71,6 +71,40 @@ export function timezoneDateKey(value: Date, timezone: string): string {
 	return dateKey(dateParts(value, timezone));
 }
 
+function nextMonth(month: string): string {
+	const [year, monthNumber] = month.split('-').map(Number);
+	const value = new Date(Date.UTC(year, monthNumber, 1));
+	return `${value.getUTCFullYear()}-${String(value.getUTCMonth() + 1).padStart(2, '0')}`;
+}
+
+/**
+ * Nearest day (today or later, in the viewer's timezone) that has a bookable slot.
+ * Prefers a day with a free slot; falls back to the first day that has any slot,
+ * then to today. Searches forward month by month across the booking window.
+ */
+export function firstAvailableDate(
+	eventType: PublicEventType,
+	timezone: string,
+	now: Date
+): string {
+	const today = timezoneDateKey(now, timezone);
+	const lastBookableMonth = dateKey(
+		addDays(dateParts(now, eventType.timezone), eventType.bookingWindowDays)
+	).slice(0, 7);
+	let firstWithSlots = '';
+	for (let month = today.slice(0, 7); month <= lastBookableMonth; month = nextMonth(month)) {
+		const slots = generateBookingSlots(eventType, timezone, month, now);
+		const dates = Object.keys(slots)
+			.filter((date) => date >= today)
+			.sort();
+		for (const date of dates) {
+			if (!firstWithSlots) firstWithSlots = date;
+			if (slots[date].some((slot) => !slot.busy)) return date;
+		}
+	}
+	return firstWithSlots || today;
+}
+
 export function generateBookingSlots(
 	eventType: PublicEventType,
 	timezone: string,

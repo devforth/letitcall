@@ -152,14 +152,16 @@
 							<IconButton tone="primary" label={`Edit ${user.email}`} onclick={() => onedit(user.email)}>
 								<Icon icon={editIcon} width="20" height="20" />
 							</IconButton>
-							<IconButton
-								tone="danger"
-								label={checkingEmail === user.email ? 'Checking…' : deletingEmail === user.email ? 'Deleting…' : `Delete ${user.email}`}
-								disabled={user.email === currentEmail || checkingEmail === user.email || deletingEmail === user.email}
-								onclick={() => ondelete(user.email)}
-							>
-								<Icon icon={trashIcon} width="20" height="20" />
-							</IconButton>
+							{#if user.email !== currentEmail}
+								<IconButton
+									tone="danger"
+									label={checkingEmail === user.email ? 'Checking…' : deletingEmail === user.email ? 'Deleting…' : `Delete ${user.email}`}
+									disabled={checkingEmail === user.email || deletingEmail === user.email}
+									onclick={() => ondelete(user.email)}
+								>
+									<Icon icon={trashIcon} width="20" height="20" />
+								</IconButton>
+							{/if}
 						</div>
 					</td>
 				</tr>
@@ -270,6 +272,17 @@
 		.user-actions {
 			transition: none;
 		}
+	}
+
+	/* Action buttons always show their hover appearance (tinted background + tone color) */
+	:global(.user-actions .tone-primary:not(:disabled)) {
+		background: rgb(var(--color-primary) / 0.14);
+		color: rgb(var(--color-primary));
+	}
+
+	:global(.user-actions .tone-danger:not(:disabled)) {
+		background: rgb(var(--error) / 0.14);
+		color: rgb(var(--error));
 	}
 
 	:global(.calendar-status path) {
