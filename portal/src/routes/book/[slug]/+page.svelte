@@ -317,7 +317,7 @@
 												{:else}
 													<table class="mt-5 w-full" style="border-collapse: separate; border-spacing: 8px; margin-left: -8px; margin-right: -8px; width: calc(100% + 16px); table-layout: fixed;">
 														<tbody>
-															{#each rows(selectedSlots) as row}
+															{#each rows(selectedSlots, 3) as row}
 																<tr>
 																	{#each row as slot (slot.time)}
 																		{@const selected = slot.time === selectedTime}
@@ -331,9 +331,6 @@
 																			class:cursor-pointer={!slot.busy}
 																			class:cursor-not-allowed={slot.busy}
 																			class:opacity-40={slot.busy}
-																			style={selected
-																				? 'border: 2px solid rgb(var(--color-primary)); background: rgb(var(--color-primary)); color: rgb(var(--color-contrast-text));'
-																				: 'border: 2px solid rgb(var(--color-primary)); background: rgb(var(--color-foreground)); color: rgb(var(--color-text));'}
 																			onclick={() => !slot.busy && selectTime(slot.time)}
 																			onkeydown={(event) => {
 																				if (slot.busy) return;
@@ -430,34 +427,31 @@
 {/if}
 
 <style>
-	/* Time-slot cells: a minimal accent underline grows on hover. */
+	/* Time-slot cells: a primary fill wipes in from the left on hover/select. */
 	.slot-cell {
 		position: relative;
+		z-index: 0;
+		overflow: hidden;
+		border-radius: 10px;
+		background: rgb(var(--color-text) / 0.05);
+		color: rgb(var(--color-text));
 	}
-	.slot-cell::after {
+	.slot-cell::before {
 		content: '';
 		position: absolute;
-		left: 50%;
-		bottom: 10px;
-		height: 2px;
-		width: 0;
-		transform: translateX(-50%);
+		inset: 0;
+		right: 100%;
 		background: rgb(var(--color-primary));
-		transition: width 0.2s ease;
+		transition: right 0.25s ease;
+		z-index: -1;
 	}
-	.slot-cell:not(.is-busy):not(.is-selected):hover::after {
-		width: 36%;
+	.slot-cell:not(.is-busy):hover::before,
+	.slot-cell.is-selected::before {
+		right: 0;
 	}
-	.slot-cell:not(.is-busy):not(.is-selected):hover {
-		color: rgb(var(--color-primary)) !important;
-		background: rgb(var(--color-primary) / 0.1) !important;
-	}
-	/* Selected slot (primary fill): use a contrast-color underline on hover. */
-	.slot-cell.is-selected::after {
-		background: rgb(var(--color-contrast-text));
-	}
-	.slot-cell.is-selected:hover::after {
-		width: 36%;
+	.slot-cell:not(.is-busy):hover,
+	.slot-cell.is-selected {
+		color: rgb(var(--color-contrast-text)) !important;
 	}
 
 	/* Toggle on the primary aside: no fill, contrast-color border and icon. */
