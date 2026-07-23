@@ -198,6 +198,14 @@
 		currentStep = target;
 	}
 
+	function rows<T>(items: T[], perRow = 2): T[][] {
+		const grouped: T[][] = [];
+		for (let index = 0; index < items.length; index += perRow) {
+			grouped.push(items.slice(index, index + perRow));
+		}
+		return grouped;
+	}
+
 	function stepState(index: number) {
 		if (index === currentStep) return 'is-active';
 		return index < furthestStep ? 'is-done' : 'is-upcoming';
@@ -282,7 +290,7 @@
 								<div class="bk-content">
 									{#if i === 0}
 										<div class="grid gap-10 xl:grid-cols-[minmax(20rem,1fr)_minmax(15rem,0.7fr)]">
-											<div class="xl:border-r-2 xl:pr-10" style={dividerStyle}>
+											<div>
 												<MonthCalendar bind:month bind:selected={selectedDate} {availableDates} {minimumMonth} today={timezoneDateKey(now, timezone)} />
 											</div>
 											<div>
@@ -304,21 +312,42 @@
 														</div>
 													</div>
 												{:else}
-													<div class="mt-5 grid grid-cols-2 gap-2">
-														{#each selectedSlots as slot (slot.time)}
-															<Button
-																variant={slot.time === selectedTime ? 'primary' : 'secondary'}
-																fullWidth
-																disabled={slot.busy}
-																onclick={() => selectTime(slot.time)}
-															>
-																<span class="flex min-h-8 flex-col items-center justify-center">
-																	<span>{slot.label}</span>
-																	{#if slot.busy}<span class="text-xs font-normal">Busy</span>{/if}
-																</span>
-															</Button>
-														{/each}
-													</div>
+													<table class="mt-5 w-full" style="border-collapse: separate; border-spacing: 8px; margin-left: -8px; margin-right: -8px; width: calc(100% + 16px); table-layout: fixed;">
+														<tbody>
+															{#each rows(selectedSlots) as row}
+																<tr>
+																	{#each row as slot (slot.time)}
+																		{@const selected = slot.time === selectedTime}
+																		<td
+																			role="button"
+																			tabindex={slot.busy ? -1 : 0}
+																			aria-disabled={slot.busy}
+																			class="slot-cell min-h-11 px-4 py-3 text-center text-sm font-medium transition"
+																			class:is-busy={slot.busy}
+																			class:is-selected={selected}
+																			class:cursor-pointer={!slot.busy}
+																			class:cursor-not-allowed={slot.busy}
+																			class:opacity-40={slot.busy}
+																			style={selected
+																				? 'border: 2px solid rgb(var(--color-primary)); background: rgb(var(--color-primary)); color: rgb(var(--color-contrast-text));'
+																				: 'border: 2px solid rgb(var(--color-primary)); background: rgb(var(--color-foreground)); color: rgb(var(--color-text));'}
+																			onclick={() => !slot.busy && selectTime(slot.time)}
+																			onkeydown={(event) => {
+																				if (slot.busy) return;
+																				if (event.key === 'Enter' || event.key === ' ') {
+																					event.preventDefault();
+																					selectTime(slot.time);
+																				}
+																			}}
+																		>
+																			<span>{slot.label}</span>
+																			{#if slot.busy}<span class="ml-1 text-xs font-normal">Busy</span>{/if}
+																		</td>
+																	{/each}
+																</tr>
+															{/each}
+														</tbody>
+													</table>
 												{/if}
 												<div class="mt-8">
 													<SearchableSelect id="booking-timezone" label="Timezone" icon={worldIcon} options={timezones} bind:value={timezoneInput} required />
@@ -398,6 +427,36 @@
 {/if}
 
 <style>
+	/* Time-slot cells: a minimal accent underline grows on hover. */
+	.slot-cell {
+		position: relative;
+	}
+	.slot-cell::after {
+		content: '';
+		position: absolute;
+		left: 50%;
+		bottom: 10px;
+		height: 2px;
+		width: 0;
+		transform: translateX(-50%);
+		background: rgb(var(--color-primary));
+		transition: width 0.2s ease;
+	}
+	.slot-cell:not(.is-busy):not(.is-selected):hover::after {
+		width: 36%;
+	}
+	.slot-cell:not(.is-busy):not(.is-selected):hover {
+		color: rgb(var(--color-primary)) !important;
+		background: rgb(var(--color-primary) / 0.1) !important;
+	}
+	/* Selected slot (primary fill): use a contrast-color underline on hover. */
+	.slot-cell.is-selected::after {
+		background: rgb(var(--color-contrast-text));
+	}
+	.slot-cell.is-selected:hover::after {
+		width: 36%;
+	}
+
 	/* Toggle on the primary aside: no fill, contrast-color border and icon. */
 	.theme-toggle-contrast :global(.toggle-switch) {
 		background: transparent !important;

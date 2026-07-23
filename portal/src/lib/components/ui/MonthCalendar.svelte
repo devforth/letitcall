@@ -42,56 +42,71 @@
 	}
 
 	function cellClass(date: string): string {
-		const base = 'relative aspect-square min-h-10 rounded-xl border-2 text-sm transition-colors';
+		// Segmented-tray look: the grid sits in an inset panel; bookable days are
+		// raised "chips", the selection fills primary, unavailable days recede.
+		const base = 'relative aspect-square w-full rounded-md text-sm transition duration-150';
 		if (selected === date)
-			return `${base} border-[rgb(var(--color-primary))] bg-[rgb(var(--color-primary))] font-semibold text-[rgb(var(--color-contrast-text))]`;
+			return `${base} z-10 bg-[rgb(var(--color-primary))] font-semibold text-[rgb(var(--color-contrast-text))]`;
 		if (date === today)
 			// Today stands out with a bold primary number (plus the dot marker).
-			return `${base} border-transparent font-bold text-[rgb(var(--color-primary))] ${available.has(date) ? 'hover:border-[rgb(var(--color-primary))] hover:bg-[rgb(var(--color-primary)/0.1)]' : 'cursor-not-allowed'}`;
+			// Only give it a chip background when it actually has bookable times.
+			return available.has(date)
+				? `${base} day-cell cursor-pointer bg-[rgb(var(--color-foreground))] font-bold text-[rgb(var(--color-primary))] hover:bg-[rgb(var(--color-primary)/0.1)]`
+				: `${base} font-bold text-[rgb(var(--color-primary))] cursor-not-allowed`;
 		if (available.has(date))
-			return `${base} border-[rgb(var(--color-border))] bg-[rgb(var(--color-foreground))] text-[rgb(var(--color-text))] hover:border-[rgb(var(--color-primary))] hover:bg-[rgb(var(--color-primary)/0.1)] hover:text-[rgb(var(--color-primary))]`;
-		return `${base} border-transparent text-[rgb(var(--color-text)/0.35)]`;
+			return `${base} day-cell cursor-pointer bg-[rgb(var(--color-foreground))] text-[rgb(var(--color-text))] hover:bg-[rgb(var(--color-primary)/0.08)] hover:text-[rgb(var(--color-primary))]`;
+		return `${base} text-[rgb(var(--color-text)/0.35)]`;
 	}
 </script>
 
 <div class="w-full" aria-label={monthLabel}>
-	<div class="mb-5 grid grid-cols-[2.75rem_1fr_2.75rem] items-center">
-		<button
-			type="button"
-			class="grid size-11 place-items-center rounded-xl border-2 border-[rgb(var(--color-border))] text-[rgb(var(--color-text))] transition-colors hover:border-[rgb(var(--color-primary))] hover:text-[rgb(var(--color-primary))] disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:border-[rgb(var(--color-border))] disabled:hover:text-[rgb(var(--color-text))]"
-			disabled={month <= minimumMonth}
-			onclick={() => moveMonth(-1)}
-			aria-label="Previous month"
-		>
-			<Icon icon={chevronLeftIcon} width="20" height="20" />
-		</button>
+	<div class="flex items-center justify-between gap-3 rounded-t-xl bg-[rgb(var(--color-primary))] px-4 pt-2 pb-0">
 		{#key month}
 			<h2
-				class="calendar-label text-center text-lg font-semibold text-[rgb(var(--color-text))]"
+				class="calendar-label text-lg font-semibold text-[rgb(var(--color-contrast-text))]"
 				class:calendar-label-next={monthDirection > 0}
 				class:calendar-label-previous={monthDirection < 0}
 			>
 				{monthLabel}
 			</h2>
 		{/key}
-		<button
-			type="button"
-			class="grid size-11 place-items-center rounded-xl border-2 border-[rgb(var(--color-border))] text-[rgb(var(--color-text))] transition-colors hover:border-[rgb(var(--color-primary))] hover:text-[rgb(var(--color-primary))]"
-			onclick={() => moveMonth(1)}
-			aria-label="Next month"
-		>
-			<Icon icon={chevronRightIcon} width="20" height="20" />
-		</button>
+		<div class="flex items-center gap-2">
+			<button
+				type="button"
+				class="group grid size-11 cursor-pointer place-items-center rounded-xl bg-transparent text-[rgb(var(--color-contrast-text))] transition-colors hover:bg-[rgb(var(--color-contrast-text)/0.15)] disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:bg-transparent"
+				disabled={month <= minimumMonth}
+				onclick={() => moveMonth(-1)}
+				aria-label="Previous month"
+			>
+				<span class="grid transition-transform duration-200 group-hover:-translate-x-0.5 group-active:-translate-x-1">
+					<Icon icon={chevronLeftIcon} width="20" height="20" />
+				</span>
+			</button>
+			<button
+				type="button"
+				class="group grid size-11 cursor-pointer place-items-center rounded-xl bg-transparent text-[rgb(var(--color-contrast-text))] transition-colors hover:bg-[rgb(var(--color-contrast-text)/0.15)]"
+				onclick={() => moveMonth(1)}
+				aria-label="Next month"
+			>
+				<span class="grid transition-transform duration-200 group-hover:translate-x-0.5 group-active:translate-x-1">
+					<Icon icon={chevronRightIcon} width="20" height="20" />
+				</span>
+			</button>
+		</div>
 	</div>
 
-	{#key month}
-		<div class:calendar-month-next={monthDirection > 0} class:calendar-month-previous={monthDirection < 0} class="calendar-month">
-			<div class="grid grid-cols-7 text-center text-xs font-medium text-[rgb(var(--color-text)/0.6)]" aria-hidden="true">
-				{#each ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] as weekday}
-					<span class="py-2">{weekday}</span>
-				{/each}
-			</div>
-			<div class="grid grid-cols-7 gap-1">
+	<div class="-mb-3 grid grid-cols-7 bg-[rgb(var(--color-primary))] px-1.5 pb-3 text-center text-xs font-medium text-[rgb(var(--color-contrast-text))]" aria-hidden="true">
+		{#each ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] as weekday}
+			<span class="py-2">{weekday}</span>
+		{/each}
+	</div>
+	<div class="overflow-hidden rounded-xl bg-[rgb(var(--color-background))] p-2 dark:bg-[color-mix(in_srgb,rgb(var(--color-background)),white_16%)]">
+		{#key month}
+			<div
+				class:calendar-month-next={monthDirection > 0}
+				class:calendar-month-previous={monthDirection < 0}
+				class="calendar-month grid grid-cols-7 gap-1"
+			>
 				{#each Array(leadingDays) as _}
 					<span></span>
 				{/each}
@@ -114,13 +129,32 @@
 					</button>
 				{/each}
 			</div>
-		</div>
-	{/key}
+		{/key}
+	</div>
 </div>
 
 <style>
+	/* Hover pop for bookable days. :global because the class is applied via a
+	   dynamic string in cellClass(), which Svelte's scoper can't see. */
+	:global(.day-cell) {
+		transition:
+			transform 0.15s ease,
+			background-color 0.15s ease,
+			color 0.15s ease,
+			box-shadow 0.15s ease;
+	}
+	:global(.day-cell:hover) {
+		z-index: 10;
+		background: rgb(var(--color-primary)) !important;
+		color: rgb(var(--color-contrast-text)) !important;
+		box-shadow: var(--shadow-small);
+	}
+	:global(.day-cell:active) {
+		filter: brightness(0.92);
+	}
+
 	.calendar-month {
-		animation: calendar-month-next 160ms ease-out;
+		animation: calendar-month-next 260ms cubic-bezier(0.22, 1, 0.36, 1);
 	}
 
 	.calendar-month-previous {
@@ -128,7 +162,7 @@
 	}
 
 	.calendar-label {
-		animation: calendar-label-next 160ms ease-out;
+		animation: calendar-label-next 260ms cubic-bezier(0.22, 1, 0.36, 1);
 	}
 
 	.calendar-label-previous {
@@ -137,29 +171,52 @@
 
 	@keyframes calendar-month-next {
 		from {
-			opacity: 0.8;
-			transform: translateX(0.5rem);
+			opacity: 0.5;
+			transform: translateX(0.9rem);
+		}
+		to {
+			opacity: 1;
+			transform: translateX(0);
 		}
 	}
 
 	@keyframes calendar-month-previous {
 		from {
-			opacity: 0.8;
-			transform: translateX(-0.5rem);
+			opacity: 0.5;
+			transform: translateX(-0.9rem);
+		}
+		to {
+			opacity: 1;
+			transform: translateX(0);
 		}
 	}
 
 	@keyframes calendar-label-next {
 		from {
-			opacity: 0.8;
-			transform: translateX(0.35rem);
+			opacity: 0.5;
+			transform: translateX(0.55rem);
+		}
+		to {
+			opacity: 1;
+			transform: translateX(0);
 		}
 	}
 
 	@keyframes calendar-label-previous {
 		from {
-			opacity: 0.8;
-			transform: translateX(-0.35rem);
+			opacity: 0.5;
+			transform: translateX(-0.55rem);
+		}
+		to {
+			opacity: 1;
+			transform: translateX(0);
+		}
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.calendar-month,
+		.calendar-label {
+			animation: none;
 		}
 	}
 </style>
