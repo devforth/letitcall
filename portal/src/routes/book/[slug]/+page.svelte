@@ -259,7 +259,7 @@
 				</div>
 			</aside>
 
-			<section class="p-6 lg:p-10" aria-label="Book a meeting">
+			<section class="p-6 pl-4 lg:p-10 lg:pl-6" aria-label="Book a meeting">
 				<ol class="bk-stepper">
 					{#each bookingSteps as step, i (step.title)}
 		<li
