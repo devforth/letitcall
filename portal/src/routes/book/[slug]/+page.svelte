@@ -294,7 +294,10 @@
 												<MonthCalendar bind:month bind:selected={selectedDate} {availableDates} {minimumMonth} today={timezoneDateKey(now, timezone)} />
 											</div>
 											<div>
-												<h3 class="text-lg font-medium">{selectedDateLabel}</h3>
+												<h3 class="text-lg font-medium">
+													<span class="block text-sm font-normal" style="color: rgb(var(--color-text) / 0.65);">Available times for</span>
+													{selectedDateLabel}
+												</h3>
 												{#if selectedSlots.length === 0}
 													<div
 														class="mt-5 flex flex-col items-center gap-3 rounded-2xl border-2 border-dashed px-6 py-10 text-center"

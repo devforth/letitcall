@@ -44,9 +44,9 @@
 	function cellClass(date: string): string {
 		// Segmented-tray look: the grid sits in an inset panel; bookable days are
 		// raised "chips", the selection fills primary, unavailable days recede.
-		const base = 'relative aspect-square w-full rounded-md text-sm transition duration-150';
+		const base = 'relative aspect-square w-full rounded-md text-sm font-bold transition duration-150';
 		if (selected === date)
-			return `${base} z-10 bg-[rgb(var(--color-primary))] font-semibold text-[rgb(var(--color-contrast-text))]`;
+			return `${base} calendar-selected z-10 bg-[rgb(var(--color-primary))] font-bold text-[rgb(var(--color-contrast-text))]`;
 		if (date === today)
 			// Today stands out with a bold primary number (plus the dot marker).
 			// Only give it a chip background when it actually has bookable times.
@@ -59,7 +59,7 @@
 	}
 </script>
 
-<div class="w-full" aria-label={monthLabel}>
+<div class="calendar-shell w-full overflow-hidden rounded-xl" aria-label={monthLabel}>
 	<div class="flex items-center justify-between gap-3 rounded-t-xl bg-[rgb(var(--color-primary))] px-4 pt-2 pb-0">
 		{#key month}
 			<h2
@@ -134,6 +134,10 @@
 </div>
 
 <style>
+	.calendar-shell {
+		box-shadow: 0 0 0 1px rgb(var(--color-border));
+	}
+
 	/* Hover pop for bookable days. :global because the class is applied via a
 	   dynamic string in cellClass(), which Svelte's scoper can't see. */
 	:global(.day-cell) {
@@ -151,6 +155,10 @@
 	}
 	:global(.day-cell:active) {
 		filter: brightness(0.92);
+	}
+
+	:global(.calendar-selected) {
+		box-shadow: inset 0 0 0 4px rgb(var(--color-background) / 0.3);
 	}
 
 	.calendar-month {
