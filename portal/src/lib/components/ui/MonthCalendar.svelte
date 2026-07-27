@@ -44,17 +44,17 @@
 	function cellClass(date: string): string {
 		// Segmented-tray look: the grid sits in an inset panel; bookable days are
 		// raised "chips", the selection fills primary, unavailable days recede.
-		const base = 'relative aspect-square w-full rounded-md text-sm font-bold transition duration-150';
+		const base = 'relative isolate aspect-square w-full overflow-hidden rounded-[10px] text-sm font-bold transition duration-150';
 		if (selected === date)
-			return `${base} calendar-selected z-10 bg-[rgb(var(--color-primary))] font-bold text-[rgb(var(--color-contrast-text))]`;
+			return `${base} calendar-selected z-10 bg-[rgb(var(--color-foreground))] font-bold text-[rgb(var(--color-contrast-text))]`;
 		if (date === today)
 			// Today stands out with a bold primary number (plus the dot marker).
 			// Only give it a chip background when it actually has bookable times.
 			return available.has(date)
-				? `${base} day-cell cursor-pointer bg-[rgb(var(--color-foreground))] font-bold text-[rgb(var(--color-primary))] hover:bg-[rgb(var(--color-primary)/0.1)]`
+				? `${base} day-cell cursor-pointer bg-[rgb(var(--color-foreground))] font-bold text-[rgb(var(--color-primary))]`
 				: `${base} font-bold text-[rgb(var(--color-primary))] cursor-not-allowed`;
 		if (available.has(date))
-			return `${base} day-cell cursor-pointer bg-[rgb(var(--color-foreground))] text-[rgb(var(--color-text))] hover:bg-[rgb(var(--color-primary)/0.08)] hover:text-[rgb(var(--color-primary))]`;
+			return `${base} day-cell cursor-pointer bg-[rgb(var(--color-foreground))] text-[rgb(var(--color-text))]`;
 		return `${base} text-[rgb(var(--color-text)/0.35)]`;
 	}
 </script>
@@ -148,17 +148,35 @@
 			box-shadow 0.15s ease;
 	}
 	:global(.day-cell:hover) {
-		z-index: 10;
-		background: rgb(var(--color-primary)) !important;
-		color: rgb(var(--color-contrast-text)) !important;
-		box-shadow: var(--shadow-small);
+		background: rgb(var(--color-primary) / 0.12) !important;
+		color: rgb(var(--color-primary)) !important;
 	}
 	:global(.day-cell:active) {
 		filter: brightness(0.92);
 	}
 
-	:global(.calendar-selected) {
+	/* Arrow-shaped primary fill wipes in — same effect as the time slots. */
+	:global(.day-cell)::before,
+	:global(.calendar-selected)::before {
+		content: '';
+		position: absolute;
+		inset: 0;
+		right: 100%;
+		background: rgb(var(--color-primary));
+		clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 50%, calc(100% - 8px) 100%, 0 100%);
+		transition: right 0.25s ease;
+		z-index: -1;
+	}
+	:global(.calendar-selected)::before {
+		right: -8px;
+	}
+	:global(.calendar-selected)::after {
+		content: '';
+		position: absolute;
+		inset: 0;
+		border-radius: inherit;
 		box-shadow: inset 0 0 0 4px rgb(var(--color-background) / 0.3);
+		pointer-events: none;
 	}
 
 	.calendar-month {

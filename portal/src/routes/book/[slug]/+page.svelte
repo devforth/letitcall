@@ -5,6 +5,7 @@
 	import clockIcon from '@iconify-icons/tabler/clock';
 	import calendarIcon from '@iconify-icons/tabler/calendar';
 	import calendarOffIcon from '@iconify-icons/tabler/calendar-off';
+	import lockIcon from '@iconify-icons/material-symbols/lock';
 	import worldIcon from '@iconify-icons/tabler/world';
 	import { callApi } from '$lib/api';
 	import { firstAvailableDate, generateBookingSlots, timezoneDateKey } from '$lib/booking';
@@ -315,7 +316,7 @@
 														</div>
 													</div>
 												{:else}
-													<table class="mt-5 w-full" style="border-collapse: separate; border-spacing: 8px; margin-left: -8px; margin-right: -8px; width: calc(100% + 16px); table-layout: fixed;">
+													<table class="mt-3 w-full" style="border-collapse: separate; border-spacing: 8px; margin-left: -8px; margin-right: -8px; width: calc(100% + 16px); table-layout: fixed;">
 														<tbody>
 															{#each rows(selectedSlots, 3) as row}
 																<tr>
@@ -325,12 +326,11 @@
 																			role="button"
 																			tabindex={slot.busy ? -1 : 0}
 																			aria-disabled={slot.busy}
-																			class="slot-cell min-h-11 px-4 py-3 text-center text-sm font-medium transition"
+																			class="slot-cell px-4 text-center text-sm font-bold transition"
 																			class:is-busy={slot.busy}
 																			class:is-selected={selected}
 																			class:cursor-pointer={!slot.busy}
 																			class:cursor-not-allowed={slot.busy}
-																			class:opacity-40={slot.busy}
 																			onclick={() => !slot.busy && selectTime(slot.time)}
 																			onkeydown={(event) => {
 																				if (slot.busy) return;
@@ -340,8 +340,10 @@
 																				}
 																			}}
 																		>
-																			<span>{slot.label}</span>
-																			{#if slot.busy}<span class="ml-1 text-xs font-normal">Busy</span>{/if}
+																			<span class="inline-flex items-center gap-1 whitespace-nowrap" class:opacity-40={slot.busy}>
+																				{#if slot.busy}<Icon icon={lockIcon} width="14" height="14" />{/if}
+																				<span>{slot.label}</span>
+																			</span>
 																		</td>
 																	{/each}
 																</tr>
@@ -427,11 +429,13 @@
 {/if}
 
 <style>
-	/* Time-slot cells: a primary fill wipes in from the left on hover/select. */
+	/* Time-slot cells: an arrow-shaped primary fill sweeps in from the left. */
 	.slot-cell {
 		position: relative;
 		z-index: 0;
 		overflow: hidden;
+		height: 3.25rem;
+		vertical-align: middle;
 		border-radius: 10px;
 		background: rgb(var(--color-text) / 0.05);
 		color: rgb(var(--color-text));
@@ -442,16 +446,33 @@
 		inset: 0;
 		right: 100%;
 		background: rgb(var(--color-primary));
+		clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 50%, calc(100% - 12px) 100%, 0 100%);
 		transition: right 0.25s ease;
 		z-index: -1;
 	}
-	.slot-cell:not(.is-busy):hover::before,
 	.slot-cell.is-selected::before {
-		right: 0;
+		right: -12px;
 	}
-	.slot-cell:not(.is-busy):hover,
+	/* Hover on an unselected slot: just a little tint, not the full fill. */
+	.slot-cell:not(.is-busy):not(.is-selected):hover {
+		background: rgb(var(--color-primary) / 0.12) !important;
+		color: rgb(var(--color-primary)) !important;
+	}
 	.slot-cell.is-selected {
 		color: rgb(var(--color-contrast-text)) !important;
+	}
+	/* Click/press feedback — same as the calendar day cells. */
+	.slot-cell:not(.is-busy):active {
+		filter: brightness(0.92);
+	}
+	/* Active slot: same inset ring as the selected calendar date. */
+	.slot-cell.is-selected::after {
+		content: '';
+		position: absolute;
+		inset: 0;
+		border-radius: inherit;
+		box-shadow: inset 0 0 0 4px rgb(var(--color-background) / 0.3);
+		pointer-events: none;
 	}
 
 	/* Toggle on the primary aside: no fill, contrast-color border and icon. */
@@ -462,45 +483,46 @@
 		box-shadow: none !important;
 	}
 
-	/* Nuxt UI-style vertical progress stepper for the booking flow. */
+	/* Horizontal progress stepper for the booking flow. */
 	.bk-stepper {
-		display: flex;
-		flex-direction: column;
+		display: grid;
+		grid-template-columns: repeat(3, minmax(0, 1fr));
 		list-style: none;
 		padding: 0;
 	}
 	.bk-step {
-		position: relative;
-		display: grid;
-		grid-template-columns: 34px 1fr;
-		align-items: start;
-		column-gap: 14px;
-		padding-bottom: 28px;
-	}
-	.bk-step:last-child {
-		padding-bottom: 0;
-	}
-	/* connector runs from the bottom of this indicator down to the next */
-	.bk-step::before {
-		content: '';
-		position: absolute;
-		left: 16px; /* centre of the 34px indicator */
-		top: 40px; /* 6px gap below the circle */
-		bottom: 6px; /* 6px gap above the next circle */
-		border-left: 2px dashed rgb(var(--color-text) / 0.15);
-	}
-	.bk-step:last-child::before {
-		display: none;
-	}
-	.bk-step.is-done::before {
-		border-color: rgb(var(--color-primary));
-	}
-	/* Header spans participate in the .bk-step grid directly. */
-	.bk-head {
 		display: contents;
+	}
+	.bk-head {
+		position: relative;
+		z-index: 0;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 10px;
+		grid-row: 1;
+		padding: 0;
+		border: 0;
+		background: transparent;
 		font: inherit;
 		color: inherit;
 		text-align: left;
+	}
+	/* Connector runs from this indicator to the next. */
+	.bk-head::before {
+		content: '';
+		position: absolute;
+		z-index: -1;
+		left: 50%;
+		right: -50%;
+		top: 16px;
+		border-top: 2px dashed rgb(var(--color-text) / 0.15);
+	}
+	.bk-step:last-child .bk-head::before {
+		display: none;
+	}
+	.bk-step.is-done .bk-head::before {
+		border-color: rgb(var(--color-primary));
 	}
 	.bk-head:not(:disabled) .bk-ind,
 	.bk-head:not(:disabled) .bk-label {
@@ -510,8 +532,7 @@
 		text-decoration: underline;
 	}
 	.bk-ind {
-		grid-column: 1;
-		grid-row: 1;
+		z-index: 1;
 		width: 34px;
 		height: 34px;
 		border-radius: 9999px;
@@ -542,18 +563,17 @@
 		box-shadow: inset 0 0 0 2px rgb(var(--color-border));
 	}
 	.bk-label {
-		grid-column: 2;
-		grid-row: 1;
 		display: flex;
 		flex-direction: column;
+		align-items: center;
 		justify-content: center;
 		gap: 2px;
 		min-height: 34px;
 	}
 	.bk-content {
-		grid-column: 2;
+		grid-column: 1 / -1;
 		grid-row: 2;
-		margin-top: 18px;
+		margin-top: 36px;
 	}
 	.bk-title {
 		font-size: 22px;

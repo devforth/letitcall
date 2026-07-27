@@ -11,6 +11,9 @@ importers:
       '@iconify-icons/logos':
         specifier: ^1.2.36
         version: 1.2.36
+      '@iconify-icons/material-symbols':
+        specifier: ^1.2.58
+        version: 1.2.58
       '@iconify-icons/tabler':
         specifier: ^1.2.95
         version: 1.2.95
@@ -95,6 +98,9 @@ packages:
 
   '@iconify-icons/logos@1.2.36':
     resolution: {integrity: sha512-VzF299ubR4SKCZzLJoAawxeSjszJV1Q6y+4chCIPQuAafqfjtDjZxagZxL3ILKCsRLNN/z3zmCOOAL83tC8kLw==}
+
+  '@iconify-icons/material-symbols@1.2.58':
+    resolution: {integrity: sha512-v0ZfPXlmDcDPCejxhg5h2eHCEHClrpn+i44Ev766vkzPIEFRdgT+YK942KzyqBpH0RhKJfel4OZdL1DY1oa5Qg==}
 
   '@iconify-icons/tabler@1.2.95':
     resolution: {integrity: sha512-d7bcyNs/AHWcdTwN+2/yohPeU0Kg5jvzt9JiLFnTnx9HYc54q2cU08rSEF0rIVHB5PEP9M8dTN/ZFxquAFCamw==}
@@ -767,6 +773,10 @@ snapshots:
     optional: true
 
   '@iconify-icons/logos@1.2.36':
+    dependencies:
+      '@iconify/types': 2.0.0
+
+  '@iconify-icons/material-symbols@1.2.58':
     dependencies:
       '@iconify/types': 2.0.0
 
