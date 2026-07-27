@@ -95,7 +95,7 @@
 		</div>
 	</div>
 
-	<div class="-mb-3 grid grid-cols-7 bg-[rgb(var(--color-primary))] px-1.5 pb-3 text-center text-xs font-medium text-[rgb(var(--color-contrast-text))]" aria-hidden="true">
+	<div class="-mb-3 grid grid-cols-7 bg-[rgb(var(--color-primary))] px-1.5 pb-3 text-center text-sm font-medium text-[rgb(var(--color-contrast-text))]" aria-hidden="true">
 		{#each ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] as weekday}
 			<span class="py-2">{weekday}</span>
 		{/each}

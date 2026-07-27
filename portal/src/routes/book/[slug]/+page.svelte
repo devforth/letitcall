@@ -2,6 +2,7 @@
 	import { page } from '$app/state';
 	import { onDestroy, onMount } from 'svelte';
 	import Icon from '@iconify/svelte';
+	import arrowRightIcon from '@iconify-icons/tabler/arrow-right';
 	import clockIcon from '@iconify-icons/tabler/clock';
 	import calendarIcon from '@iconify-icons/tabler/calendar';
 	import calendarOffIcon from '@iconify-icons/tabler/calendar-off';
@@ -268,7 +269,7 @@
 				</div>
 			</aside>
 
-			<section class="p-6 pl-4 lg:p-10 lg:pl-6" aria-label="Book a meeting">
+			<section class="flex min-h-0 flex-col p-6 lg:p-10" aria-label="Book a meeting">
 				<ol class="bk-stepper">
 					{#each bookingSteps as step, i (step.title)}
 		<li
@@ -290,7 +291,8 @@
 							{#if i === currentStep}
 								<div class="bk-content">
 									{#if i === 0}
-										<div class="grid gap-10 xl:grid-cols-[minmax(20rem,1fr)_minmax(15rem,0.7fr)]">
+										<div class="flex h-full flex-col">
+											<div class="grid gap-10 xl:grid-cols-[minmax(20rem,1fr)_minmax(15rem,0.7fr)]">
 											<div>
 												<MonthCalendar bind:month bind:selected={selectedDate} {availableDates} {minimumMonth} today={timezoneDateKey(now, timezone)} />
 											</div>
@@ -318,7 +320,7 @@
 												{:else}
 													<table class="mt-3 w-full" style="border-collapse: separate; border-spacing: 8px; margin-left: -8px; margin-right: -8px; width: calc(100% + 16px); table-layout: fixed;">
 														<tbody>
-															{#each rows(selectedSlots, 3) as row}
+																								{#each rows(selectedSlots, 2) as row}
 																<tr>
 																	{#each row as slot (slot.time)}
 																		{@const selected = slot.time === selectedTime}
@@ -356,9 +358,13 @@
 													</div>
 												</div>
 											</div>
-											<div class="mt-8">
-												<Button disabled={!selectedTime} onclick={confirmDateAndTime}>Confirm date and time</Button>
+											<div class="mt-auto flex justify-end pt-8">
+												<Button class="booking-next gap-2" disabled={!selectedTime} onclick={confirmDateAndTime}>
+													Next
+													<Icon icon={arrowRightIcon} width="18" height="18" />
+												</Button>
 											</div>
+										</div>
 										{:else if i === 1}
 											<form class="grid max-w-xl gap-6" onsubmit={confirmContactInformation}>
 											<Input id="attendee-name" label="Name" bind:value={attendeeName} required autocomplete="name" />
@@ -487,6 +493,8 @@
 	.bk-stepper {
 		display: grid;
 		grid-template-columns: repeat(3, minmax(0, 1fr));
+		grid-template-rows: auto minmax(0, 1fr);
+		flex: 1;
 		list-style: none;
 		padding: 0;
 	}

@@ -37,6 +37,10 @@
 		box-shadow: var(--shadow-small);
 	}
 
+	.button-primary.booking-next {
+		min-height: 48px !important;
+	}
+
 	.button-primary:hover:not(:disabled) {
 		background: color-mix(in srgb, rgb(var(--color-primary)), white 15%) !important;
 		border-color: color-mix(in srgb, rgb(var(--color-primary)), white 15%) !important;
