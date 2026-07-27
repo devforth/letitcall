@@ -53,9 +53,9 @@
 	let availabilityClock: number | undefined;
 
 	const bookingSteps = [
-		{ title: 'Date and Time' },
-		{ title: 'Contact Information' },
-		{ title: 'Confirmation' }
+		{ title: 'Date and Time', subtitle: 'Pick a day and a time' },
+		{ title: 'Contact Information', subtitle: 'Your name, email, and guests' },
+		{ title: 'Confirmation', subtitle: "Review and you're booked" }
 	];
 	const timezone = $derived(timezones.includes(timezoneInput) ? timezoneInput : localTimezone);
 	const minimumMonth = $derived(timezoneDateKey(now, timezone).slice(0, 7));
@@ -270,165 +270,169 @@
 			</aside>
 
 			<section class="flex min-h-0 flex-col p-6 lg:p-10" aria-label="Book a meeting">
-				<ol class="bk-stepper">
-					{#each bookingSteps as step, i (step.title)}
-		<li
-			class="bk-step {stepState(i)}"
-							aria-current={i === currentStep ? 'step' : undefined}
-						>
-							<button
-								type="button"
-								class="bk-head"
-								onclick={() => goToStep(i)}
-				disabled={!!booking || i > furthestStep}
-							>
-								<span class="bk-ind">{i + 1}</span>
-								<span class="bk-label">
-									<span class="bk-title">{step.title}</span>
-								</span>
-							</button>
+				<div class="bk-stepper">
+					<div class="bk-track" aria-hidden="true">
+						<div class="bk-fill" style="--bk-progress: {currentStep / (bookingSteps.length - 1)};"></div>
+						<div class="bk-marks">
+							{#each bookingSteps as step, i (step.title)}
+								<span class="bk-dot {stepState(i)}"></span>
+							{/each}
+						</div>
+					</div>
 
-							{#if i === currentStep}
-								<div class="bk-content">
-									{#if i === 0}
-										<div class="flex h-full flex-col">
-											<div class="grid gap-10 xl:grid-cols-[minmax(20rem,1fr)_minmax(15rem,0.7fr)]">
+					<ol class="bk-labels">
+						{#each bookingSteps as step, i (step.title)}
+							<li class="bk-step {stepState(i)}" aria-current={i === currentStep ? 'step' : undefined}>
+								<button
+									type="button"
+									class="bk-head"
+									onclick={() => goToStep(i)}
+									disabled={!!booking || i > furthestStep}
+								>
+									<span class="bk-title">{step.title}</span>
+									<span class="bk-sub">{step.subtitle}</span>
+								</button>
+							</li>
+						{/each}
+					</ol>
+
+					<div class="bk-content">
+						{#if currentStep === 0}
+							<div class="flex h-full flex-col">
+								<div class="grid gap-10 xl:grid-cols-[minmax(20rem,1fr)_minmax(15rem,0.7fr)]">
+								<div>
+									<MonthCalendar bind:month bind:selected={selectedDate} {availableDates} {minimumMonth} today={timezoneDateKey(now, timezone)} />
+								</div>
+								<div>
+									<h3 class="text-lg font-medium">
+										<span class="block text-sm font-normal" style="color: rgb(var(--color-text) / 0.65);">Available times for</span>
+										{selectedDateLabel}
+									</h3>
+									{#if selectedSlots.length === 0}
+										<div
+											class="mt-5 flex flex-col items-center gap-3 rounded-2xl border-2 border-dashed px-6 py-10 text-center"
+											style="border-color: rgb(var(--color-border));"
+										>
+											<span
+												class="grid size-12 place-items-center rounded-full"
+												style="background: rgb(var(--color-primary) / 0.1); color: rgb(var(--color-primary));"
+											>
+												<Icon icon={calendarOffIcon} width="24" height="24" />
+											</span>
 											<div>
-												<MonthCalendar bind:month bind:selected={selectedDate} {availableDates} {minimumMonth} today={timezoneDateKey(now, timezone)} />
-											</div>
-											<div>
-												<h3 class="text-lg font-medium">
-													<span class="block text-sm font-normal" style="color: rgb(var(--color-text) / 0.65);">Available times for</span>
-													{selectedDateLabel}
-												</h3>
-												{#if selectedSlots.length === 0}
-													<div
-														class="mt-5 flex flex-col items-center gap-3 rounded-2xl border-2 border-dashed px-6 py-10 text-center"
-														style="border-color: rgb(var(--color-border));"
-													>
-														<span
-															class="grid size-12 place-items-center rounded-full"
-															style="background: rgb(var(--color-primary) / 0.1); color: rgb(var(--color-primary));"
-														>
-															<Icon icon={calendarOffIcon} width="24" height="24" />
-														</span>
-														<div>
-															<p class="font-semibold">No times available</p>
-															<p class="mt-1 text-sm" style="color: rgb(var(--color-text) / 0.6);">Please select another date.</p>
-														</div>
-													</div>
-												{:else}
-													<table class="mt-3 w-full" style="border-collapse: separate; border-spacing: 8px; margin-left: -8px; margin-right: -8px; width: calc(100% + 16px); table-layout: fixed;">
-														<tbody>
-																								{#each rows(selectedSlots, 2) as row}
-																<tr>
-																	{#each row as slot (slot.time)}
-																		{@const selected = slot.time === selectedTime}
-																		<td
-																			role="button"
-																			tabindex={slot.busy ? -1 : 0}
-																			aria-disabled={slot.busy}
-																			class="slot-cell px-4 text-center text-sm font-bold transition"
-																			class:is-busy={slot.busy}
-																			class:is-selected={selected}
-																			class:cursor-pointer={!slot.busy}
-																			class:cursor-not-allowed={slot.busy}
-																			onclick={() => !slot.busy && selectTime(slot.time)}
-																			onkeydown={(event) => {
-																				if (slot.busy) return;
-																				if (event.key === 'Enter' || event.key === ' ') {
-																					event.preventDefault();
-																					selectTime(slot.time);
-																				}
-																			}}
-																		>
-																			<span class="inline-flex items-center gap-1 whitespace-nowrap" class:opacity-40={slot.busy}>
-																				{#if slot.busy}<Icon icon={lockIcon} width="14" height="14" />{/if}
-																				<span>{slot.label}</span>
-																			</span>
-																		</td>
-																	{/each}
-																</tr>
-															{/each}
-														</tbody>
-													</table>
-												{/if}
-												<div class="mt-8">
-													<SearchableSelect id="booking-timezone" label="Timezone" icon={worldIcon} options={timezones} bind:value={timezoneInput} required />
-													</div>
-												</div>
-											</div>
-											<div class="mt-auto flex justify-end pt-8">
-												<Button class="booking-next gap-2" disabled={!selectedTime} onclick={confirmDateAndTime}>
-													Next
-													<Icon icon={arrowRightIcon} width="18" height="18" />
-												</Button>
+												<p class="font-semibold">No times available</p>
+												<p class="mt-1 text-sm" style="color: rgb(var(--color-text) / 0.6);">Please select another date.</p>
 											</div>
 										</div>
-										{:else if i === 1}
-											<form class="grid max-w-xl gap-6" onsubmit={confirmContactInformation}>
-											<Input id="attendee-name" label="Name" bind:value={attendeeName} required autocomplete="name" />
-											<Input id="attendee-email" label="Email" type="email" bind:value={attendeeEmail} required autocomplete="email" />
-											<GuestEmailFields idPrefix="booking-guest" bind:emails={guestEmails} limit={guestLimit} />
-											<Textarea
-												id="booking-notes"
-												label="Please share anything that will help prepare for our meeting."
-												bind:value={notes}
-												maxlength={2000}
-												/>
-												<div>
-													<Button type="submit">Confirm contact information</Button>
-											</div>
-										</form>
-											{:else if booking}
-												<div class="max-w-lg rounded-2xl p-6" style={blockStyle}>
-													<p class="text-sm font-medium">{eventType.name}</p>
-											<p class="mt-1 text-sm">
-												{new Intl.DateTimeFormat(undefined, { dateStyle: 'full', timeStyle: 'short', timeZone: timezone }).format(new Date(booking.time))}
-											</p>
-											<a class="mt-6 inline-block rounded-xl bg-[rgb(var(--color-primary)/0.12)] px-4 py-3 text-sm font-semibold text-[rgb(var(--color-primary))] transition-colors hover:bg-[rgb(var(--color-primary)/0.2)]" href={manageURL}>Cancel or update event</a>
-													<a class="mt-4 block text-sm font-medium underline hover:no-underline" href={page.url.pathname} data-sveltekit-reload>Make another booking</a>
-												</div>
-											{:else}
-												<div class="grid max-w-xl gap-6">
-													<div class="rounded-2xl border-2 p-5" style={dividerStyle}>
-														<h3 class="text-lg font-semibold">Review your booking</h3>
-														<div class="mt-5 grid gap-4 text-sm">
-															<div>
-																<p class="text-xs font-medium" style="color: rgb(var(--color-text) / 0.6);">Date and time</p>
-																<p class="mt-1 font-medium">{selectedTimeLabel}</p>
-															</div>
-															<div>
-																<p class="text-xs font-medium" style="color: rgb(var(--color-text) / 0.6);">Timezone</p>
-																<p class="mt-1 font-medium">{timezone}</p>
-															</div>
-															<div>
-																<p class="text-xs font-medium" style="color: rgb(var(--color-text) / 0.6);">Contact</p>
-																<p class="mt-1 font-medium">{attendeeName}</p>
-																<p>{attendeeEmail}</p>
-															</div>
-															{#if guestEmails.length > 0}
-																<div>
-																	<p class="text-xs font-medium" style="color: rgb(var(--color-text) / 0.6);">Additional guests</p>
-																	<p class="mt-1">{guestEmails.join(', ')}</p>
-																</div>
-															{/if}
-															<div>
-																<p class="text-xs font-medium" style="color: rgb(var(--color-text) / 0.6);">Notes</p>
-																<p class="mt-1 whitespace-pre-wrap">{notes || 'None'}</p>
-															</div>
-														</div>
-													</div>
-													<form onsubmit={createBooking}>
-														<Button type="submit" disabled={saving}>{saving ? 'Scheduling…' : 'Confirm booking'}</Button>
-													</form>
-												</div>
-											{/if}
+									{:else}
+										<table class="mt-3 w-full" style="border-collapse: separate; border-spacing: 8px; margin-left: -8px; margin-right: -8px; width: calc(100% + 16px); table-layout: fixed;">
+											<tbody>
+																					{#each rows(selectedSlots, 2) as row}
+													<tr>
+														{#each row as slot (slot.time)}
+															{@const selected = slot.time === selectedTime}
+															<td
+																role="button"
+																tabindex={slot.busy ? -1 : 0}
+																aria-disabled={slot.busy}
+																class="slot-cell px-4 text-center text-sm font-bold transition"
+																class:is-busy={slot.busy}
+																class:is-selected={selected}
+																class:cursor-pointer={!slot.busy}
+																class:cursor-not-allowed={slot.busy}
+																onclick={() => !slot.busy && selectTime(slot.time)}
+																onkeydown={(event) => {
+																	if (slot.busy) return;
+																	if (event.key === 'Enter' || event.key === ' ') {
+																		event.preventDefault();
+																		selectTime(slot.time);
+																	}
+																}}
+															>
+																<span class="inline-flex items-center gap-1 whitespace-nowrap" class:opacity-40={slot.busy}>
+																	{#if slot.busy}<Icon icon={lockIcon} width="14" height="14" />{/if}
+																	<span>{slot.label}</span>
+																</span>
+															</td>
+														{/each}
+													</tr>
+												{/each}
+											</tbody>
+										</table>
+									{/if}
+									<div class="mt-8">
+										<SearchableSelect id="booking-timezone" label="Timezone" icon={worldIcon} options={timezones} bind:value={timezoneInput} required />
+										</div>
+									</div>
 								</div>
-							{/if}
-						</li>
-					{/each}
-				</ol>
+								<div class="mt-auto flex justify-end pt-8">
+									<Button class="booking-next gap-2" disabled={!selectedTime} onclick={confirmDateAndTime}>
+										Next
+										<Icon icon={arrowRightIcon} width="18" height="18" />
+									</Button>
+								</div>
+							</div>
+							{:else if currentStep === 1}
+								<form class="grid max-w-xl gap-6" onsubmit={confirmContactInformation}>
+								<Input id="attendee-name" label="Name" bind:value={attendeeName} required autocomplete="name" />
+								<Input id="attendee-email" label="Email" type="email" bind:value={attendeeEmail} required autocomplete="email" />
+								<GuestEmailFields idPrefix="booking-guest" bind:emails={guestEmails} limit={guestLimit} />
+								<Textarea
+									id="booking-notes"
+									label="Please share anything that will help prepare for our meeting."
+									bind:value={notes}
+									maxlength={2000}
+									/>
+									<div>
+										<Button type="submit">Confirm contact information</Button>
+								</div>
+							</form>
+								{:else if booking}
+									<div class="max-w-lg rounded-2xl p-6" style={blockStyle}>
+										<p class="text-sm font-medium">{eventType.name}</p>
+								<p class="mt-1 text-sm">
+									{new Intl.DateTimeFormat(undefined, { dateStyle: 'full', timeStyle: 'short', timeZone: timezone }).format(new Date(booking.time))}
+								</p>
+								<a class="mt-6 inline-block rounded-xl bg-[rgb(var(--color-primary)/0.12)] px-4 py-3 text-sm font-semibold text-[rgb(var(--color-primary))] transition-colors hover:bg-[rgb(var(--color-primary)/0.2)]" href={manageURL}>Cancel or update event</a>
+										<a class="mt-4 block text-sm font-medium underline hover:no-underline" href={page.url.pathname} data-sveltekit-reload>Make another booking</a>
+									</div>
+								{:else}
+									<div class="grid max-w-xl gap-6">
+										<div class="rounded-2xl border-2 p-5" style={dividerStyle}>
+											<h3 class="text-lg font-semibold">Review your booking</h3>
+											<div class="mt-5 grid gap-4 text-sm">
+												<div>
+													<p class="text-xs font-medium" style="color: rgb(var(--color-text) / 0.6);">Date and time</p>
+													<p class="mt-1 font-medium">{selectedTimeLabel}</p>
+												</div>
+												<div>
+													<p class="text-xs font-medium" style="color: rgb(var(--color-text) / 0.6);">Timezone</p>
+													<p class="mt-1 font-medium">{timezone}</p>
+												</div>
+												<div>
+													<p class="text-xs font-medium" style="color: rgb(var(--color-text) / 0.6);">Contact</p>
+													<p class="mt-1 font-medium">{attendeeName}</p>
+													<p>{attendeeEmail}</p>
+												</div>
+												{#if guestEmails.length > 0}
+													<div>
+														<p class="text-xs font-medium" style="color: rgb(var(--color-text) / 0.6);">Additional guests</p>
+														<p class="mt-1">{guestEmails.join(', ')}</p>
+													</div>
+												{/if}
+												<div>
+													<p class="text-xs font-medium" style="color: rgb(var(--color-text) / 0.6);">Notes</p>
+													<p class="mt-1 whitespace-pre-wrap">{notes || 'None'}</p>
+												</div>
+											</div>
+										</div>
+										<form onsubmit={createBooking}>
+											<Button type="submit" disabled={saving}>{saving ? 'Scheduling…' : 'Confirm booking'}</Button>
+										</form>
+									</div>
+								{/if}
+					</div>
+				</div>
 			</section>
 		</div>
 	</main>
@@ -489,107 +493,129 @@
 		box-shadow: none !important;
 	}
 
-	/* Horizontal progress stepper for the booking flow. */
+	/* Booking progress: one filling rail, a marker per step, labels beneath. */
 	.bk-stepper {
+		display: flex;
+		flex: 1;
+		min-height: 0;
+		flex-direction: column;
+		gap: 14px;
+	}
+	.bk-track {
+		position: relative;
+		height: 6px;
+		margin: 0 7px;
+		border-radius: 999px;
+		background: rgb(var(--color-text) / 0.12);
+	}
+	/* Fill spans from the first marker to the current one. */
+	.bk-fill {
+		position: absolute;
+		inset: 0 auto 0 0;
+		width: calc(var(--bk-progress) * 100%);
+		border-radius: 999px;
+		background: rgb(var(--color-primary));
+		transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+	}
+	.bk-marks {
+		position: absolute;
+		inset: 0;
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+	}
+	.bk-dot {
+		width: 14px;
+		height: 14px;
+		border-radius: 999px;
+		background: rgb(var(--color-foreground));
+		box-shadow: inset 0 0 0 3px rgb(var(--color-text) / 0.18);
+		transition:
+			box-shadow 0.3s,
+			transform 0.3s;
+	}
+	.bk-dot.is-done {
+		box-shadow: inset 0 0 0 7px rgb(var(--color-primary));
+	}
+	.bk-dot.is-active {
+		transform: scale(1.5);
+		box-shadow: inset 0 0 0 3px rgb(var(--color-primary));
+	}
+	.bk-labels {
 		display: grid;
 		grid-template-columns: repeat(3, minmax(0, 1fr));
-		grid-template-rows: auto minmax(0, 1fr);
-		flex: 1;
 		list-style: none;
+		margin: 0;
 		padding: 0;
 	}
-	.bk-step {
-		display: contents;
-	}
+	/* Outer labels align to their marker, the middle one centres. */
 	.bk-head {
-		position: relative;
-		z-index: 0;
 		display: flex;
 		flex-direction: column;
 		align-items: center;
-		gap: 10px;
-		grid-row: 1;
+		gap: 2px;
+		width: 100%;
 		padding: 0;
 		border: 0;
 		background: transparent;
 		font: inherit;
-		color: inherit;
+		color: rgb(var(--color-text) / 0.5);
+		text-align: center;
+	}
+	.bk-step:first-child .bk-head {
+		align-items: flex-start;
 		text-align: left;
 	}
-	/* Connector runs from this indicator to the next. */
-	.bk-head::before {
-		content: '';
-		position: absolute;
-		z-index: -1;
-		left: 50%;
-		right: -50%;
-		top: 16px;
-		border-top: 2px dashed rgb(var(--color-text) / 0.15);
+	.bk-step:last-child .bk-head {
+		align-items: flex-end;
+		text-align: right;
 	}
-	.bk-step:last-child .bk-head::before {
-		display: none;
-	}
-	.bk-step.is-done .bk-head::before {
-		border-color: rgb(var(--color-primary));
-	}
-	.bk-head:not(:disabled) .bk-ind,
-	.bk-head:not(:disabled) .bk-label {
+	.bk-head:not(:disabled) {
 		cursor: pointer;
 	}
 	.bk-head:not(:disabled):hover .bk-title {
 		text-decoration: underline;
 	}
-	.bk-ind {
-		z-index: 1;
-		width: 34px;
-		height: 34px;
-		border-radius: 9999px;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		line-height: 1;
+	.bk-title {
+		font-size: 15px;
 		font-weight: 600;
-		font-size: 18px;
-		font-variant-numeric: tabular-nums;
-		transition:
-			background 0.3s,
-			color 0.3s,
-			box-shadow 0.3s;
+		line-height: 1.25;
+		transition: font-size 0.3s;
 	}
-	.bk-step.is-done .bk-ind {
-		background: rgb(var(--color-primary));
-		color: rgb(var(--color-contrast-text));
+	.bk-step.is-done .bk-head {
+		color: rgb(var(--color-text) / 0.8);
 	}
-	.bk-step.is-active .bk-ind {
-		background: transparent;
+	.bk-step.is-active .bk-head {
 		color: rgb(var(--color-primary));
-		box-shadow: inset 0 0 0 2px rgb(var(--color-primary));
 	}
-	.bk-step.is-upcoming .bk-ind {
-		background: transparent;
-		color: rgb(var(--color-text) / 0.6);
-		box-shadow: inset 0 0 0 2px rgb(var(--color-border));
+	.bk-step.is-active .bk-title {
+		font-size: 17px;
 	}
-	.bk-label {
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		justify-content: center;
-		gap: 2px;
-		min-height: 34px;
+	.bk-sub {
+		font-size: 12.5px;
+		font-weight: 500;
+		line-height: 1.35;
+		color: rgb(var(--color-text) / 0.5);
+	}
+	.bk-step.is-active .bk-sub {
+		color: rgb(var(--color-text) / 0.7);
+	}
+	.bk-step.is-upcoming .bk-sub {
+		color: rgb(var(--color-text) / 0.35);
 	}
 	.bk-content {
-		grid-column: 1 / -1;
-		grid-row: 2;
-		margin-top: 36px;
+		flex: 1;
+		min-height: 0;
+		margin-top: 22px;
 	}
-	.bk-title {
-		font-size: 22px;
-		font-weight: 600;
-		line-height: 1.2;
-		color: rgb(var(--color-text));
-	}
-	.bk-step.is-upcoming .bk-title {
-		color: rgb(var(--color-text) / 0.6);
+	/* Too narrow for three subtitles side by side — keep the current one only. */
+	@media (max-width: 640px) {
+		.bk-title,
+		.bk-step.is-active .bk-title {
+			font-size: 13.5px;
+		}
+		.bk-step:not(.is-active) .bk-sub {
+			display: none;
+		}
 	}
 </style>
