@@ -5,11 +5,14 @@
 	let {
 		idPrefix,
 		emails = $bindable(),
-		limit = null
+		limit = null,
+		legend = 'Additional guests'
 	}: {
 		idPrefix: string;
 		emails: string[];
 		limit?: number | null;
+		// Pass null where a surrounding section heading already names the group.
+		legend?: string | null;
 	} = $props();
 
 	const canAdd = $derived(limit === null || emails.length < limit);
@@ -24,7 +27,9 @@
 </script>
 
 <fieldset class="grid gap-4">
-	<legend class="text-sm font-medium">Additional guests</legend>
+	{#if legend}
+		<legend class="text-sm font-medium">{legend}</legend>
+	{/if}
 	{#each emails as _, index (`${idPrefix}-${index}`)}
 		<div class="grid gap-2 sm:grid-cols-[1fr_auto] sm:items-end">
 			<Input id={`${idPrefix}-${index}`} label={`Guest ${index + 1} email`} type="email" bind:value={emails[index]} required autocomplete="off" />

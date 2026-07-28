@@ -6,6 +6,9 @@
 	import clockIcon from '@iconify-icons/tabler/clock';
 	import calendarIcon from '@iconify-icons/tabler/calendar';
 	import calendarOffIcon from '@iconify-icons/tabler/calendar-off';
+	import calendarSearchIcon from '@iconify-icons/tabler/calendar-search';
+	import usersIcon from '@iconify-icons/tabler/users';
+	import checksIcon from '@iconify-icons/tabler/checks';
 	import lockIcon from '@iconify-icons/material-symbols/lock';
 	import worldIcon from '@iconify-icons/tabler/world';
 	import { callApi } from '$lib/api';
@@ -53,9 +56,9 @@
 	let availabilityClock: number | undefined;
 
 	const bookingSteps = [
-		{ title: 'Date and Time', subtitle: 'Pick a day and a time' },
-		{ title: 'Contact Information', subtitle: 'Your name, email, and guests' },
-		{ title: 'Confirmation', subtitle: "Review and you're booked" }
+		{ title: 'Date and Time', subtitle: 'Find a time that works', icon: calendarSearchIcon },
+		{ title: 'Contact Information', subtitle: 'Your name, email, and guests', icon: usersIcon },
+		{ title: 'Confirmation', subtitle: "Review and you're booked", icon: checksIcon }
 	];
 	const timezone = $derived(timezones.includes(timezoneInput) ? timezoneInput : localTimezone);
 	const minimumMonth = $derived(timezoneDateKey(now, timezone).slice(0, 7));
@@ -269,14 +272,20 @@
 				</div>
 			</aside>
 
-			<section class="flex min-h-0 flex-col p-6 lg:p-10" aria-label="Book a meeting">
+			<section class="flex min-h-0 flex-col p-6 pt-4 lg:p-10 lg:pt-6" aria-label="Book a meeting">
 				<div class="bk-stepper">
-					<div class="bk-track" aria-hidden="true">
-						<div class="bk-fill" style="--bk-progress: {currentStep / (bookingSteps.length - 1)};"></div>
-						<div class="bk-marks">
-							{#each bookingSteps as step, i (step.title)}
-								<span class="bk-dot {stepState(i)}"></span>
-							{/each}
+					<div class="bk-rail" aria-hidden="true">
+						<div class="bk-track">
+							<div class="bk-fill" style="--bk-progress: {currentStep / (bookingSteps.length - 1)};"></div>
+							<div class="bk-marks">
+								{#each bookingSteps as step, i (step.title)}
+									<span class="bk-dot {stepState(i)}">
+										{#if i === currentStep}
+											<Icon icon={step.icon} width="20" height="20" />
+										{/if}
+									</span>
+								{/each}
+							</div>
 						</div>
 					</div>
 
@@ -373,20 +382,46 @@
 								</div>
 							</div>
 							{:else if currentStep === 1}
-								<form class="grid max-w-xl gap-6" onsubmit={confirmContactInformation}>
-								<Input id="attendee-name" label="Name" bind:value={attendeeName} required autocomplete="name" />
-								<Input id="attendee-email" label="Email" type="email" bind:value={attendeeEmail} required autocomplete="email" />
-								<GuestEmailFields idPrefix="booking-guest" bind:emails={guestEmails} limit={guestLimit} />
-								<Textarea
-									id="booking-notes"
-									label="Please share anything that will help prepare for our meeting."
-									bind:value={notes}
-									maxlength={2000}
-									/>
-									<div>
-										<Button type="submit">Confirm contact information</Button>
-								</div>
-							</form>
+								<form class="flex h-full flex-col" onsubmit={confirmContactInformation}>
+									<div class="grid max-w-xl gap-8 xl:max-w-4xl xl:grid-cols-2 xl:gap-x-10">
+										<section class="grid content-start gap-3">
+											<h3 class="text-lg font-medium">
+												<span class="block text-sm font-normal" style="color: rgb(var(--color-text) / 0.65);">Share with us</span>
+												Your personal details
+											</h3>
+											<div class="grid gap-5">
+												<Input id="attendee-name" label="Name" icon="user" bind:value={attendeeName} required autocomplete="name" />
+												<Input id="attendee-email" label="Email" type="email" bind:value={attendeeEmail} required autocomplete="email" />
+											</div>
+										</section>
+										{#if guestLimit === null || guestLimit > 0 || guestEmails.length > 0}
+											<section class="grid content-start gap-4">
+												<h3 class="text-lg font-medium">
+													<span class="block text-sm font-normal" style="color: rgb(var(--color-text) / 0.65);">Guests</span>
+													Anyone else joining the call?
+												</h3>
+												<GuestEmailFields idPrefix="booking-guest" bind:emails={guestEmails} limit={guestLimit} legend={null} />
+											</section>
+										{/if}
+										<section class="grid gap-3 xl:col-span-2">
+											<h3 class="text-lg font-medium">
+												<span class="block text-sm font-normal" style="color: rgb(var(--color-text) / 0.65);">Additional info</span>
+											</h3>
+											<Textarea
+												id="booking-notes"
+												label="Anything that will help prepare for our meeting"
+												bind:value={notes}
+												maxlength={2000}
+											/>
+										</section>
+									</div>
+									<div class="mt-auto flex justify-end pt-8">
+										<Button type="submit" class="booking-next gap-2">
+											Next
+											<Icon icon={arrowRightIcon} width="18" height="18" />
+										</Button>
+									</div>
+								</form>
 								{:else if booking}
 									<div class="max-w-lg rounded-2xl p-6" style={blockStyle}>
 										<p class="text-sm font-medium">{eventType.name}</p>
@@ -499,12 +534,20 @@
 		flex: 1;
 		min-height: 0;
 		flex-direction: column;
-		gap: 14px;
+		gap: 0;
+	}
+	/* The rail row is as tall as a marker, so the circles never overlap the labels. */
+	.bk-rail {
+		display: flex;
+		align-items: center;
+		height: 36px;
 	}
 	.bk-track {
 		position: relative;
+		flex: 1;
 		height: 6px;
-		margin: 0 7px;
+		/* Ends sit under the centres of the outer labels, a sixth in from each side. */
+		margin: 0 calc(100% / 6);
 		border-radius: 999px;
 		background: rgb(var(--color-text) / 0.12);
 	}
@@ -517,29 +560,46 @@
 		background: rgb(var(--color-primary));
 		transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 	}
+	/* Markers straddle the ends of the track, so they sit centred on it. */
 	.bk-marks {
 		position: absolute;
-		inset: 0;
+		inset: 0 -18px;
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
 	}
 	.bk-dot {
-		width: 14px;
-		height: 14px;
+		display: grid;
+		place-items: center;
+		width: 36px;
+		height: 36px;
 		border-radius: 999px;
 		background: rgb(var(--color-foreground));
-		box-shadow: inset 0 0 0 3px rgb(var(--color-text) / 0.18);
+		box-shadow: inset 0 0 0 4px rgb(var(--color-text) / 0.18);
+		color: rgb(var(--color-text) / 0.5);
 		transition:
+			background 0.3s,
 			box-shadow 0.3s,
-			transform 0.3s;
+			color 0.3s,
+			width 0.3s,
+			height 0.3s,
+			margin 0.3s;
 	}
 	.bk-dot.is-done {
-		box-shadow: inset 0 0 0 7px rgb(var(--color-primary));
+		background: rgb(var(--color-primary));
+		box-shadow: none;
+		color: rgb(var(--color-contrast-text));
 	}
 	.bk-dot.is-active {
-		transform: scale(1.5);
-		box-shadow: inset 0 0 0 3px rgb(var(--color-primary));
+		box-shadow: inset 0 0 0 2px rgb(var(--color-primary));
+		color: rgb(var(--color-primary));
+	}
+	/* Steps without an icon shrink to plain markers; the side margins keep the
+	   36px footprint, so every marker stays centred on its label and rail end. */
+	.bk-dot:not(.is-active) {
+		width: 18px;
+		height: 18px;
+		margin: 0 9px;
 	}
 	.bk-labels {
 		display: grid;
@@ -548,7 +608,6 @@
 		margin: 0;
 		padding: 0;
 	}
-	/* Outer labels align to their marker, the middle one centres. */
 	.bk-head {
 		display: flex;
 		flex-direction: column;
@@ -561,14 +620,6 @@
 		font: inherit;
 		color: rgb(var(--color-text) / 0.5);
 		text-align: center;
-	}
-	.bk-step:first-child .bk-head {
-		align-items: flex-start;
-		text-align: left;
-	}
-	.bk-step:last-child .bk-head {
-		align-items: flex-end;
-		text-align: right;
 	}
 	.bk-head:not(:disabled) {
 		cursor: pointer;
@@ -583,7 +634,7 @@
 		transition: font-size 0.3s;
 	}
 	.bk-step.is-done .bk-head {
-		color: rgb(var(--color-text) / 0.8);
+		color: rgb(var(--color-primary));
 	}
 	.bk-step.is-active .bk-head {
 		color: rgb(var(--color-primary));
@@ -606,7 +657,7 @@
 	.bk-content {
 		flex: 1;
 		min-height: 0;
-		margin-top: 22px;
+		margin-top: 52px;
 	}
 	/* Too narrow for three subtitles side by side — keep the current one only. */
 	@media (max-width: 640px) {
