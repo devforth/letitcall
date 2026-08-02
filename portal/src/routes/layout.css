@@ -37,8 +37,10 @@
 		box-shadow: var(--shadow-small);
 	}
 
-	.button-primary.booking-next {
-		min-height: 48px !important;
+	.button-primary.booking-next,
+	.button-primary.guest-add-button {
+		min-height: 44px !important;
+		border-radius: 9999px !important;
 	}
 
 	.button-primary:hover:not(:disabled) {

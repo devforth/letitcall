@@ -128,7 +128,7 @@
 					{#if booking.cancellationReason}<p class="mt-4 border border-black p-4">{booking.cancellationReason}</p>{/if}
 				</section>
 			{:else}
-				<form class="grid gap-6 border-b border-black p-6 sm:p-8" onsubmit={save}>
+				<form class="grid gap-6 border-b border-black p-6 sm:p-8" autocomplete="off" onsubmit={save}>
 					<div class="flex items-center gap-2"><Icon icon={usersIcon} width="22" height="22" /><h2 class="text-xl font-semibold">Event details</h2></div>
 					<Textarea id="event-notes" label="Description" bind:value={notes} maxlength={2000} />
 					<GuestEmailFields idPrefix="event-guest" bind:emails={guestEmails} limit={guestLimit} />

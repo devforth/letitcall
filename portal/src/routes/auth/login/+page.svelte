@@ -92,7 +92,7 @@
 
 	/* Dark mode overrides */
 	:global(html.dark input) {
-		border-color: rgb(var(--color-primary) / 0.3) !important;
+		border-color: rgb(var(--color-border)) !important;
 	}
 
 	:global(html.dark input:focus) {

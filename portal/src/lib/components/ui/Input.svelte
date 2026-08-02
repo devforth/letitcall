@@ -14,7 +14,9 @@
 		minlength,
 		error = '',
 		hint = '',
-		icon
+		icon,
+		inputmode,
+		noAutofill = false
 	}: {
 		id: string;
 		label: string;
@@ -29,9 +31,31 @@
 		error?: string;
 		hint?: string;
 		icon?: 'text' | 'email' | 'password' | 'search' | 'user';
+		inputmode?: HTMLInputAttributes['inputmode'];
+		/** Keep browsers and password managers from offering saved values here. */
+		noAutofill?: boolean;
 	} = $props();
 
 	const activeIcon = $derived(icon ?? type);
+	// Chrome ignores autocomplete="off" on a field it has classified itself, so the
+	// name is scrubbed of anything it can classify, an unknown token is sent (Chrome
+	// and Safari treat those as off), and the common password managers get their own
+	// opt-out attributes. Chrome also needs autocomplete="off" on the parent <form>.
+	const noAutofillAttrs = $derived(
+		noAutofill
+			? ({
+					name: `${id}-nf`,
+					autocomplete: 'off-nf',
+					autocorrect: 'off',
+					autocapitalize: 'none',
+					spellcheck: false,
+					'data-1p-ignore': '',
+					'data-lpignore': 'true',
+					'data-bwignore': '',
+					'data-form-type': 'other'
+				} as unknown as HTMLInputAttributes)
+			: {}
+	);
 
 	let revealed = $state(false);
 	let inputEl = $state<HTMLInputElement>();
@@ -54,6 +78,8 @@
 			{disabled}
 			{readonly}
 			{minlength}
+			{inputmode}
+			{...noAutofillAttrs}
 			aria-invalid={error ? 'true' : undefined}
 			aria-describedby={error ? `${id}-error` : undefined}
 			class="input"

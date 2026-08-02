@@ -29,7 +29,8 @@
 
 	const blockStyle =
 		'background: rgb(var(--color-foreground)); box-shadow: var(--shadow-small);';
-	const dividerStyle = 'border-color: rgb(var(--color-border));';
+	const boldArrowRightIcon = { ...arrowRightIcon, body: arrowRightIcon.body.replace('stroke-width="2"', 'stroke-width="3"') };
+	const boldChecksIcon = { ...checksIcon, body: checksIcon.body.replace('stroke-width="2"', 'stroke-width="3"') };
 	const asideStyle =
 		'background: rgb(var(--color-primary)); color: rgb(var(--color-contrast-text)); box-shadow: 0 0 0 1px rgb(var(--color-border)), var(--shadow-small);';
 
@@ -45,6 +46,8 @@
 	let attendeeName = $state('');
 	let attendeeEmail = $state('');
 	let guestEmails = $state<string[]>([]);
+	// A guest email typed but not yet confirmed; it blocks the step's Next button.
+	let guestPending = $state(false);
 	let notes = $state('');
 	let booking = $state<Booking | null>(null);
 	let manageURL = $state('');
@@ -82,6 +85,12 @@
 		const remaining = eventType.remainingInvitees[selectedTime] ?? eventType.inviteeLimit;
 		return Math.max(0, remaining - 1);
 	});
+	const showGuestFields = $derived(
+		guestLimit === null || guestLimit > 0 || guestEmails.length > 0
+	);
+	// Only a visible draft can block the step — the fields can disappear when a slot
+	// fills up mid-booking, and a stale pending flag would strand the invitee.
+	const guestDraftBlocks = $derived(showGuestFields && guestPending);
 	const selectedDateLabel = $derived(
 		selectedDate
 			? new Intl.DateTimeFormat(undefined, { dateStyle: 'full', timeZone: 'UTC' }).format(
@@ -89,7 +98,9 @@
 				)
 			: 'Select a date'
 	);
-	const selectedTimeLabel = $derived.by(() => {
+	// The review step shows the range and the date on separate lines, so they are
+	// derived apart and joined again for the places that want one string.
+	const selectedTimeRangeLabel = $derived.by(() => {
 		if (!selectedTime || !eventType) return '';
 		const start = new Date(selectedTime);
 		const end = new Date(start.getTime() + eventType.durationMinutes * 60_000);
@@ -98,15 +109,49 @@
 			hour: 'numeric',
 			minute: '2-digit'
 		});
-		const date = new Intl.DateTimeFormat(undefined, {
-			timeZone: timezone,
-			weekday: 'long',
-			month: 'long',
-			day: 'numeric',
-			year: 'numeric'
-		}).format(start);
-		return `${times.format(start)} – ${times.format(end)}, ${date}`;
+		return `${times.format(start)} – ${times.format(end)}`;
 	});
+	const selectedDateLongLabel = $derived(
+		selectedTime
+			? new Intl.DateTimeFormat(undefined, {
+					timeZone: timezone,
+					weekday: 'long',
+					month: 'long',
+					day: 'numeric',
+					year: 'numeric'
+				}).format(new Date(selectedTime))
+			: ''
+	);
+	const selectedTimeLabel = $derived(
+		selectedTimeRangeLabel ? `${selectedTimeRangeLabel}, ${selectedDateLongLabel}` : ''
+	);
+	// The review sentence reads better with the short date and just the start time;
+	// the full range and timezone follow on the meta line beneath it.
+	const selectedDateShortLabel = $derived(
+		selectedTime
+			? new Intl.DateTimeFormat(undefined, {
+					timeZone: timezone,
+					weekday: 'long',
+					month: 'short',
+					day: 'numeric'
+				}).format(new Date(selectedTime))
+			: ''
+	);
+	const selectedStartLabel = $derived(
+		selectedTime
+			? new Intl.DateTimeFormat(undefined, {
+					timeZone: timezone,
+					hour: 'numeric',
+					minute: '2-digit'
+				}).format(new Date(selectedTime))
+			: ''
+	);
+	const requiredHostNames = $derived(
+		eventType ? eventType.requiredHosts.map((host) => host.fullName || host.email).join(', ') : ''
+	);
+	const optionalHostNames = $derived(
+		eventType ? eventType.optionalHosts.map((host) => host.fullName || host.email).join(', ') : ''
+	);
 
 	onMount(async () => {
 		const local = getLocalTimezones();
@@ -192,6 +237,8 @@
 
 	function confirmContactInformation(event: SubmitEvent) {
 		event.preventDefault();
+		// Enter in another field submits even while Next is disabled, so re-check here.
+		if (guestDraftBlocks) return;
 		furthestStep = 2;
 		currentStep = 2;
 	}
@@ -377,35 +424,35 @@
 								<div class="mt-auto flex justify-end pt-8">
 									<Button class="booking-next gap-2" disabled={!selectedTime} onclick={confirmDateAndTime}>
 										Next
-										<Icon icon={arrowRightIcon} width="18" height="18" />
+										<Icon icon={boldArrowRightIcon} width="18" height="18" />
 									</Button>
 								</div>
 							</div>
 							{:else if currentStep === 1}
-								<form class="flex h-full flex-col" onsubmit={confirmContactInformation}>
-									<div class="grid max-w-xl gap-8 xl:max-w-4xl xl:grid-cols-2 xl:gap-x-10">
-										<section class="grid content-start gap-3">
+								<form class="flex h-full flex-col" autocomplete="off" onsubmit={confirmContactInformation}>
+									<div class="grid gap-8">
+										<section class="grid content-start gap-3 md:w-1/2">
 											<h3 class="text-lg font-medium">
-												<span class="block text-sm font-normal" style="color: rgb(var(--color-text) / 0.65);">Share with us</span>
-												Your personal details
+												Personal details
 											</h3>
 											<div class="grid gap-5">
 												<Input id="attendee-name" label="Name" icon="user" bind:value={attendeeName} required autocomplete="name" />
 												<Input id="attendee-email" label="Email" type="email" bind:value={attendeeEmail} required autocomplete="email" />
 											</div>
 										</section>
-										{#if guestLimit === null || guestLimit > 0 || guestEmails.length > 0}
-											<section class="grid content-start gap-4">
-												<h3 class="text-lg font-medium">
-													<span class="block text-sm font-normal" style="color: rgb(var(--color-text) / 0.65);">Guests</span>
-													Anyone else joining the call?
-												</h3>
-												<GuestEmailFields idPrefix="booking-guest" bind:emails={guestEmails} limit={guestLimit} legend={null} />
+										{#if showGuestFields}
+											<section class="grid content-start gap-3">
+												{#if guestEmails.length > 0}
+													<h3 class="text-lg font-medium">
+														Guests
+													</h3>
+												{/if}
+												<GuestEmailFields idPrefix="booking-guest" bind:emails={guestEmails} bind:pending={guestPending} limit={guestLimit} legend={null} addLabel="Add Guests" />
 											</section>
 										{/if}
-										<section class="grid gap-3 xl:col-span-2">
+										<section class="grid gap-3">
 											<h3 class="text-lg font-medium">
-												<span class="block text-sm font-normal" style="color: rgb(var(--color-text) / 0.65);">Additional info</span>
+												Additional info
 											</h3>
 											<Textarea
 												id="booking-notes"
@@ -416,9 +463,9 @@
 										</section>
 									</div>
 									<div class="mt-auto flex justify-end pt-8">
-										<Button type="submit" class="booking-next gap-2">
+										<Button type="submit" class="booking-next gap-2" disabled={guestDraftBlocks}>
 											Next
-											<Icon icon={arrowRightIcon} width="18" height="18" />
+											<Icon icon={boldArrowRightIcon} width="18" height="18" />
 										</Button>
 									</div>
 								</form>
@@ -432,39 +479,50 @@
 										<a class="mt-4 block text-sm font-medium underline hover:no-underline" href={page.url.pathname} data-sveltekit-reload>Make another booking</a>
 									</div>
 								{:else}
-									<div class="grid max-w-xl gap-6">
-										<div class="rounded-2xl border-2 p-5" style={dividerStyle}>
-											<h3 class="text-lg font-semibold">Review your booking</h3>
-											<div class="mt-5 grid gap-4 text-sm">
-												<div>
-													<p class="text-xs font-medium" style="color: rgb(var(--color-text) / 0.6);">Date and time</p>
-													<p class="mt-1 font-medium">{selectedTimeLabel}</p>
-												</div>
-												<div>
-													<p class="text-xs font-medium" style="color: rgb(var(--color-text) / 0.6);">Timezone</p>
-													<p class="mt-1 font-medium">{timezone}</p>
-												</div>
-												<div>
-													<p class="text-xs font-medium" style="color: rgb(var(--color-text) / 0.6);">Contact</p>
-													<p class="mt-1 font-medium">{attendeeName}</p>
-													<p>{attendeeEmail}</p>
-												</div>
-												{#if guestEmails.length > 0}
-													<div>
-														<p class="text-xs font-medium" style="color: rgb(var(--color-text) / 0.6);">Additional guests</p>
-														<p class="mt-1">{guestEmails.join(', ')}</p>
-													</div>
-												{/if}
-												<div>
-													<p class="text-xs font-medium" style="color: rgb(var(--color-text) / 0.6);">Notes</p>
-													<p class="mt-1 whitespace-pre-wrap">{notes || 'None'}</p>
-												</div>
+									<form class="flex h-full flex-col" onsubmit={createBooking}>
+										<div>
+											<p class="review-lede">
+												You're booking <strong>{eventType.name}</strong> with <strong>{requiredHostNames}</strong>
+												{#if optionalHostNames}and <strong>{optionalHostNames}</strong>{/if}
+												on <strong>{selectedDateShortLabel}</strong> at <strong>{selectedStartLabel}</strong>.
+											</p>
+											<p class="review-meta">{selectedTimeRangeLabel} · {eventType.durationMinutes} min · {timezone}</p>
+											<div class="review-block">
+												<p class="review-label">Personal details</p>
+												<ul class="review-chips">
+													<li class="review-chip">
+														<Avatar name={attendeeName} email={attendeeEmail} size={22} rounded="full" />
+														<span class="truncate">{attendeeName} · {attendeeEmail}</span>
+													</li>
+												</ul>
 											</div>
+											{#if guestEmails.length > 0}
+												<div class="review-block">
+													<p class="review-label">Guests · {guestEmails.length}</p>
+													<ul class="review-chips">
+														{#each guestEmails as email (email)}
+															<li class="review-chip">
+																<Avatar name={email} {email} size={22} rounded="full" />
+																<span class="truncate">{email}</span>
+															</li>
+														{/each}
+													</ul>
+												</div>
+											{/if}
+											{#if notes}
+												<div class="review-block">
+													<p class="review-label">Notes</p>
+													<blockquote class="review-quote">{notes}</blockquote>
+												</div>
+											{/if}
 										</div>
-										<form onsubmit={createBooking}>
-											<Button type="submit" disabled={saving}>{saving ? 'Scheduling…' : 'Confirm booking'}</Button>
-										</form>
-									</div>
+										<div class="mt-auto flex justify-end pt-8">
+											<Button type="submit" class="booking-next gap-2" disabled={saving}>
+												{saving ? 'Scheduling…' : 'Confirm booking'}
+												<Icon icon={boldChecksIcon} width="20" height="20" />
+											</Button>
+										</div>
+									</form>
 								{/if}
 					</div>
 				</div>
@@ -474,6 +532,72 @@
 {/if}
 
 <style>
+	/* Review step: the booking read back as a sentence, then the details that the
+	   sentence deliberately leaves out. */
+	.review-lede {
+		font-size: 1.125rem;
+		font-weight: 600;
+		line-height: 1.5;
+		text-wrap: pretty;
+	}
+
+	/* The whole sentence is bold, so the facts inside it carry the brand color. */
+	.review-lede strong {
+		font-weight: 700;
+		color: rgb(var(--color-primary));
+	}
+
+	/* Carries the slot's remaining detail, so it reads at the sentence's own weight
+	   of ink — one step down in size, not in contrast. */
+	.review-meta {
+		margin-top: 0.5rem;
+		font-size: 1rem;
+		color: rgb(var(--color-text));
+	}
+
+	.review-block {
+		margin-top: 1.5rem;
+	}
+
+	.review-label {
+		font-size: 0.75rem;
+		font-weight: 600;
+		color: rgb(var(--color-text) / 0.55);
+	}
+
+	/* One chip per guest, each carrying the initials avatar used elsewhere. */
+	.review-chips {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.5rem;
+		margin: 0.625rem 0 0;
+		padding: 0;
+		list-style: none;
+	}
+
+	.review-chip {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.4rem;
+		max-width: 100%;
+		border: 1px solid rgb(var(--color-border));
+		border-radius: 999px;
+		padding: 0.25rem 0.75rem 0.25rem 0.25rem;
+		font-size: 0.8125rem;
+		font-weight: 600;
+	}
+
+	/* Sits under its own label now, so it lines up with the guest chips above. */
+	.review-quote {
+		margin-top: 0.625rem;
+		border-left: 3px solid rgb(var(--color-primary) / 0.4);
+		padding: 0.125rem 0 0.125rem 0.875rem;
+		font-size: 0.9375rem;
+		font-weight: 400;
+		color: rgb(var(--color-text) / 0.8);
+		white-space: pre-wrap;
+	}
+
 	/* Time-slot cells: an arrow-shaped primary fill sweeps in from the left. */
 	.slot-cell {
 		position: relative;
