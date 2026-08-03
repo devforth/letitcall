@@ -39,4 +39,12 @@ func TestEmailRendererEscapesHTMLAndKeepsPlainText(t *testing.T) {
 	if !strings.Contains(message.HTML, "DevForth") {
 		t.Fatal("HTML email did not use the configured brand name")
 	}
+	for _, want := range []string{"Edit event", "Cancel event", "secret#event-details", "secret#cancel-event"} {
+		if !strings.Contains(message.HTML, want) || !strings.Contains(message.Text, want) {
+			t.Fatalf("booking email did not include %q action", want)
+		}
+	}
+	if strings.Contains(message.HTML, "Cancel or update event") || strings.Contains(message.Text, "Cancel or update event") {
+		t.Fatal("booking email retained the combined management action")
+	}
 }

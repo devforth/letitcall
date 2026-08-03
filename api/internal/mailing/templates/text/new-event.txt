@@ -21,7 +21,10 @@ Booking details:
 Please share anything that will help prepare for our meeting.
 {{.Notes}}
 {{end}}
-Cancel or update event:
-{{.ManageURL}}
+Edit event:
+{{.ManageURL}}#event-details
+
+Cancel event:
+{{.ManageURL}}#cancel-event
 
 Sent by {{.BrandName}}

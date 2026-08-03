@@ -13,6 +13,7 @@
 		readonly = false,
 		minlength,
 		error = '',
+		invalid = false,
 		hint = '',
 		icon,
 		inputmode,
@@ -29,6 +30,7 @@
 		readonly?: boolean;
 		minlength?: number;
 		error?: string;
+		invalid?: boolean;
 		hint?: string;
 		icon?: 'text' | 'email' | 'password' | 'search' | 'user';
 		inputmode?: HTMLInputAttributes['inputmode'];
@@ -67,7 +69,7 @@
 </script>
 
 <div class="field">
-	<div class="input-group" class:filled={!!value} class:has-error={!!error}>
+	<div class="input-group" class:filled={!!value} class:has-error={invalid || !!error}>
 		<input
 			{id}
 			bind:this={inputEl}
@@ -80,7 +82,7 @@
 			{minlength}
 			{inputmode}
 			{...noAutofillAttrs}
-			aria-invalid={error ? 'true' : undefined}
+			aria-invalid={invalid || error ? 'true' : undefined}
 			aria-describedby={error ? `${id}-error` : undefined}
 			class="input"
 			class:has-trailing={type === 'password'}

@@ -25,7 +25,8 @@
         <mj-text css-class="label">Please share anything that will help prepare for our meeting.</mj-text>
         <mj-text css-class="value">{{.Notes}}</mj-text>
         <mj-raw>{{end}}</mj-raw>
-        <mj-button href="{{.ManageURL}}" align="left">Cancel or update event</mj-button>
+        <mj-button href="{{.ManageURL}}#event-details" align="left">Edit event</mj-button>
+        <mj-button href="{{.ManageURL}}#cancel-event" align="left" background-color="#ffffff" color="#111111" border="1px solid #111111" padding="12px 0 0">Cancel event</mj-button>
       </mj-column>
     </mj-section>
     <mj-include path="./common/footer.mjml" />

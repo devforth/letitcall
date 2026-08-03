@@ -1185,7 +1185,7 @@ func mockBookingDelivery(t *testing.T) (*int, *int, *int) {
 		case request.Method == http.MethodPost && request.URL.Path == "/calendar/v3/calendars/primary/events":
 			calendarRequests++
 			body, _ := io.ReadAll(request.Body)
-			if request.URL.Query().Get("sendUpdates") != "all" || !strings.Contains(string(body), "Cancel or update event") || !strings.Contains(string(body), "/event/") || !strings.Contains(string(body), `"email":"guest@example.com"`) || !strings.Contains(string(body), `"email":"friend@example.com"`) {
+			if request.URL.Query().Get("sendUpdates") != "all" || !strings.Contains(string(body), "Edit event") || !strings.Contains(string(body), "Cancel event") || !strings.Contains(string(body), "#event-details") || !strings.Contains(string(body), "#cancel-event") || !strings.Contains(string(body), `"email":"guest@example.com"`) || !strings.Contains(string(body), `"email":"friend@example.com"`) {
 				t.Errorf("Google event did not include attendee invitations and management link: url=%s body=%s", request.URL, body)
 			}
 		case request.Method == http.MethodPatch && request.URL.Path == "/calendar/v3/calendars/primary/events/accepted":

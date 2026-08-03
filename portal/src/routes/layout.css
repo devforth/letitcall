@@ -43,6 +43,10 @@
 		border-radius: 9999px !important;
 	}
 
+	.button-primary.booking-confirm {
+		padding-right: 1.25rem !important;
+	}
+
 	.button-primary:hover:not(:disabled) {
 		background: color-mix(in srgb, rgb(var(--color-primary)), white 15%) !important;
 		border-color: color-mix(in srgb, rgb(var(--color-primary)), white 15%) !important;

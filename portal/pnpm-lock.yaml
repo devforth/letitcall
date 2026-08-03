@@ -8,12 +8,21 @@ importers:
 
   .:
     dependencies:
+      '@iconify-icons/humbleicons':
+        specifier: ^1.2.4
+        version: 1.2.4
+      '@iconify-icons/la':
+        specifier: ^1.2.3
+        version: 1.2.3
       '@iconify-icons/logos':
         specifier: ^1.2.36
         version: 1.2.36
       '@iconify-icons/material-symbols':
         specifier: ^1.2.58
         version: 1.2.58
+      '@iconify-icons/pajamas':
+        specifier: ^1.2.32
+        version: 1.2.32
       '@iconify-icons/tabler':
         specifier: ^1.2.95
         version: 1.2.95
@@ -96,11 +105,20 @@ packages:
   '@emnapi/wasi-threads@1.2.2':
     resolution: {integrity: sha512-c95qOXkHdydNKhscBTebqEC1CVAZpyqOfVfBzQ1qgzyl3gfeldUjIggDbIZgDKsHLgnsM+igH7TJ/eAasaVuMA==}
 
+  '@iconify-icons/humbleicons@1.2.4':
+    resolution: {integrity: sha512-J0tKxbuwEy9sQZrNpzeVsgDpeQVWPWY4nO1826q7sq4q83LA+3H6jAHvxwGRjQmovJnuomq/NlG5eJLpy9CJCA==}
+
+  '@iconify-icons/la@1.2.3':
+    resolution: {integrity: sha512-jhQ3dFlxjGFOqNyFJyxbbKvH0VO4RnVIiEZzjpl5ylFlI8FBzdtHUxN+GdYWc8Akdnwx3atO/cSySa9YRM2GcA==}
+
   '@iconify-icons/logos@1.2.36':
     resolution: {integrity: sha512-VzF299ubR4SKCZzLJoAawxeSjszJV1Q6y+4chCIPQuAafqfjtDjZxagZxL3ILKCsRLNN/z3zmCOOAL83tC8kLw==}
 
   '@iconify-icons/material-symbols@1.2.58':
     resolution: {integrity: sha512-v0ZfPXlmDcDPCejxhg5h2eHCEHClrpn+i44Ev766vkzPIEFRdgT+YK942KzyqBpH0RhKJfel4OZdL1DY1oa5Qg==}
+
+  '@iconify-icons/pajamas@1.2.32':
+    resolution: {integrity: sha512-dKUXcT5n3DAmnCjdIoEOtZqZaf0aZvy5LhibEwWgJh2+c295npLE6JZrykNhwnQSeIW5DJtYn6bXRruBo/qpbQ==}
 
   '@iconify-icons/tabler@1.2.95':
     resolution: {integrity: sha512-d7bcyNs/AHWcdTwN+2/yohPeU0Kg5jvzt9JiLFnTnx9HYc54q2cU08rSEF0rIVHB5PEP9M8dTN/ZFxquAFCamw==}
@@ -772,11 +790,23 @@ snapshots:
       tslib: 2.8.1
     optional: true
 
+  '@iconify-icons/humbleicons@1.2.4':
+    dependencies:
+      '@iconify/types': 2.0.0
+
+  '@iconify-icons/la@1.2.3':
+    dependencies:
+      '@iconify/types': 2.0.0
+
   '@iconify-icons/logos@1.2.36':
     dependencies:
       '@iconify/types': 2.0.0
 
   '@iconify-icons/material-symbols@1.2.58':
+    dependencies:
+      '@iconify/types': 2.0.0
+
+  '@iconify-icons/pajamas@1.2.32':
     dependencies:
       '@iconify/types': 2.0.0
 

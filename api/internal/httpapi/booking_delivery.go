@@ -150,7 +150,7 @@ func bookingCalendarDescription(booking model.Booking, manageURL string) string 
 	if booking.Notes != "" {
 		lines = append(lines, "", "Booking details:", booking.Notes)
 	}
-	lines = append(lines, "", "Cancel or update event", manageURL)
+	lines = append(lines, "", "Edit event", manageURL+"#event-details", "", "Cancel event", manageURL+"#cancel-event")
 	if booking.CanceledAt != nil && booking.CanceledBy != nil {
 		lines = append(lines, "", "Canceled by "+booking.CanceledBy.Name+" <"+booking.CanceledBy.Email+"> at "+booking.CanceledAt.UTC().Format("2006-01-02 15:04:05 UTC"))
 		if booking.CancellationReason != "" {
