@@ -19,8 +19,12 @@
 	} = $props();
 
 	const productName = 'Let It Call';
+	let highlightedHost = $state<string | null>(null);
 
-	const hosts = $derived([...eventType.requiredHosts, ...eventType.optionalHosts]);
+	const hosts = $derived([
+		...eventType.requiredHosts.map((host) => ({ ...host, avatarSize: 76 })),
+		...eventType.optionalHosts.map((host) => ({ ...host, avatarSize: 52 }))
+	]);
 	const asideStyle =
 		'background: rgb(var(--color-primary)); color: rgb(var(--color-contrast-text)); box-shadow: 0 0 0 1px rgb(var(--color-border)), var(--shadow-small);';
 
@@ -39,25 +43,49 @@
 		});
 		return `${formatter.format(new Date(booking!.time))} – ${formatter.format(new Date(booking!.endTime))}`;
 	}
+
+	function highlightHost(email: string | null) {
+		highlightedHost = email;
+	}
 </script>
+
+{#snippet hostNames(hostList: PublicEventType['requiredHosts'])}
+	{#each hostList as host, index (host.email)}
+		{#if index > 0}, {/if}<span
+			class="host-name"
+			class:highlighted={highlightedHost === host.email}
+			role="presentation"
+			onmouseenter={() => highlightHost(host.email)}
+			onmouseleave={() => highlightHost(null)}
+		>{host.fullName || host.email}</span>
+	{/each}
+{/snippet}
 
 <aside class="relative flex flex-col rounded-b-2xl p-6 lg:rounded-bl-none lg:rounded-tr-2xl lg:rounded-br-2xl lg:p-8" style={asideStyle}>
 	<h1 class="text-3xl font-semibold tracking-tight">{eventType.name}</h1>
-	<div class="mt-8 flex -space-x-4">
+	<div class="mt-8 flex items-end -space-x-4">
 		{#each hosts as host (host.email)}
-			<Avatar
-				name={host.fullName}
-				email={host.email}
-				avatarPath={host.avatarPath}
-				size={76}
-				rounded="full"
-				class="bg-none! bg-[rgb(var(--color-foreground))]! shadow-[0_0_0_4px_rgb(var(--color-primary))]"
-			/>
+			<span
+				class="host-avatar"
+				class:highlighted={highlightedHost === host.email}
+				role="presentation"
+				onmouseenter={() => highlightHost(host.email)}
+				onmouseleave={() => highlightHost(null)}
+			>
+				<Avatar
+					name={host.fullName}
+					email={host.email}
+					avatarPath={host.avatarPath}
+					size={host.avatarSize}
+					rounded="full"
+					class="bg-none! bg-[rgb(var(--color-foreground))]! shadow-[0_0_0_4px_rgb(var(--color-primary))]"
+				/>
+			</span>
 		{/each}
 	</div>
-	<p class="mt-6 text-sm font-medium">{eventType.requiredHosts.map((host) => host.fullName || host.email).join(', ')}</p>
+	<p class="mt-6 text-sm font-medium">{@render hostNames(eventType.requiredHosts)}</p>
 	{#if eventType.optionalHosts.length > 0}
-		<p class="mt-1 text-xs">Optional: {eventType.optionalHosts.map((host) => host.fullName || host.email).join(', ')}</p>
+		<p class="mt-1 text-xs">Optional: {@render hostNames(eventType.optionalHosts)}</p>
 	{/if}
 	{#if !booking}
 		<p class="mt-7 flex items-center gap-2 text-sm font-medium">
@@ -115,6 +143,28 @@
 </aside>
 
 <style>
+	.host-avatar {
+		display: inline-flex;
+		border-radius: 9999px;
+		transition: outline-offset 0.15s ease, transform 0.15s ease;
+	}
+
+	.host-avatar.highlighted {
+		outline: 2px solid currentColor;
+		outline-offset: 2px;
+		transform: translateY(-2px);
+	}
+
+	.host-name {
+		border-radius: 0.2rem;
+		transition: background 0.15s ease, color 0.15s ease;
+	}
+
+	.host-name.highlighted {
+		background: rgb(var(--color-contrast-text));
+		color: rgb(var(--color-primary));
+	}
+
 	.booking-details {
 		display: grid;
 		gap: 1.25rem;

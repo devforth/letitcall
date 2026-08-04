@@ -215,7 +215,7 @@
 						<p class="event-manage-eyebrow">Manage booking</p>
 						<div class="event-manage-title">
 							{@render backButton()}
-							<h2>Edit your event</h2>
+							<h2>Edit event</h2>
 						</div>
 					</header>
 					{#if authenticated}<p class="event-page-copy">You are signed in. Changes are recorded on your behalf.</p>{/if}
@@ -272,9 +272,10 @@
 
 	<ConfirmationDialog
 		open={showCancelDialog}
-		title="Cancel event?"
+		title="Are you sure you want to cancel?"
 		description="This action cannot be undone."
 		confirmLabel="Cancel event"
+		cancelLabel="Keep event"
 		confirmingLabel="Canceling…"
 		confirming={canceling}
 		onconfirm={cancelBooking}

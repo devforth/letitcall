@@ -1,7 +1,7 @@
 <script lang="ts">
 	import Icon from '@iconify/svelte';
-	import pencilIcon from '@iconify-icons/tabler/pencil';
-	import xIcon from '@iconify-icons/tabler/x';
+	import pencilIcon from '@iconify-icons/mdi/edit';
+	import xIcon from '@iconify-icons/mingcute/close-fill';
 	import BookingDetailsCard from '$lib/components/BookingDetailsCard.svelte';
 	import BookingStatusHeading from '$lib/components/BookingStatusHeading.svelte';
 	import BookingSubtitle from '$lib/components/BookingSubtitle.svelte';
@@ -56,8 +56,8 @@
 	/>
 	<div class="booking-confirmed-actions">
 		<div class="booking-event-actions">
-			<a class="booking-event-action booking-edit-action" href={editHref} onclick={onedit}><Icon icon={pencilIcon} width="18" height="18" />Edit event</a>
-			<a class="booking-event-action booking-cancel-action" href={cancelHref} onclick={oncancel}><Icon icon={xIcon} width="18" height="18" />Cancel event</a>
+			<a class="booking-event-action booking-edit-action" href={editHref} onclick={onedit}><Icon icon={pencilIcon} width="22" height="22" />Edit event</a>
+			<a class="booking-event-action booking-cancel-action" href={cancelHref} onclick={oncancel}><Icon icon={xIcon} width="22" height="22" />Cancel event</a>
 		</div>
 		{#if reloadNewBooking}
 			<a class="booking-new-link" href={newBookingHref} data-sveltekit-reload>Make another booking</a>

@@ -6,6 +6,7 @@
 		title,
 		description,
 		confirmLabel,
+		cancelLabel = 'Cancel',
 		confirmingLabel = 'Confirming…',
 		confirming = false,
 		onconfirm,
@@ -15,6 +16,7 @@
 		title: string;
 		description: string;
 		confirmLabel: string;
+		cancelLabel?: string;
 		confirmingLabel?: string;
 		confirming?: boolean;
 		onconfirm: () => void;
@@ -55,7 +57,7 @@
 			>
 				{confirming ? confirmingLabel : confirmLabel}
 			</button>
-			<button type="button" class="btn-cancel" disabled={confirming} onclick={cancel}>Cancel</button>
+			<button type="button" class="btn-cancel" disabled={confirming} onclick={cancel}>{cancelLabel}</button>
 		</div>
 	</div>
 </Dialog>
