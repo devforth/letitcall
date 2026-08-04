@@ -100,7 +100,7 @@
 			<span class="py-2">{weekday}</span>
 		{/each}
 	</div>
-	<div class="overflow-hidden rounded-xl bg-[rgb(var(--color-background))] p-2 dark:bg-[color-mix(in_srgb,rgb(var(--color-background)),white_16%)]">
+	<div class="calendar-dates overflow-hidden">
 		{#key month}
 			<div
 				class:calendar-month-next={monthDirection > 0}
@@ -134,8 +134,10 @@
 </div>
 
 <style>
-	.calendar-shell {
-		box-shadow: 0 0 0 1px rgb(var(--color-border));
+	.calendar-dates {
+		border-radius: 0.75rem;
+		padding: 1rem;
+		background: color-mix(in srgb, rgb(var(--color-text)) 5%, rgb(var(--color-foreground)));
 	}
 
 	/* Hover pop for bookable days. :global because the class is applied via a

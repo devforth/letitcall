@@ -6,32 +6,25 @@
 	import stepCheckIcon from '@iconify-icons/humbleicons/check';
 	import stepUserIcon from '@iconify-icons/la/user';
 	import arrowRightIcon from '@iconify-icons/tabler/arrow-right';
-	import clockIcon from '@iconify-icons/tabler/clock';
-	import notesIcon from '@iconify-icons/tabler/align-left';
-	import pencilIcon from '@iconify-icons/tabler/pencil';
-	import userIcon from '@iconify-icons/tabler/user';
-	import xIcon from '@iconify-icons/tabler/x';
 	import calendarOffIcon from '@iconify-icons/tabler/calendar-off';
-	import usersIcon from '@iconify-icons/tabler/users';
 	import checkIcon from '@iconify-icons/tabler/check';
 	import lockIcon from '@iconify-icons/material-symbols/lock';
 	import worldIcon from '@iconify-icons/tabler/world';
-	import { callApi } from '$lib/api';
+	import { goto } from '$app/navigation';
+	import { appPath, callApi } from '$lib/api';
 	import { firstAvailableDate, generateBookingSlots, timezoneDateKey } from '$lib/booking';
 	import type { Booking, PublicEventType } from '$lib/types';
 	import { getLocalTimezones } from '$lib/timezones';
 	import Button from '$lib/components/ui/Button.svelte';
 	import GuestEmailFields from '$lib/components/GuestEmailFields.svelte';
 	import PageTitle from '$lib/components/PageTitle.svelte';
-	import { branding } from '$lib/stores/branding.svelte';
 	import Input from '$lib/components/ui/Input.svelte';
 	import MonthCalendar from '$lib/components/ui/MonthCalendar.svelte';
 	import SearchableSelect from '$lib/components/ui/SearchableSelect.svelte';
-	import BrandLogo from '$lib/components/BrandLogo.svelte';
 	import Textarea from '$lib/components/ui/Textarea.svelte';
-	import Avatar from '$lib/components/ui/Avatar.svelte';
-	import ThemeToggle from '$lib/components/ThemeToggle.svelte';
 	import { isValidEmail } from '$lib/validation';
+	import BookingDetailsCard from '$lib/components/BookingDetailsCard.svelte';
+	import EventTypeAside from '$lib/components/EventTypeAside.svelte';
 
 	const blockStyle =
 		'background: rgb(var(--color-foreground)); box-shadow: var(--shadow-small);';
@@ -45,8 +38,6 @@
 	};
 	const boldArrowRightIcon = { ...arrowRightIcon, body: arrowRightIcon.body.replace('stroke-width="2"', 'stroke-width="3"') };
 	const boldCheckIcon = { ...checkIcon, body: checkIcon.body.replace('stroke-width="2"', 'stroke-width="3"') };
-	const asideStyle =
-		'background: rgb(var(--color-primary)); color: rgb(var(--color-contrast-text)); box-shadow: 0 0 0 1px rgb(var(--color-border)), var(--shadow-small);';
 
 	let eventType = $state<PublicEventType | null>(null);
 	let loading = $state(true);
@@ -62,7 +53,6 @@
 	let guestEmails = $state<string[]>([]);
 	let notes = $state('');
 	let booking = $state<Booking | null>(null);
-	let manageURL = $state('');
 	let saving = $state(false);
 	let currentStep = $state(0);
 	let furthestStep = $state(0);
@@ -74,7 +64,7 @@
 
 	const bookingSteps = [
 		{ title: 'Date and Time', subtitle: 'Find a time that works', icon: stepCalendarIcon },
-		{ title: 'Contact Information', subtitle: 'Your name, email, and guests', icon: boldStepUserIcon },
+		{ title: 'Contact Information', subtitle: 'Your name, email and guests', icon: boldStepUserIcon },
 		{ title: 'Confirmation', subtitle: "Review and you're booked", icon: boldStepCheckIcon }
 	];
 	const timezone = $derived(timezones.includes(timezoneInput) ? timezoneInput : localTimezone);
@@ -92,8 +82,6 @@
 			selectedMonth === month ? slotsByDate : generateBookingSlots(eventType, timezone, selectedMonth, now);
 		return map[selectedDate] ?? [];
 	});
-	const hosts = $derived(eventType ? [...eventType.requiredHosts, ...eventType.optionalHosts] : []);
-
 	const guestLimit = $derived.by(() => {
 		if (!eventType || eventType.inviteeLimit === null || !selectedTime) return null;
 		const remaining = eventType.remainingInvitees[selectedTime] ?? eventType.inviteeLimit;
@@ -230,10 +218,13 @@
 				})
 			});
 			booking = response.booking;
-			manageURL = response.manageURL;
+			// The API builds the manage URL from its own configured base URL, so navigate by
+			// the secret alone to stay on the origin the visitor is already using.
+			const secret = response.manageURL.split('/').pop()!;
+			// The spinner stays up until the event page takes over.
+			await goto(appPath(`/event/${encodeURIComponent(secret)}`));
 		} catch {
 			// callApi reports the error globally.
-		} finally {
 			saving = false;
 		}
 	}
@@ -322,48 +313,6 @@
 	</div>
 {/snippet}
 
-{#snippet bookingSummary(editable: boolean)}
-	<div class="review-editorial" class:review-editorial-static={!editable}>
-		<section class="review-editorial-schedule">
-			<p class="review-editorial-date">{selectedReviewDateLabel}</p>
-			<p class="review-editorial-time">{selectedTimeRangeLabel}</p>
-			<p class="review-editorial-muted">{timezone}</p>
-			{#if editable}
-				<button type="button" class="review-editorial-change" aria-label="Change schedule" title="Change schedule" onclick={() => goToStep(0)}>
-					<Icon icon={pencilIcon} width="22" height="22" />
-				</button>
-			{/if}
-		</section>
-		<div class="review-editorial-details">
-			<section>
-				<p class="review-editorial-label"><span class="review-editorial-label-icon" aria-hidden="true"><Icon icon={userIcon} width="16" height="16" /></span>Attendee (you)</p>
-				<p class="review-editorial-value">{attendeeName} · {attendeeEmail}</p>
-			</section>
-			{#if guestEmails.length > 0}
-				<section>
-					<p class="review-editorial-label"><span class="review-editorial-label-icon" aria-hidden="true"><Icon icon={usersIcon} width="16" height="16" /></span>Guests · {guestEmails.length}</p>
-					<ul class="review-editorial-list">
-						{#each guestEmails as email (email)}
-							<li>{email}</li>
-						{/each}
-					</ul>
-				</section>
-			{/if}
-			{#if notes}
-				<section>
-					<p class="review-editorial-label"><span class="review-editorial-label-icon" aria-hidden="true"><Icon icon={notesIcon} width="16" height="16" /></span>Notes</p>
-					<p class="review-editorial-notes">{notes}</p>
-				</section>
-			{/if}
-			{#if editable}
-				<button type="button" class="review-editorial-change" aria-label="Change contact information" title="Change contact information" onclick={() => goToStep(1)}>
-					<Icon icon={pencilIcon} width="22" height="22" />
-				</button>
-			{/if}
-		</div>
-	</div>
-{/snippet}
-
 {#if loading}
 	<main class="grid min-h-screen place-items-center p-6"><p class="text-sm">Loading booking page…</p></main>
 {:else if notFound || !eventType}
@@ -376,71 +325,44 @@
 {:else}
 	<main class="min-h-screen p-4 sm:p-8 lg:p-10">
 		<div class="mx-auto grid min-h-[calc(100vh-5rem)] max-w-7xl overflow-hidden rounded-2xl lg:h-[calc(100vh-5rem)] lg:min-h-0 lg:grid-cols-[21rem_1fr]" style={blockStyle}>
-			<aside class="relative flex flex-col rounded-b-2xl p-6 lg:rounded-bl-none lg:rounded-tr-2xl lg:rounded-br-2xl lg:p-8" style={asideStyle}>
-				<h1 class="text-3xl font-semibold tracking-tight">{eventType.name}</h1>
-				<div class="mt-8 flex -space-x-4">
-					{#each hosts as host (host.email)}
-						<Avatar
-							name={host.fullName}
-							email={host.email}
-							avatarPath={host.avatarPath}
-							size={76}
-							rounded="full"
-							class="bg-none! bg-[rgb(var(--color-foreground))]! shadow-[0_0_0_4px_rgb(var(--color-primary))]"
-						/>
-					{/each}
-				</div>
-				<p class="mt-6 text-sm font-medium">{eventType.requiredHosts.map((host) => host.fullName || host.email).join(', ')}</p>
-				{#if eventType.optionalHosts.length > 0}
-					<p class="mt-1 text-xs">Optional: {eventType.optionalHosts.map((host) => host.fullName || host.email).join(', ')}</p>
-				{/if}
-				<p class="mt-7 flex items-center gap-2 text-sm font-medium">
-					<Icon icon={clockIcon} width="22" height="22" />
-					{eventType.durationMinutes} min
-				</p>
-				<div class="mt-auto flex items-center gap-3 pt-12 text-sm font-semibold">
-					<BrandLogo class="size-10 rounded-xl object-cover" />
-					<span>{branding.name}</span>
-				</div>
-				<div class="theme-toggle-contrast absolute bottom-6 right-6 lg:bottom-8 lg:right-8">
-					<ThemeToggle />
-				</div>
-			</aside>
+			<EventTypeAside {eventType} />
 
 			<section class="flex min-h-0 flex-col overflow-hidden p-6 pt-4 lg:p-10 lg:pt-6" aria-label="Book a meeting">
 				<div class="bk-stepper">
-					<div class="bk-rail" aria-hidden="true">
-						<div class="bk-track">
-							<div class="bk-fill" style="--bk-progress: {furthestStep / (bookingSteps.length - 1)};"></div>
-							<div class="bk-marks">
-								{#each bookingSteps as step, i (step.title)}
-									<span class="bk-dot {stepState(i)}">
-										{#if i === currentStep}
-											<Icon icon={step.icon} width="20" height="20" />
-										{/if}
-									</span>
-								{/each}
+					{#if !booking}
+						<div class="bk-rail" aria-hidden="true">
+							<div class="bk-track">
+								<div class="bk-fill" style="--bk-progress: {furthestStep / (bookingSteps.length - 1)};"></div>
+								<div class="bk-marks">
+									{#each bookingSteps as step, i (step.title)}
+										<span class="bk-dot {stepState(i)}">
+											{#if i === currentStep}
+												<Icon icon={step.icon} width="20" height="20" />
+											{/if}
+										</span>
+									{/each}
+								</div>
 							</div>
 						</div>
-					</div>
 
-					<ol class="bk-labels">
-						{#each bookingSteps as step, i (step.title)}
-							<li class="bk-step {stepState(i)}" aria-current={i === currentStep ? 'step' : undefined}>
-								<button
-									type="button"
-									class="bk-head"
-									onclick={() => goToStep(i)}
-									disabled={!!booking || i > furthestStep}
-								>
-									<span class="bk-title">{step.title}</span>
-									<span class="bk-sub">{step.subtitle}</span>
-								</button>
-							</li>
-						{/each}
-					</ol>
+						<ol class="bk-labels">
+							{#each bookingSteps as step, i (step.title)}
+								<li class="bk-step {stepState(i)}" aria-current={i === currentStep ? 'step' : undefined}>
+									<button
+										type="button"
+										class="bk-head"
+										onclick={() => goToStep(i)}
+										disabled={i > furthestStep}
+									>
+										<span class="bk-title">{step.title}</span>
+										<span class="bk-sub">{step.subtitle}</span>
+									</button>
+								</li>
+							{/each}
+						</ol>
+					{/if}
 
-					<div class="bk-content">
+					<div class="bk-content" class:bk-content-without-stepper={!!booking}>
 						{#if currentStep === 0}
 							<div class="flex h-full flex-col">
 								<div class="grid gap-10 xl:grid-cols-[minmax(20rem,1fr)_minmax(15rem,0.7fr)]">
@@ -571,27 +493,24 @@
 										<p class="booking-confirming-title">Confirming your booking…</p>
 										<p class="booking-confirming-copy">Please keep this page open.</p>
 									</div>
-								{:else if booking}
-									<section class="booking-confirmed" aria-labelledby="booking-confirmed-title">
-										<p class="booking-confirmed-eyebrow">Booking confirmed</p>
-										<h2 id="booking-confirmed-title" class="booking-confirmed-title">You’re booked for {eventType.name}</h2>
-										<p class="booking-confirmed-copy">A confirmation has been sent to {attendeeEmail}.</p>
-										{@render bookingSummary(false)}
-										<div class="booking-confirmed-actions">
-											<div class="booking-event-actions">
-												<a class="booking-event-action booking-edit-action" href={`${manageURL}#event-details`}><Icon icon={pencilIcon} width="18" height="18" />Edit event</a>
-												<a class="booking-event-action booking-cancel-action" href={`${manageURL}#cancel-event`}><Icon icon={xIcon} width="18" height="18" />Cancel event</a>
-											</div>
-											<a class="booking-new-link" href={page.url.pathname} data-sveltekit-reload>Make another booking</a>
-										</div>
-									</section>
 								{:else}
 									<form class="flex h-full min-h-0 flex-col" onsubmit={createBooking}>
 										<div class="booking-step-scroll-shell">
 											<div class="booking-step-scroll" use:scrollFades>
 												<section class="review-details-section" aria-labelledby="review-details-title">
 													<h2 id="review-details-title" class="review-details-title">Review your booking</h2>
-													{@render bookingSummary(true)}
+													<BookingDetailsCard
+														dateLabel={selectedReviewDateLabel}
+														timeLabel={selectedTimeRangeLabel}
+														{timezone}
+														{attendeeName}
+														{attendeeEmail}
+														{guestEmails}
+														{notes}
+														editable
+														onChangeSchedule={() => goToStep(0)}
+														onChangeDetails={() => goToStep(1)}
+													/>
 												</section>
 											</div>
 										</div>
@@ -691,224 +610,10 @@
 		to { transform: rotate(360deg); }
 	}
 
-	.booking-confirmed-eyebrow {
-		font-size: 0.75rem;
-		font-weight: 600;
-		color: rgb(var(--color-primary));
-	}
-
-	.booking-confirmed-title {
-		margin-top: 0.375rem;
-		font-size: 1.5rem;
-		font-weight: 600;
-		line-height: 1.25;
-	}
-
-	.booking-confirmed-copy {
-		margin-top: 0.5rem;
-		font-size: 0.875rem;
-		color: rgb(var(--color-text) / 0.62);
-	}
-
-	.booking-confirmed-actions {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		gap: 1rem;
-		margin-top: 1.5rem;
-	}
-
-	.booking-event-actions {
-		display: flex;
-		flex-wrap: wrap;
-		gap: 0.75rem;
-	}
-
-	.booking-event-action {
-		display: inline-flex;
-		align-items: center;
-		justify-content: center;
-		gap: 0.5rem;
-		min-height: 3rem;
-		border-radius: 11px;
-		padding: 0.5rem 1rem;
-		font-size: 0.875rem;
-		font-weight: 600;
-		transition: background 0.2s ease, color 0.2s ease;
-	}
-
-	.booking-edit-action {
-		background: rgb(var(--color-primary) / 0.14);
-		color: rgb(var(--color-primary));
-	}
-
-	.booking-edit-action:hover {
-		background: rgb(var(--color-primary) / 0.2);
-	}
-
-	.booking-cancel-action {
-		background: rgb(var(--error) / 0.14);
-		color: rgb(var(--error));
-	}
-
-	.booking-cancel-action:hover {
-		background: rgb(var(--error) / 0.2);
-	}
-
-	.booking-new-link {
-		font-size: 0.875rem;
-		font-weight: 600;
-		color: rgb(var(--color-primary));
-		text-decoration: underline;
-	}
-
-	.booking-new-link:hover {
-		text-decoration: none;
-	}
-
 	.review-details-title {
 		font-size: 1.125rem;
 		font-weight: 500;
 		line-height: 1.5rem;
-	}
-
-	.review-editorial {
-		display: grid;
-		grid-template-columns: minmax(13rem, 0.8fr) minmax(0, 1.2fr);
-		overflow: hidden;
-		margin-top: 1rem;
-		border: 1px solid rgb(var(--color-border));
-		border-radius: 1rem;
-	}
-
-	.review-editorial-schedule {
-		position: relative;
-		padding: 1.25rem;
-		padding-bottom: 5rem;
-		border-right: 1px solid rgb(var(--color-border));
-	}
-
-	.review-editorial-static .review-editorial-schedule {
-		padding-bottom: 1.25rem;
-	}
-
-	.review-editorial-change {
-		display: grid;
-		position: absolute;
-		right: 1.25rem;
-		bottom: 1.25rem;
-		place-items: center;
-		width: 3rem;
-		height: 3rem;
-		border: 0;
-		border-radius: 0.875rem;
-		background: rgb(var(--color-primary) / 0.12);
-		padding: 0;
-		color: rgb(var(--color-primary));
-		cursor: pointer;
-		opacity: 0;
-		transition: background 0.2s ease, opacity 0.2s ease;
-	}
-
-	.review-editorial-change:hover {
-		background: rgb(var(--color-primary) / 0.2);
-	}
-
-	.review-editorial-schedule:hover .review-editorial-change,
-	.review-editorial-schedule:focus-within .review-editorial-change,
-	.review-editorial-details:hover .review-editorial-change,
-	.review-editorial-details:focus-within .review-editorial-change {
-		opacity: 1;
-	}
-
-	.review-editorial-change:hover {
-		text-decoration: underline;
-	}
-
-	.review-editorial-date {
-		font-size: 1.5rem;
-		font-weight: 600;
-		line-height: 1.25;
-	}
-
-	.review-editorial-time {
-		margin-top: 0.25rem;
-		font-size: 1rem;
-		font-weight: 600;
-		line-height: 1.5rem;
-	}
-
-	.review-editorial-details section {
-		padding: 0;
-	}
-
-	.review-editorial-details {
-		position: relative;
-		display: grid;
-		align-content: start;
-		gap: 1.5rem;
-		padding: 1.25rem 1.25rem 5rem;
-	}
-
-	.review-editorial-static .review-editorial-details {
-		padding-bottom: 1.25rem;
-	}
-
-	.review-editorial-label {
-		display: flex;
-		align-items: center;
-		gap: 0.375rem;
-		font-size: 0.75rem;
-		font-weight: 400;
-		color: rgb(var(--color-text) / 0.6);
-	}
-
-	.review-editorial-label-icon {
-		display: grid;
-		place-items: center;
-		color: inherit;
-	}
-
-	.review-editorial-value {
-		margin: 0.25rem 0 0 1.4rem;
-		font-size: 1rem;
-		font-weight: 400;
-		line-height: 1.5rem;
-		overflow-wrap: anywhere;
-	}
-
-	.review-editorial-muted {
-		font-size: 0.8125rem;
-		overflow-wrap: anywhere;
-		color: rgb(var(--color-text) / 0.62);
-	}
-
-	.review-editorial-list {
-		display: grid;
-		gap: 0.125rem;
-		margin: 0.25rem 0 0 1.4rem;
-		padding: 0;
-		list-style: none;
-		font-size: 1rem;
-		font-weight: 400;
-		line-height: 1.5rem;
-		color: rgb(var(--color-text));
-		overflow-wrap: anywhere;
-	}
-
-	.review-editorial-notes {
-		margin: 0.25rem 0 0 1.4rem;
-		font-size: 1rem;
-		font-weight: 400;
-		line-height: 1.5;
-		color: rgb(var(--color-text));
-		white-space: pre-wrap;
-	}
-
-	@media (hover: none) {
-		.review-editorial-change {
-			opacity: 1;
-		}
 	}
 
 	/* Time-slot cells: an arrow-shaped primary fill sweeps in from the left. */
@@ -955,14 +660,6 @@
 		border-radius: inherit;
 		box-shadow: inset 0 0 0 4px rgb(var(--color-background) / 0.3);
 		pointer-events: none;
-	}
-
-	/* Toggle on the primary aside: no fill, contrast-color border and icon. */
-	.theme-toggle-contrast :global(.toggle-switch) {
-		background: transparent !important;
-		border-color: rgb(var(--color-contrast-text)) !important;
-		color: rgb(var(--color-contrast-text)) !important;
-		box-shadow: none !important;
 	}
 
 	/* Booking progress: one filling rail, a marker per step, labels beneath. */
@@ -1094,6 +791,10 @@
 		margin-top: 52px;
 	}
 
+	.bk-content-without-stepper {
+		margin-top: 0;
+	}
+
 	.booking-step-scroll-shell {
 		position: relative;
 		flex: 1;
@@ -1170,28 +871,6 @@
 
 		.booking-step-actions :global(button) {
 			width: 100%;
-		}
-
-		.booking-confirmed-actions {
-			align-items: stretch;
-			flex-direction: column;
-		}
-
-		.booking-event-actions {
-			flex-direction: column;
-		}
-
-		.booking-event-action {
-			text-align: center;
-		}
-
-		.review-editorial {
-			grid-template-columns: minmax(0, 1fr);
-		}
-
-		.review-editorial-schedule {
-			border-right: 0;
-			border-bottom: 1px solid rgb(var(--color-border));
 		}
 
 		.review-confirm {

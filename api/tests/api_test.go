@@ -1185,8 +1185,8 @@ func mockBookingDelivery(t *testing.T) (*int, *int, *int) {
 		case request.Method == http.MethodPost && request.URL.Path == "/calendar/v3/calendars/primary/events":
 			calendarRequests++
 			body, _ := io.ReadAll(request.Body)
-			if request.URL.Query().Get("sendUpdates") != "all" || !strings.Contains(string(body), "Edit event") || !strings.Contains(string(body), "Cancel event") || !strings.Contains(string(body), "#event-details") || !strings.Contains(string(body), "#cancel-event") || !strings.Contains(string(body), `"email":"guest@example.com"`) || !strings.Contains(string(body), `"email":"friend@example.com"`) {
-				t.Errorf("Google event did not include attendee invitations and management link: url=%s body=%s", request.URL, body)
+			if request.URL.Query().Get("sendUpdates") != "all" || !strings.Contains(string(body), "Scheduled through LetItCall.") || !strings.Contains(string(body), "Open LetItCall to view or manage this booking:") || !strings.Contains(string(body), "/event/") || strings.Contains(string(body), "#event-details") || strings.Contains(string(body), "#cancel-event") || !strings.Contains(string(body), `"email":"guest@example.com"`) || !strings.Contains(string(body), `"email":"friend@example.com"`) {
+				t.Errorf("Google event did not include the safe description and attendee invitations: url=%s body=%s", request.URL, body)
 			}
 		case request.Method == http.MethodPatch && request.URL.Path == "/calendar/v3/calendars/primary/events/accepted":
 			calendarUpdates++
@@ -1195,7 +1195,7 @@ func mockBookingDelivery(t *testing.T) (*int, *int, *int) {
 				t.Errorf("Google event update did not send attendee updates: url=%s body=%s", request.URL, body)
 			} else if calendarUpdates == 1 && (!strings.Contains(string(body), `"summary":"Delivery test"`) || !strings.Contains(string(body), `"email":"second-friend@example.com"`)) {
 				t.Errorf("Google guest update was not correct: %s", body)
-			} else if calendarUpdates == 2 && (!strings.Contains(string(body), `"summary":"Canceled: Delivery test"`) || !strings.Contains(string(body), "Reason: Host unavailable")) {
+			} else if calendarUpdates == 2 && (!strings.Contains(string(body), `"summary":"Canceled: Delivery test"`) || !strings.Contains(string(body), "Scheduled through LetItCall.")) {
 				t.Errorf("Google cancellation event was not updated correctly: %s", body)
 			}
 		case request.URL.String() == "https://api.eu.mailgun.net/v3/mail.example.com/messages":

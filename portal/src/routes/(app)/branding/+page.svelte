@@ -26,7 +26,7 @@
 		{
 			key: 'foreground',
 			label: 'Foreground',
-			description: 'Color of foreground surfaces such as panels, menus, and cards.'
+			description: 'Color of foreground surfaces such as panels, menus and cards.'
 		},
 		{
 			key: 'text',

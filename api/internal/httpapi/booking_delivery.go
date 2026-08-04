@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
-	"strings"
 	"sync"
 
 	"github.com/letitcall/letitcall/api/internal/calendar"
@@ -141,23 +140,7 @@ func (s *Server) googleClient(ctx context.Context, user model.User) (*http.Clien
 }
 
 func bookingCalendarDescription(booking model.Booking, manageURL string) string {
-	lines := []string{
-		"Booked by " + booking.AttendeeName + " <" + booking.AttendeeEmail + ">",
-	}
-	if len(booking.GuestEmails) > 0 {
-		lines = append(lines, "Guests: "+strings.Join(booking.GuestEmails, ", "))
-	}
-	if booking.Notes != "" {
-		lines = append(lines, "", "Booking details:", booking.Notes)
-	}
-	lines = append(lines, "", "Edit event", manageURL+"#event-details", "", "Cancel event", manageURL+"#cancel-event")
-	if booking.CanceledAt != nil && booking.CanceledBy != nil {
-		lines = append(lines, "", "Canceled by "+booking.CanceledBy.Name+" <"+booking.CanceledBy.Email+"> at "+booking.CanceledAt.UTC().Format("2006-01-02 15:04:05 UTC"))
-		if booking.CancellationReason != "" {
-			lines = append(lines, "Reason: "+booking.CancellationReason)
-		}
-	}
-	return strings.Join(lines, "\n")
+	return "Scheduled through LetItCall.\n\nOpen LetItCall to view or manage this booking:\n" + manageURL
 }
 
 func (s *Server) sendBookingEmail(ctx context.Context, recipients []model.User, booking model.Booking, manageURL string) error {

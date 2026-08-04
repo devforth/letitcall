@@ -20,6 +20,9 @@ importers:
       '@iconify-icons/material-symbols':
         specifier: ^1.2.58
         version: 1.2.58
+      '@iconify-icons/mingcute':
+        specifier: ^1.2.9
+        version: 1.2.9
       '@iconify-icons/pajamas':
         specifier: ^1.2.32
         version: 1.2.32
@@ -116,6 +119,9 @@ packages:
 
   '@iconify-icons/material-symbols@1.2.58':
     resolution: {integrity: sha512-v0ZfPXlmDcDPCejxhg5h2eHCEHClrpn+i44Ev766vkzPIEFRdgT+YK942KzyqBpH0RhKJfel4OZdL1DY1oa5Qg==}
+
+  '@iconify-icons/mingcute@1.2.9':
+    resolution: {integrity: sha512-u+hX7mh7amKlWFHOTi52tnJ52NWQVAFevjDcQkZvK4Zj2UyVVKZ45yKBsFHo4OTJDzBkIafJh4C4fkPJsvCtOA==}
 
   '@iconify-icons/pajamas@1.2.32':
     resolution: {integrity: sha512-dKUXcT5n3DAmnCjdIoEOtZqZaf0aZvy5LhibEwWgJh2+c295npLE6JZrykNhwnQSeIW5DJtYn6bXRruBo/qpbQ==}
@@ -803,6 +809,10 @@ snapshots:
       '@iconify/types': 2.0.0
 
   '@iconify-icons/material-symbols@1.2.58':
+    dependencies:
+      '@iconify/types': 2.0.0
+
+  '@iconify-icons/mingcute@1.2.9':
     dependencies:
       '@iconify/types': 2.0.0
 

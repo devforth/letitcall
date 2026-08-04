@@ -7,7 +7,8 @@
 		required = false,
 		disabled = false,
 		maxlength,
-		rows = 5
+		rows = 5,
+		resizable = true
 	}: {
 		id: string;
 		label: string;
@@ -17,6 +18,7 @@
 		disabled?: boolean;
 		maxlength?: number;
 		rows?: number;
+		resizable?: boolean;
 	} = $props();
 </script>
 
@@ -31,6 +33,7 @@
 			{maxlength}
 			{rows}
 			class="input"
+			class:not-resizable={!resizable}
 		></textarea>
 		<label class="float-label" for={id}>{label}</label>
 		<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="4" y1="8" x2="20" y2="8" /><line x1="4" y1="12" x2="14" y2="12" /><line x1="4" y1="16" x2="18" y2="16" /></svg>
@@ -127,5 +130,9 @@
 	.input:disabled {
 		opacity: 0.4;
 		cursor: not-allowed;
+	}
+
+	.input.not-resizable {
+		resize: none;
 	}
 </style>

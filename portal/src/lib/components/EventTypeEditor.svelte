@@ -169,7 +169,7 @@
 				</div>
 				<div>
 					<h1 class="text-2xl font-semibold tracking-tight" style="color: rgb(var(--color-text));">{slug ? 'Edit event type' : 'New event type'}</h1>
-					<p class="text-sm" style="color: rgb(var(--color-text) / 0.65);">Configure the booking duration, recipients, and availability.</p>
+					<p class="text-sm" style="color: rgb(var(--color-text) / 0.65);">Configure the booking duration, recipients and availability.</p>
 				</div>
 			</div>
 		</div>
@@ -178,7 +178,7 @@
 			<section class="ml-1 grid gap-5 rounded-md rounded-l-lg p-4 sm:grid-cols-2 sm:p-5" style="background: rgb(var(--color-foreground));" aria-labelledby="event-details-title">
 				<div class="sm:col-span-2">
 					<h2 id="event-details-title" class="font-semibold" style="color: rgb(var(--color-text));">Event details</h2>
-					<p class="mt-1 text-sm" style="color: rgb(var(--color-text) / 0.65);">Set the booking length, availability window, and schedule timezone.</p>
+					<p class="mt-1 text-sm" style="color: rgb(var(--color-text) / 0.65);">Set the booking length, availability window and schedule timezone.</p>
 				</div>
 
 				<Input id="event-name" label="Event Name" bind:value={name} required />

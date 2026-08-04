@@ -136,7 +136,7 @@ func mockHostReassignmentCalendar(t *testing.T) (*int, *int) {
 		case http.MethodPost:
 			creates++
 			body, _ := io.ReadAll(request.Body)
-			if request.URL.Query().Get("sendUpdates") != "all" || !bytes.Contains(body, []byte("Edit event")) || !bytes.Contains(body, []byte("Cancel event")) {
+			if request.URL.Query().Get("sendUpdates") != "all" || !bytes.Contains(body, []byte("Scheduled through LetItCall.")) || !bytes.Contains(body, []byte("/event/")) || bytes.Contains(body, []byte("#event-details")) || bytes.Contains(body, []byte("#cancel-event")) {
 				t.Errorf("Google Calendar event was incomplete: url=%s body=%s", request.URL, body)
 			}
 			return jsonHTTPResponse(request, fmt.Sprintf(`{"id":"calendar-%d"}`, creates)), nil

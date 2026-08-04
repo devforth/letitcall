@@ -46,7 +46,7 @@
 	<div class="grid gap-3">
 		{#if emails.length > 0}
 			{#each emails as _, index (index)}
-				<div class="guest-email-row grid gap-2 sm:grid-cols-[minmax(0,50%)_auto] sm:items-start sm:gap-3">
+				<div class="guest-email-row grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3 sm:grid-cols-[minmax(0,50%)_auto]">
 					<Input
 						id={`${idPrefix}-${index}`}
 						label={`Guest email ${index + 1}`}
