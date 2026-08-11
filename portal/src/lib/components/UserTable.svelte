@@ -3,7 +3,7 @@
 	import calendarCheckIcon from '@iconify-icons/tabler/check';
 	import calendarXIcon from '@iconify-icons/tabler/x';
 	import checkIcon from '@iconify-icons/tabler/circle-check-filled';
-	import editIcon from '@iconify-icons/tabler/edit';
+	import editIcon from '@iconify-icons/mdi/edit';
 	import trashIcon from '@iconify-icons/tabler/trash';
 	import usersIcon from '@iconify-icons/tabler/users';
 	import worldIcon from '@iconify-icons/tabler/world';

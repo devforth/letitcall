@@ -25,6 +25,7 @@
 		...eventType.requiredHosts.map((host) => ({ ...host, avatarSize: 76 })),
 		...eventType.optionalHosts.map((host) => ({ ...host, avatarSize: 52 }))
 	]);
+	const hostHighlightEnabled = $derived(hosts.length > 1);
 	const asideStyle =
 		'background: rgb(var(--color-primary)); color: rgb(var(--color-contrast-text)); box-shadow: 0 0 0 1px rgb(var(--color-border)), var(--shadow-small);';
 
@@ -45,7 +46,7 @@
 	}
 
 	function highlightHost(email: string | null) {
-		highlightedHost = email;
+		highlightedHost = hostHighlightEnabled ? email : null;
 	}
 </script>
 
@@ -53,7 +54,8 @@
 	{#each hostList as host, index (host.email)}
 		{#if index > 0}, {/if}<span
 			class="host-name"
-			class:highlighted={highlightedHost === host.email}
+			class:highlight-enabled={hostHighlightEnabled}
+			class:highlighted={hostHighlightEnabled && highlightedHost === host.email}
 			role="presentation"
 			onmouseenter={() => highlightHost(host.email)}
 			onmouseleave={() => highlightHost(null)}
@@ -61,13 +63,13 @@
 	{/each}
 {/snippet}
 
-<aside class="relative flex flex-col rounded-b-2xl p-6 lg:rounded-bl-none lg:rounded-tr-2xl lg:rounded-br-2xl lg:p-8" style={asideStyle}>
+<aside class="relative flex flex-col p-6 pb-10 sm:pb-6 sm:rounded-b-2xl lg:rounded-bl-none lg:rounded-tr-2xl lg:rounded-br-2xl lg:p-8" style={asideStyle}>
 	<h1 class="text-3xl font-semibold tracking-tight">{eventType.name}</h1>
 	<div class="mt-8 flex items-end -space-x-4">
 		{#each hosts as host (host.email)}
 			<span
 				class="host-avatar"
-				class:highlighted={highlightedHost === host.email}
+				class:highlighted={hostHighlightEnabled && highlightedHost === host.email}
 				role="presentation"
 				onmouseenter={() => highlightHost(host.email)}
 				onmouseleave={() => highlightHost(null)}
@@ -78,7 +80,8 @@
 					avatarPath={host.avatarPath}
 					size={host.avatarSize}
 					rounded="full"
-					class="bg-none! bg-[rgb(var(--color-foreground))]! shadow-[0_0_0_4px_rgb(var(--color-primary))]"
+					onBrand
+					class="shadow-[0_0_0_4px_rgb(var(--color-primary))]"
 				/>
 			</span>
 		{/each}
@@ -126,7 +129,9 @@
 			{/if}
 		</div>
 	{/if}
-	<div class="mt-auto flex items-center justify-between gap-4 pt-12">
+	<!-- Mobile puts the brand row above the event name; from sm up it drops back to the
+	     foot of the aside where the "Powered by" line sits beneath it. -->
+	<div class="order-first flex items-center justify-between gap-4 pb-1 sm:order-none sm:mt-auto sm:pb-0 sm:pt-12">
 		<p class="text-xl font-semibold">{branding.name}</p>
 		<div class="theme-toggle-contrast shrink-0">
 			<ThemeToggle />
@@ -134,7 +139,7 @@
 	</div>
 	{#if branding.name !== productName}
 		<p
-			class="absolute bottom-3 left-1/2 -translate-x-1/2 whitespace-nowrap text-xs font-normal"
+			class="absolute bottom-3 right-5 whitespace-nowrap text-xs font-normal sm:left-1/2 sm:right-auto sm:-translate-x-1/2"
 			style="color: rgb(var(--color-contrast-text) / 0.72);"
 		>
 			Powered by <span class="font-medium" style="color: rgb(var(--color-contrast-text));">{productName}</span>
@@ -146,23 +151,29 @@
 	.host-avatar {
 		display: inline-flex;
 		border-radius: 9999px;
-		transition: outline-offset 0.15s ease, transform 0.15s ease;
+		transition: transform 0.15s ease;
 	}
 
 	.host-avatar.highlighted {
-		outline: 2px solid currentColor;
-		outline-offset: 2px;
-		transform: translateY(-2px);
+		z-index: 1;
+		transform: scale(1.08);
 	}
 
 	.host-name {
-		border-radius: 0.2rem;
-		transition: background 0.15s ease, color 0.15s ease;
+		text-decoration-color: transparent;
+		text-underline-offset: 0.2rem;
+		transition: text-decoration-color 0.15s ease;
+	}
+
+	.host-name.highlight-enabled {
+		cursor: default;
 	}
 
 	.host-name.highlighted {
-		background: rgb(var(--color-contrast-text));
-		color: rgb(var(--color-primary));
+		font-weight: 700;
+		text-decoration-line: underline;
+		text-decoration-color: currentColor;
+		text-decoration-thickness: 2px;
 	}
 
 	.booking-details {
@@ -203,5 +214,18 @@
 		border-color: rgb(var(--color-contrast-text)) !important;
 		color: rgb(var(--color-contrast-text)) !important;
 		box-shadow: none !important;
+	}
+
+	/* Pulled up to sit level with the brand name in the mobile top row, where a
+	   hairline drawn as an inset shadow replaces the 2px border. */
+	@media (max-width: 640px) {
+		.theme-toggle-contrast {
+			margin-top: -8px;
+		}
+
+		.theme-toggle-contrast :global(.toggle-switch) {
+			border: 0 !important;
+			box-shadow: inset 0 0 0 1px rgb(var(--color-contrast-text)) !important;
+		}
 	}
 </style>

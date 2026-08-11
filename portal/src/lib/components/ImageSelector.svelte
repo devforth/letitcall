@@ -8,7 +8,7 @@
 	import uploadIcon from '@iconify-icons/tabler/upload';
 	import zoomInIcon from '@iconify-icons/tabler/zoom-in';
 	import zoomOutIcon from '@iconify-icons/tabler/zoom-out';
-	import editIcon from '@iconify-icons/tabler/edit';
+	import editIcon from '@iconify-icons/mdi/edit';
 	import trashIcon from '@iconify-icons/tabler/trash';
 	import Button from '$lib/components/ui/Button.svelte';
 	import IconButton from '$lib/components/ui/IconButton.svelte';

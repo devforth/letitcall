@@ -170,7 +170,7 @@
 						aria-label="Account menu"
 						onclick={toggleMenu}
 					>
-						<Avatar name={user.fullName} email={user.email} avatarPath={user.avatarPath} size={36} variant="solid" ring />
+						<Avatar name={user.fullName} email={user.email} avatarPath={user.avatarPath} size={36} ring />
 						<span class="hidden max-w-[10rem] truncate text-sm font-bold sm:inline" style="color: rgb(var(--color-text));">
 							{user.fullName || user.email}
 						</span>
@@ -198,7 +198,7 @@
 							onclick={(e) => e.stopPropagation()}
 						>
 							<div class="flex items-center gap-3 px-2 py-2">
-								<Avatar name={user.fullName} email={user.email} avatarPath={user.avatarPath} size={44} variant="solid" />
+								<Avatar name={user.fullName} email={user.email} avatarPath={user.avatarPath} size={44} />
 								<span class="flex min-w-0 flex-col leading-tight">
 									<span class="truncate text-sm font-bold" style="color: rgb(var(--color-text));">
 										{user.fullName || user.email}

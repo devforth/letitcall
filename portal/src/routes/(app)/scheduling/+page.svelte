@@ -3,7 +3,7 @@
 	import { onMount } from 'svelte';
 	import Icon from '@iconify/svelte';
 	import calendarEventIcon from '@iconify-icons/tabler/calendar-event';
-	import editIcon from '@iconify-icons/tabler/edit';
+	import editIcon from '@iconify-icons/mdi/edit';
 	import externalLinkIcon from '@iconify-icons/tabler/external-link';
 	import plusIcon from '@iconify-icons/tabler/plus';
 	import { appPath, callApi } from '$lib/api';

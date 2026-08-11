@@ -8,6 +8,7 @@
 	import arrowRightIcon from '@iconify-icons/tabler/arrow-right';
 	import calendarOffIcon from '@iconify-icons/tabler/calendar-off';
 	import checkIcon from '@iconify-icons/tabler/check';
+	import clockIcon from '@iconify-icons/tabler/clock';
 	import lockIcon from '@iconify-icons/material-symbols/lock';
 	import worldIcon from '@iconify-icons/tabler/world';
 	import { goto } from '$app/navigation';
@@ -82,6 +83,25 @@
 			selectedMonth === month ? slotsByDate : generateBookingSlots(eventType, timezone, selectedMonth, now);
 		return map[selectedDate] ?? [];
 	});
+	// Below xl the times panel wraps under the calendar and runs full width, where the
+	// two-up grid of cells pushes the Next button off screen — so the same slots go into
+	// one field there, the same component the timezone below it uses. Busy slots stay
+	// listed but disabled, which is the dropdown's version of a locked cell; the words
+	// carry what the lock icon carries in the grid.
+	const slotOptions = $derived(
+		selectedSlots.map((slot) => ({
+			value: slot.time,
+			label: slot.busy ? `${slot.label} — booked` : slot.label,
+			disabled: slot.busy
+		}))
+	);
+	// selectedTime survives a change of date, so it can name a slot that isn't in the day
+	// on screen. Fall back to empty then: the field reads as unset, and its clear button
+	// stays hidden rather than offering to clear a time nothing shows. The grid of cells
+	// has no equivalent state — it just highlights nothing.
+	const dropdownTime = $derived(
+		selectedSlots.some((slot) => slot.time === selectedTime) ? selectedTime : ''
+	);
 	const guestLimit = $derived.by(() => {
 		if (!eventType || eventType.inviteeLimit === null || !selectedTime) return null;
 		const remaining = eventType.remainingInvitees[selectedTime] ?? eventType.inviteeLimit;
@@ -235,6 +255,21 @@
 		if (guestLimit !== null) guestEmails = guestEmails.slice(0, guestLimit);
 	}
 
+	// Each new date lands on its first free time, so the Time field arrives filled and a
+	// booking is one tap when the default suits. Keyed on the date rather than on an empty
+	// selection: that way clearing the field, or losing a slot to someone else, leaves it
+	// empty instead of instantly refilling itself under the guest.
+	let autoSelectedDate = $state('');
+	$effect(() => {
+		if (!selectedDate || selectedDate === autoSelectedDate) return;
+		const first = selectedSlots.find((slot) => !slot.busy);
+		// Slots arrive with the event type, and a fully booked day has none — stay unmarked
+		// so the first free time still gets picked up whenever one exists.
+		if (!first) return;
+		autoSelectedDate = selectedDate;
+		selectTime(first.time);
+	});
+
 	function confirmDateAndTime() {
 		if (!selectedTime) {
 			scheduleAttempts += 1;
@@ -323,8 +358,8 @@
 		</section>
 	</main>
 {:else}
-	<main class="min-h-screen p-4 sm:p-8 lg:p-10">
-		<div class="mx-auto grid min-h-[calc(100vh-5rem)] max-w-7xl overflow-hidden rounded-2xl lg:h-[calc(100vh-5rem)] lg:min-h-0 lg:grid-cols-[21rem_1fr]" style={blockStyle}>
+	<main class="min-h-screen sm:p-8 lg:p-10">
+		<div class="mx-auto grid min-h-screen max-w-7xl overflow-hidden sm:min-h-[calc(100vh-5rem)] sm:rounded-2xl lg:h-[calc(100vh-5rem)] lg:min-h-0 lg:grid-cols-[21rem_1fr]" style={blockStyle}>
 			<EventTypeAside {eventType} />
 
 			<section class="flex min-h-0 flex-col overflow-hidden p-6 pt-4 lg:p-10 lg:pt-6" aria-label="Book a meeting">
@@ -354,8 +389,18 @@
 										onclick={() => goToStep(i)}
 										disabled={i > furthestStep}
 									>
-										<span class="bk-title">{step.title}</span>
-										<span class="bk-sub">{step.subtitle}</span>
+										<!-- The wrappers collapse to display: contents above the phone
+										     breakpoint, where the three labels stack centred as before. -->
+										<span class="bk-head-icon" aria-hidden="true">
+											<Icon icon={step.icon} width="22" height="22" />
+										</span>
+										<span class="bk-head-text">
+											<span class="bk-head-line">
+												<span class="bk-count"><span class="bk-count-current">{i + 1}</span><span class="bk-count-slash">/</span>{bookingSteps.length}</span>
+												<span class="bk-title">{step.title}</span>
+											</span>
+											<span class="bk-sub">{step.subtitle}</span>
+										</span>
 									</button>
 								</li>
 							{/each}
@@ -364,70 +409,95 @@
 
 					<div class="bk-content" class:bk-content-without-stepper={!!booking}>
 						{#if currentStep === 0}
-							<div class="flex h-full flex-col">
-								<div class="grid gap-10 xl:grid-cols-[minmax(20rem,1fr)_minmax(15rem,0.7fr)]">
-								<div>
-									<MonthCalendar bind:month bind:selected={selectedDate} {availableDates} {minimumMonth} today={timezoneDateKey(now, timezone)} />
-								</div>
-								<div>
-									<h3 class="text-lg font-medium">
-										<span class="block text-sm font-normal" style="color: rgb(var(--color-text) / 0.65);">Available times for</span>
-										{selectedDateLabel}
-									</h3>
-									{#if selectedSlots.length === 0}
-										<div
-											class="mt-5 flex flex-col items-center gap-3 rounded-2xl border-2 border-dashed px-6 py-10 text-center"
-											style="border-color: rgb(var(--color-border));"
-										>
-											<span
-												class="grid size-12 place-items-center rounded-full"
-												style="background: rgb(var(--color-primary) / 0.1); color: rgb(var(--color-primary));"
+							<div class="flex h-full min-h-0 flex-col">
+								<div class="booking-step-scroll-shell">
+									<div class="booking-step-scroll grid content-start gap-10 xl:grid-cols-[minmax(20rem,1fr)_minmax(15rem,0.7fr)]" use:scrollFades>
+									<div class="max-w-[500px]">
+										<MonthCalendar bind:month bind:selected={selectedDate} {availableDates} {minimumMonth} today={timezoneDateKey(now, timezone)} />
+									</div>
+									<div>
+										<h3 class="text-lg font-medium">
+											<span class="block text-sm font-normal" style="color: rgb(var(--color-text) / 0.65);">Available times for</span>
+											{selectedDateLabel}
+										</h3>
+										{#if selectedSlots.length === 0}
+											<div
+												class="mt-5 flex flex-col items-center gap-3 rounded-2xl border-2 border-dashed px-6 py-10 text-center"
+												style="border-color: rgb(var(--color-border));"
 											>
-												<Icon icon={calendarOffIcon} width="24" height="24" />
-											</span>
-											<div>
-												<p class="font-semibold">No times available</p>
-												<p class="mt-1 text-sm" style="color: rgb(var(--color-text) / 0.6);">Please select another date.</p>
+												<span
+													class="grid size-12 place-items-center rounded-full"
+													style="background: rgb(var(--color-primary) / 0.1); color: rgb(var(--color-primary));"
+												>
+													<Icon icon={calendarOffIcon} width="24" height="24" />
+												</span>
+												<div>
+													<p class="font-semibold">No times available</p>
+													<p class="mt-1 text-sm" style="color: rgb(var(--color-text) / 0.6);">Please select another date.</p>
+												</div>
 											</div>
-										</div>
-									{:else}
-										<table class="mt-3 w-full" style="border-collapse: separate; border-spacing: 8px; margin-left: -8px; margin-right: -8px; width: calc(100% + 16px); table-layout: fixed;">
-											<tbody>
-																					{#each rows(selectedSlots, 2) as row}
-													<tr>
-														{#each row as slot (slot.time)}
-															{@const selected = slot.time === selectedTime}
-															<td
-																role="button"
-																tabindex={slot.busy ? -1 : 0}
-																aria-disabled={slot.busy}
-																class="slot-cell px-4 text-center text-sm font-bold transition"
-																class:is-busy={slot.busy}
-																class:is-selected={selected}
-																class:cursor-pointer={!slot.busy}
-																class:cursor-not-allowed={slot.busy}
-																onclick={() => !slot.busy && selectTime(slot.time)}
-																onkeydown={(event) => {
-																	if (slot.busy) return;
-																	if (event.key === 'Enter' || event.key === ' ') {
-																		event.preventDefault();
-																		selectTime(slot.time);
-																	}
-																}}
-															>
-																<span class="inline-flex items-center gap-1 whitespace-nowrap" class:opacity-40={slot.busy}>
-																	{#if slot.busy}<Icon icon={lockIcon} width="14" height="14" />{/if}
-																	<span>{slot.label}</span>
-																</span>
-															</td>
-														{/each}
-													</tr>
-												{/each}
-											</tbody>
-										</table>
-									{/if}
-									<div class="mt-8">
-										<SearchableSelect id="booking-timezone" label="Timezone" icon={worldIcon} options={timezones} bind:value={timezoneInput} required />
+										{:else}
+											<table class="mt-3 hidden w-full xl:table" style="border-collapse: separate; border-spacing: 8px; margin-left: -8px; margin-right: -8px; width: calc(100% + 16px); table-layout: fixed;">
+												<tbody>
+																						{#each rows(selectedSlots, 2) as row}
+														<tr>
+															{#each row as slot (slot.time)}
+																{@const selected = slot.time === selectedTime}
+																<td
+																	role="button"
+																	tabindex={slot.busy ? -1 : 0}
+																	aria-disabled={slot.busy}
+																	class="slot-cell px-4 text-center text-sm font-bold transition"
+																	class:is-busy={slot.busy}
+																	class:is-selected={selected}
+																	class:cursor-pointer={!slot.busy}
+																	class:cursor-not-allowed={slot.busy}
+																	onclick={() => !slot.busy && selectTime(slot.time)}
+																	onkeydown={(event) => {
+																		if (slot.busy) return;
+																		if (event.key === 'Enter' || event.key === ' ') {
+																			event.preventDefault();
+																			selectTime(slot.time);
+																		}
+																	}}
+																>
+																	<span class="inline-flex items-center gap-1 whitespace-nowrap" class:opacity-40={slot.busy}>
+																		{#if slot.busy}<Icon icon={lockIcon} width="14" height="14" />{/if}
+																		<span>{slot.label}</span>
+																	</span>
+																</td>
+															{/each}
+														</tr>
+													{/each}
+												</tbody>
+											</table>
+										{/if}
+										<!-- One row of fields under the times. Below xl the grid of cells is
+										     hidden and Time joins Timezone here; at xl the cells are back and
+										     Timezone has the row to itself. Stacked under sm, where two
+										     comboboxes side by side leave no room for their own controls. -->
+										<div
+											class="mt-5 grid gap-5 xl:mt-8 xl:grid-cols-1 {selectedSlots.length > 0
+												? 'sm:grid-cols-2'
+												: ''}"
+										>
+											{#if selectedSlots.length > 0}
+												<div class="xl:hidden">
+													<SearchableSelect
+														id="booking-time"
+														label="Time"
+														icon={clockIcon}
+														options={slotOptions}
+														value={dropdownTime}
+														onchange={selectTime}
+														placeholder="Search times…"
+														emptyText="No matching times"
+														placement="top"
+													/>
+												</div>
+											{/if}
+											<SearchableSelect id="booking-timezone" label="Timezone" icon={worldIcon} options={timezones} bind:value={timezoneInput} emptyText="No matching timezones" placement="top" required />
+											</div>
 										</div>
 									</div>
 								</div>
@@ -757,6 +827,33 @@
 	.bk-head:not(:disabled):hover .bk-title {
 		text-decoration: underline;
 	}
+	/* Phone-only parts of the head; the wrappers hand their children straight back to
+	   the column layout everywhere else. */
+	.bk-head-icon {
+		display: none;
+	}
+	.bk-head-text,
+	.bk-head-line {
+		display: contents;
+	}
+	/* Only the phone layout shows it — wider screens have all three labels on screen,
+	   which says the same thing. */
+	.bk-count {
+		display: none;
+		font-size: 12px;
+		font-weight: 600;
+		line-height: 1.3;
+		color: rgb(var(--color-text) / 0.5);
+	}
+	/* Only the step you are on is coloured; the total stays quiet beside it. */
+	.bk-step.is-active .bk-count-current {
+		color: rgb(var(--color-primary));
+	}
+	/* The divider carries no weight of its own — both numbers keep theirs. */
+	.bk-count-slash {
+		margin: 0 0.2em;
+		font-weight: 400;
+	}
 	.bk-title {
 		font-size: 15px;
 		font-weight: 600;
@@ -862,7 +959,8 @@
 			transition: none;
 		}
 	}
-	/* Too narrow for three subtitles side by side — keep the current one only. */
+	/* Too narrow for three labels side by side — the rail carries the progress and
+	   only the step you are on names itself. */
 	@media (max-width: 640px) {
 		.booking-step-actions {
 			align-items: stretch;
@@ -883,12 +981,77 @@
 			justify-content: center;
 		}
 
-		.bk-title,
-		.bk-step.is-active .bk-title {
-			font-size: 13.5px;
-		}
-		.bk-step:not(.is-active) .bk-sub {
+		/* No rail on a phone: the current step's own icon, count and text carry it,
+		   left aligned like the rest of the panel. */
+		.bk-rail {
 			display: none;
+		}
+
+		.bk-labels {
+			grid-template-columns: minmax(0, 1fr);
+		}
+
+		.bk-step:not(.is-active) {
+			display: none;
+		}
+
+		.bk-head {
+			position: relative;
+			flex-direction: row;
+			align-items: center;
+			justify-content: flex-start;
+			gap: 0.625rem;
+			padding-right: 3rem;
+			text-align: left;
+		}
+
+		/* Same marker the rail draws for the active step, minus the rail. */
+		.bk-head-icon {
+			display: grid;
+			place-items: center;
+			width: 36px;
+			height: 36px;
+			flex-shrink: 0;
+			border-radius: 999px;
+			background: rgb(var(--color-foreground));
+			box-shadow: inset 0 0 0 2px rgb(var(--color-primary));
+			color: rgb(var(--color-primary));
+		}
+
+		.bk-head-text {
+			display: flex;
+			min-width: 0;
+			flex-direction: column;
+			align-items: flex-start;
+			gap: 2px;
+		}
+
+		.bk-head-line {
+			display: flex;
+			align-items: baseline;
+			gap: 0.375rem;
+		}
+
+		/* With the other two steps hidden, the count says how far along this one is —
+		   parked on the far right, clear of the title and its subtitle. */
+		.bk-count {
+			display: block;
+			position: absolute;
+			top: 0;
+			right: 0;
+		}
+
+		.bk-step.is-active .bk-title {
+			font-size: 19px;
+		}
+
+		.bk-count {
+			font-size: 19px;
+			font-weight: 700;
+		}
+
+		.bk-content {
+			margin-top: 1.5rem;
 		}
 	}
 </style>

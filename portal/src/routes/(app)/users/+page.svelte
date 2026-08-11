@@ -226,6 +226,7 @@
 				/>
 				<SearchableSelect
 					id="new-timezone"
+					emptyText="No matching timezones"
 					label="Timezone"
 					icon={worldIcon}
 					options={timezones}

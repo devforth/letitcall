@@ -1,6 +1,8 @@
 <script lang="ts">
 	import { page } from '$app/state';
 	import { onMount, tick } from 'svelte';
+	import Icon from '@iconify/svelte';
+	import checkIcon from '@iconify-icons/tabler/check';
 	import { appPath, callApi } from '$lib/api';
 	import type { Booking, PublicEventType } from '$lib/types';
 	import Button from '$lib/components/ui/Button.svelte';
@@ -28,7 +30,9 @@
 	let view = $state<'summary' | 'edit' | 'cancel'>('summary');
 
 	const secret = $derived(page.params.secret!);
-	const blockStyle = 'background: rgb(var(--color-foreground)); box-shadow: var(--shadow-small);';
+	// Same weight the booking flow gives its Confirm tick.
+	const boldCheckIcon = { ...checkIcon, body: checkIcon.body.replace('stroke-width="2"', 'stroke-width="3"') };
+	const blockStyle ='background: rgb(var(--color-foreground)); box-shadow: var(--shadow-small);';
 	const reasonPresets = ['Schedule conflict', 'No longer needed', 'Booked by mistake', 'Rescheduling'];
 	// A preset owns the first line of the reason, so anything typed by hand survives
 	// switching between chips.
@@ -177,8 +181,8 @@
 		</section>
 	</main>
 {:else}
-	<main class="min-h-screen p-4 sm:p-8 lg:p-10">
-		<div class="mx-auto grid min-h-[calc(100vh-5rem)] max-w-7xl overflow-hidden rounded-2xl lg:grid-cols-[21rem_1fr]" style={blockStyle}>
+	<main class="min-h-screen sm:p-8 lg:p-10">
+		<div class="mx-auto grid min-h-screen max-w-7xl overflow-hidden sm:min-h-[calc(100vh-5rem)] sm:rounded-2xl lg:grid-cols-[21rem_1fr]" style={blockStyle}>
 			<EventTypeAside
 				{eventType}
 				booking={view === 'edit' || view === 'cancel' ? booking : undefined}
@@ -235,7 +239,10 @@
 							</section>
 						</div>
 						<div class="event-form-actions">
-							<Button type="submit" disabled={saving}>{saving ? 'Saving…' : 'Save changes'}</Button>
+							<Button type="submit" class="booking-next booking-confirm gap-2" disabled={saving}>
+								<Icon icon={boldCheckIcon} width="20" height="20" />
+								{saving ? 'Saving…' : 'Save changes'}
+							</Button>
 						</div>
 					</form>
 				{:else}

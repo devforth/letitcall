@@ -3,6 +3,8 @@
 	import chevronDownIcon from '@iconify-icons/tabler/chevron-down';
 	import xIcon from '@iconify-icons/tabler/x';
 
+	type Option = { value: string; label: string; disabled?: boolean };
+
 	let {
 		id,
 		label,
@@ -11,28 +13,56 @@
 		placeholder = 'Search…',
 		required = false,
 		disabled = false,
-		icon
+		icon,
+		emptyText = 'No matches',
+		placement = 'bottom',
+		onchange
 	}: {
 		id: string;
 		label: string;
-		options: string[];
+		/** Plain strings when the value is the text you show, pairs when it isn't. */
+		options: (string | Option)[];
 		value?: string;
 		placeholder?: string;
 		required?: boolean;
 		disabled?: boolean;
 		icon?: IconifyIcon;
-		} = $props();
+		/** Shown in place of the list when the query matches nothing. */
+		emptyText?: string;
+		/**
+		 * Which side of the field the list opens on. Use 'top' where the field sits at the
+		 * bottom of a scrolling panel, since a list opening downward is clipped there.
+		 */
+		placement?: 'bottom' | 'top';
+		/**
+		 * The chosen value, for callers that need more than an assignment. Fires on
+		 * selection and on clear, never while typing, so it is safe to run side effects.
+		 */
+		onchange?: (value: string) => void;
+	} = $props();
 
 	let open = $state(false);
-	let query = $state('');
+	// null while the field is showing its selection, a string once the user types. That
+	// distinction is what lets focus show the current label against the *whole* list
+	// instead of filtering the list down to the thing already chosen.
+	let query = $state<string | null>(null);
 
-	const matchingOptions = $derived(
-		query ? options.filter((option) => option.toLowerCase().includes(query.toLowerCase())) : options
+	const normalized = $derived(
+		options.map((option) => (typeof option === 'string' ? { value: option, label: option } : option))
 	);
+	const selectedLabel = $derived(normalized.find((option) => option.value === value)?.label ?? '');
+	// The input is display-only: it renders the query while searching and the selection
+	// otherwise, so `value` only ever holds a real option — never half-typed text.
+	const text = $derived(query ?? selectedLabel);
+	const matchingOptions = $derived.by(() => {
+		if (!query) return normalized;
+		const needle = query.toLowerCase();
+		return normalized.filter((option) => option.label.toLowerCase().includes(needle));
+	});
 
 	function openOptions() {
 		open = true;
-		query = '';
+		query = null;
 	}
 
 	function filterOptions(event: Event) {
@@ -40,30 +70,35 @@
 		query = (event.currentTarget as HTMLInputElement).value;
 	}
 
-	function selectOption(option: string) {
-		value = option;
+	function selectOption(option: Option) {
+		value = option.value;
 		open = false;
-		query = '';
+		query = null;
+		onchange?.(option.value);
 	}
 
 	function clearValue() {
 		value = '';
 		open = true;
-		query = '';
+		query = null;
+		onchange?.('');
 	}
 
 	function closeOptions(event: FocusEvent) {
 		const field = event.currentTarget as HTMLDivElement;
-		if (!field.contains(event.relatedTarget as Node | null)) open = false;
+		if (field.contains(event.relatedTarget as Node | null)) return;
+		open = false;
+		// Abandoned search text goes back to showing the selection it never replaced.
+		query = null;
 	}
 </script>
 
 <div class="field" onfocusout={closeOptions}>
-	<div class="input-group" class:filled={!!value} class:has-icon={!!icon}>
+	<div class="input-group" class:filled={!!text} class:has-icon={!!icon}>
 		<input
 			{id}
 			type="search"
-			bind:value
+			value={text}
 			{placeholder}
 			{required}
 			{disabled}
@@ -75,7 +110,9 @@
 			onfocus={openOptions}
 			oninput={filterOptions}
 			onkeydown={(event) => {
-				if (event.key === 'Escape') open = false;
+				if (event.key !== 'Escape') return;
+				open = false;
+				query = null;
 			}}
 			class="input"
 		/>
@@ -103,27 +140,34 @@
 				disabled={disabled}
 				onclick={() => {
 					open = !open;
-					query = '';
+					query = null;
 				}}
 			>
 				<Icon icon={chevronDownIcon} width="18" height="18" class={open ? 'open' : ''} />
 			</button>
 		</div>
 		{#if open}
-			<div id={`${id}-options`} class="options" role="listbox" aria-label={`${label} options`}>
-				{#each matchingOptions as option (option)}
+			<div
+				id={`${id}-options`}
+				class="options"
+				class:above={placement === 'top'}
+				role="listbox"
+				aria-label={`${label} options`}
+			>
+				{#each matchingOptions as option (option.value)}
 					<button
 						type="button"
-						class:selected={option === value}
+						class:selected={option.value === value}
 						class="option"
 						role="option"
-						aria-selected={option === value}
+						aria-selected={option.value === value}
+						disabled={option.disabled}
 						onclick={() => selectOption(option)}
 					>
-						{option}
+						{option.label}
 					</button>
 				{:else}
-					<p class="empty-options">No matching timezones</p>
+					<p class="empty-options">{emptyText}</p>
 				{/each}
 			</div>
 		{/if}
@@ -317,6 +361,13 @@
 		scrollbar-width: thin;
 	}
 
+	/* Opens over the field instead of under it. Two classes, so it wins on specificity
+	   rather than on source order. */
+	.options.above {
+		top: auto;
+		bottom: calc(100% + 0.5rem);
+	}
+
 	.options::-webkit-scrollbar {
 		width: 0.75rem;
 	}
@@ -350,10 +401,21 @@
 		cursor: pointer;
 	}
 
-	.option:hover,
+	.option:hover:not(:disabled),
 	.option.selected {
 		background: rgb(var(--color-primary) / 0.12);
 		color: rgb(var(--color-primary));
+	}
+
+	.option:focus-visible {
+		outline: 2px solid rgb(var(--color-primary));
+		outline-offset: -2px;
+	}
+
+	/* Listed but unpickable — the dropdown's equivalent of a locked slot cell. */
+	.option:disabled {
+		opacity: 0.4;
+		cursor: not-allowed;
 	}
 
 	.empty-options {

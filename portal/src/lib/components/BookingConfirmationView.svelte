@@ -133,5 +133,10 @@
 		.booking-event-actions {
 			flex-direction: column;
 		}
+
+		/* Stacked full-width buttons above it, so the link centres under them. */
+		.booking-new-link {
+			text-align: center;
+		}
 	}
 </style>

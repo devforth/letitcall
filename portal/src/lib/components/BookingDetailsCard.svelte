@@ -1,7 +1,7 @@
 <script lang="ts">
 	import Icon from '@iconify/svelte';
 	import notesIcon from '@iconify-icons/tabler/align-left';
-	import pencilIcon from '@iconify-icons/tabler/pencil';
+	import pencilIcon from '@iconify-icons/mdi/edit';
 	import userIcon from '@iconify-icons/tabler/user';
 	import usersIcon from '@iconify-icons/tabler/users';
 

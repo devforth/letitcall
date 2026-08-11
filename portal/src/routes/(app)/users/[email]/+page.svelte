@@ -87,6 +87,7 @@
 			<Input id="edit-full-name" label="Full name" bind:value={fullName} autocomplete="name" />
 			<SearchableSelect
 				id="edit-timezone"
+				emptyText="No matching timezones"
 				label="Timezone"
 				icon={worldIcon}
 				options={timezones}
