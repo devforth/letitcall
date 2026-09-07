@@ -57,12 +57,13 @@
 
 <style>
 	.copy-trigger {
-		color: rgb(var(--color-text));
+		background: rgb(var(--color-primary) / 0.14);
+		color: rgb(var(--color-primary));
 		--tw-ring-color: rgb(var(--color-primary));
 	}
 
 	.copy-trigger:hover {
-		background: rgb(var(--color-primary) / 0.14);
+		background: rgb(var(--color-primary) / 0.22);
 		color: rgb(var(--color-primary));
 	}
 </style>

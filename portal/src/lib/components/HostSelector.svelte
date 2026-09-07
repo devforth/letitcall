@@ -7,12 +7,14 @@
 		required = $bindable([]),
 		optional = $bindable([]),
 		error = '',
+		embedded = false,
 		onchange
 	}: {
 		users: ManagedUser[];
 		required?: string[];
 		optional?: string[];
 		error?: string;
+		embedded?: boolean;
 		onchange?: () => void;
 	} = $props();
 
@@ -37,16 +39,21 @@
 	id="hosts"
 	tabindex="-1"
 	aria-describedby={error ? 'hosts-error' : 'hosts-description'}
-	class="rounded-lg border-2 p-4 outline-none focus:ring-2 focus:ring-[rgb(var(--color-primary))]/25 focus:ring-offset-2 sm:p-5"
-	style="background: rgb(var(--color-foreground)); border-color: rgb(var(--color-border)); box-shadow: var(--shadow-small);"
+	class={`p-4 outline-none sm:p-5 ${embedded ? '' : 'rounded-lg border-2'}`}
+	style={embedded
+		? undefined
+		: 'background: rgb(var(--color-foreground)); border-color: rgb(var(--color-border)); box-shadow: var(--shadow-small);'}
 >
-	<legend class="px-2 text-sm font-semibold" style="color: rgb(var(--color-text));">Hosts</legend>
+	<legend class={`text-sm font-semibold ${embedded ? '' : 'px-2'}`} style="color: rgb(var(--color-text));">Hosts</legend>
 	<p id="hosts-description" class="mb-4 text-sm" style="color: rgb(var(--color-text) / 0.65);">Required hosts determine availability. Optional hosts receive the booking without blocking a time.</p>
 	<div class="grid gap-2">
 		{#each users as user (user.email)}
-			<div class="grid min-h-14 gap-3 rounded-lg border p-3 sm:grid-cols-[1fr_auto] sm:items-center" style="border-color: rgb(var(--color-border)); background: rgb(var(--color-text) / 0.035);">
+			<div
+				class="grid min-h-14 gap-3 rounded-lg border p-3 sm:grid-cols-[1fr_auto] sm:items-center"
+				style={`border-color: rgb(var(--color-border)); ${embedded ? '' : 'background: rgb(var(--color-text) / 0.035);'}`}
+			>
 				<div class="flex min-w-0 items-center gap-3">
-					<Avatar name={user.fullName} email={user.email} avatarPath={user.avatarPath} size={36} rounded="lg" ring />
+					<Avatar name={user.fullName} email={user.email} avatarPath={user.avatarPath} size={36} ring />
 					<span class="min-w-0 text-sm">
 						<span class="block truncate font-medium" style="color: rgb(var(--color-text));">{user.email}</span>
 						<span class="block text-xs" style="color: rgb(var(--color-text) / 0.65);">{user.googleConnected ? 'Google Calendar connected' : 'Email only'}</span>

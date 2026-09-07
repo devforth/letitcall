@@ -132,6 +132,7 @@
 
 	.input-group {
 		position: relative;
+		margin: 3px;
 	}
 
 	.input-group > svg {
@@ -180,12 +181,13 @@
 		font-size: 0.9rem;
 		color: rgb(var(--color-text));
 		background: rgb(var(--color-foreground));
-		border: 2px solid rgb(var(--color-border));
+		border: 0;
 		border-radius: 10px;
 		padding: 10px 12px 10px 40px;
 		min-height: 44px;
 		outline: none;
-		transition: border-color 0.18s, box-shadow 0.18s;
+		box-shadow: 0 0 0 1px rgb(var(--color-border));
+		transition: box-shadow 0.18s;
 	}
 
 	.input.has-trailing {
@@ -235,13 +237,15 @@
 	}
 
 	.input:focus {
-		border-color: rgb(var(--color-primary));
-		box-shadow: 0 0 0 3px rgb(var(--color-primary) / 0.25);
+		box-shadow:
+			0 0 0 1px rgb(var(--color-primary)),
+			0 0 0 3px rgb(var(--color-primary) / 0.25);
 	}
 
 	.has-error .input {
-		border-color: rgb(var(--error));
-		box-shadow: 0 0 0 3px rgb(var(--error) / 0.15);
+		box-shadow:
+			0 0 0 1px rgb(var(--error)),
+			0 0 0 3px rgb(var(--error) / 0.15);
 	}
 
 	.has-error > svg,
@@ -252,23 +256,26 @@
 	/* neutralize the browser autofill background/text so it matches the field */
 	.input:-webkit-autofill,
 	.input:-webkit-autofill:hover {
-		-webkit-box-shadow: 0 0 0 1000px rgb(var(--color-foreground)) inset !important;
+		-webkit-box-shadow:
+			0 0 0 1px rgb(var(--color-border)),
+			0 0 0 1000px rgb(var(--color-foreground)) inset !important;
 		-webkit-text-fill-color: rgb(var(--color-text)) !important;
 		caret-color: rgb(var(--color-text));
-		border-color: rgb(var(--color-border));
 		transition: background-color 9999s ease-in-out 0s;
 	}
 
 	.input:-webkit-autofill:focus {
 		-webkit-box-shadow:
-			0 0 0 1000px rgb(var(--color-foreground)) inset,
-			0 0 0 3px rgb(var(--color-primary) / 0.25) !important;
-		border-color: rgb(var(--color-primary));
+			0 0 0 1px rgb(var(--color-primary)),
+			0 0 0 3px rgb(var(--color-primary) / 0.25),
+			0 0 0 1000px rgb(var(--color-foreground)) inset !important;
 	}
 
 	.has-error .input:-webkit-autofill {
-		-webkit-box-shadow: 0 0 0 1000px rgb(var(--color-foreground)) inset !important;
-		border-color: rgb(var(--error));
+		-webkit-box-shadow:
+			0 0 0 1px rgb(var(--error)),
+			0 0 0 3px rgb(var(--error) / 0.15),
+			0 0 0 1000px rgb(var(--color-foreground)) inset !important;
 	}
 
 	.input:disabled {

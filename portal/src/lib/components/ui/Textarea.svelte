@@ -51,6 +51,7 @@
 
 	.input-group {
 		position: relative;
+		margin: 3px;
 	}
 
 	/* Sits on the first text line rather than the middle of the box. */
@@ -73,12 +74,13 @@
 		font-size: 0.9rem;
 		color: rgb(var(--color-text));
 		background: rgb(var(--color-foreground));
-		border: 2px solid rgb(var(--color-border));
+		border: 0;
 		border-radius: 10px;
 		padding: 10px 12px 10px 40px;
 		resize: vertical;
 		outline: none;
-		transition: border-color 0.18s, box-shadow 0.18s;
+		box-shadow: 0 0 0 1px rgb(var(--color-border));
+		transition: box-shadow 0.18s;
 	}
 
 	/* label doubles as placeholder — hide the native placeholder until focused */
@@ -123,8 +125,9 @@
 	}
 
 	.input:focus {
-		border-color: rgb(var(--color-primary));
-		box-shadow: 0 0 0 3px rgb(var(--color-primary) / 0.25);
+		box-shadow:
+			0 0 0 1px rgb(var(--color-primary)),
+			0 0 0 3px rgb(var(--color-primary) / 0.25);
 	}
 
 	.input:disabled {

@@ -25,6 +25,7 @@
 		"vite": "^8.0.16"
 	},
 	"dependencies": {
+		"@iconify-icons/charm": "^2.0.1",
 		"@iconify-icons/humbleicons": "^1.2.4",
 		"@iconify-icons/la": "^1.2.3",
 		"@iconify-icons/logos": "^1.2.36",

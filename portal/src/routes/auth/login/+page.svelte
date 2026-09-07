@@ -62,54 +62,18 @@
 		background-color: rgb(var(--color-background));
 	}
 
-	/* Input styling */
-	:global(input) {
-		border-color: #e5e5e5 !important;
-		border-radius: 10px !important;
-		background-color: rgb(var(--color-foreground)) !important;
-		transition: all 0.2s !important;
-	}
-
-	:global(input:focus) {
-		outline: none !important;
-		border-color: rgb(var(--color-primary)) !important;
-		box-shadow: none !important;
-	}
-
-	/* Browser autofill re-adds a focus glow via !important and paints its own
-	   background — strip the glow and match the field background so it never
-	   changes. Scoped to .login-bg to win specificity. */
-	:global(.login-bg input:-webkit-autofill),
-	:global(.login-bg input:-webkit-autofill:focus) {
-		-webkit-box-shadow: 0 0 0 1000px rgb(var(--color-foreground)) inset !important;
-		-webkit-text-fill-color: rgb(var(--color-text)) !important;
-	}
-
 	/* Label styling */
 	:global(label span) {
 		font-weight: 600 !important;
 	}
 
 	/* Dark mode overrides */
-	:global(html.dark input) {
-		border-color: rgb(var(--color-border)) !important;
-	}
-
-	:global(html.dark input:focus) {
-		border-color: rgb(var(--color-primary)) !important;
-		box-shadow: none !important;
-	}
-
 	:global(html.dark) .bg-red-50 {
 		background-color: rgba(127, 29, 29, 0.2);
 	}
 
 	:global(html.dark) .border-red-200 {
 		border-color: rgb(127, 29, 29);
-	}
-
-	:global(html.dark) .bg-gray-300 {
-		background-color: rgb(75, 85, 99);
 	}
 
 </style>
@@ -129,7 +93,7 @@
 		<div class="hidden lg:flex lg:col-span-2 flex-col justify-center px-12 xl:px-20">
 			<h2 class="mb-8 text-3xl xl:text-4xl font-bold leading-tight">
 				<span class="mb-3 text-3xl xl:text-5xl flex flex-col items-start gap-4 text-primary leading-none">
-					<BrandLogo class="size-16 rounded-xl border-2 border-border object-cover" />
+					<BrandLogo class="size-16 rounded-xl object-cover shadow-[0_0_0_1px_rgb(var(--color-border))]" />
 					{branding.name.toUpperCase()}
 				</span>
 				<span>Scheduling Admin Panel</span>
@@ -137,7 +101,7 @@
 		</div>
 
 		<section class="w-full max-w-md mx-auto lg:mx-0 lg:col-span-2 px-4 lg:pl-8 xl:pl-12" aria-labelledby="login-title">
-			<div class="p-8 sm:p-10 rounded-2xl border-2 border-border" style="background: rgb(var(--color-foreground)); box-shadow: var(--shadow);">
+			<div class="p-8 sm:p-10 rounded-2xl" style="background: rgb(var(--color-foreground)); box-shadow: 0 0 0 1px rgb(var(--color-border)), var(--shadow);">
 				<div class="mb-8">
 					<h1 id="login-title" class="text-3xl font-normal tracking-tight">Welcome Back</h1>
 					<p class="mt-2 text-sm">Sign in to manage your team's schedule</p>
@@ -164,9 +128,9 @@
 
 				{#if googleEnabled}
 					<div class="my-4 flex items-center gap-3" aria-hidden="true">
-						<div class="h-px flex-1 bg-gray-300"></div>
+						<div class="h-px flex-1 bg-border"></div>
 						<span class="text-sm font-medium opacity-50">or</span>
-						<div class="h-px flex-1 bg-gray-300"></div>
+						<div class="h-px flex-1 bg-border"></div>
 					</div>
 					<Button variant="secondary" fullWidth class="lg-pd" onclick={googleLogin}>
 						<span class="flex items-center gap-2">

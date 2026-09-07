@@ -61,7 +61,11 @@
 	}
 
 	// Pages that render their own blocks instead of the shared content card.
-	const bareContent = $derived(page.url.pathname === appPath('/users'));
+	const bareContent = $derived(
+		page.url.pathname === appPath('/') ||
+		page.url.pathname === appPath('/scheduling') ||
+		page.url.pathname === appPath('/users')
+	);
 
 	async function logout() {
 		loggingOut = true;
@@ -123,8 +127,8 @@
 	style="--sidebar-w: {navCollapsed ? '4.5rem' : '16rem'};"
 >
 	<header
-		class="sticky top-0 z-20 border-b-2 md:h-[66px]"
-		style="background: rgb(var(--color-foreground)); border-color: rgb(var(--color-border)); box-shadow: 0 0.75rem 1rem -0.75rem rgb(0 0 0 / 0.2);"
+		class="sticky top-0 z-20 md:h-[66px]"
+		style="background: rgb(var(--color-foreground)); box-shadow: inset 0 -1px rgb(var(--color-border)), 0 0.75rem 1rem -0.75rem rgb(0 0 0 / 0.2);"
 	>
 		<div
 			class="mx-auto flex w-full max-w-[76rem] flex-wrap items-center justify-between gap-4 px-4 py-2 sm:px-6 lg:px-8"
@@ -147,7 +151,7 @@
 					<MenuToggleIcon open={navOpen} />
 				</button>
 				<a class="flex min-w-0 items-center gap-3 tracking-tight" href={appPath('/')}>
-					<BrandLogo class="size-10 shrink-0 rounded-lg border-2 border-black object-cover" />
+					<BrandLogo class="size-10 shrink-0 rounded-lg object-cover shadow-[0_0_0_1px_rgb(var(--color-border))]" />
 					<span class="flex min-w-0 flex-col leading-tight">
 						<span class="truncate text-lg font-bold" style="color: rgb(var(--color-primary));">{branding.name}</span>
 						<span class="hidden text-sm font-bold sm:block">Scheduling Admin Panel</span>
@@ -164,7 +168,7 @@
 					<button
 						type="button"
 						class="flex items-center gap-2 rounded-full py-1 pl-1 pr-3"
-						style="background: rgb(var(--color-foreground)); border: 2px solid rgb(var(--color-border)); box-shadow: var(--shadow-small); outline: none;"
+						style="background: rgb(var(--color-foreground)); border: 0; box-shadow: 0 0 0 1px rgb(var(--color-border)), var(--shadow-small); outline: none;"
 						aria-haspopup="menu"
 						aria-expanded={menuOpen}
 						aria-label="Account menu"
@@ -192,7 +196,7 @@
 						<!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
 						<div
 							class="absolute right-0 z-40 mt-2 w-64 overflow-hidden rounded-xl p-2"
-							style="background: rgb(var(--color-foreground)); border: 2px solid rgb(var(--color-border)); box-shadow: var(--shadow);"
+							style="background: rgb(var(--color-foreground)); border: 0; box-shadow: 0 0 0 1px rgb(var(--color-border)), var(--shadow);"
 							role="menu"
 							tabindex="-1"
 							onclick={(e) => e.stopPropagation()}
@@ -282,8 +286,8 @@
 	<div class="contents">
 		<nav
 			id="app-sidebar"
-			class={`fixed inset-y-0 left-0 z-40 w-72 overflow-y-auto border-r-2 p-4 transition-[transform,width] duration-300 ease-out motion-reduce:transition-none ${navOpen ? 'translate-x-0' : '-translate-x-full'} md:flex md:min-h-screen md:w-[var(--sidebar-w)] md:min-w-0 md:flex-col md:p-0 md:translate-x-0 md:overflow-hidden`}
-			style="background: rgb(var(--color-foreground)); border-color: rgb(var(--color-border));"
+			class={`fixed inset-y-0 left-0 z-40 flex w-72 flex-col overflow-y-auto p-4 transition-[transform,width] duration-300 ease-out motion-reduce:transition-none ${navOpen ? 'translate-x-0' : '-translate-x-full'} md:w-[var(--sidebar-w)] md:min-w-0 md:p-0 md:translate-x-0 md:overflow-hidden`}
+			style="background: rgb(var(--color-foreground)); box-shadow: inset -1px 0 rgb(var(--color-border));"
 			aria-label="Primary navigation"
 			inert={isMobile && !navOpen}
 		>
@@ -300,10 +304,7 @@
 				</button>
 			</div>
 
-			<div
-				class="hidden h-[66px] items-center border-b-2 px-4 md:flex"
-				style="border-color: rgb(var(--color-border));"
-			>
+			<div class="hidden h-[66px] items-center px-4 md:flex">
 				<button
 					type="button"
 					class="menu-toggle-button flex size-10 shrink-0 items-center justify-center rounded-lg"
@@ -314,11 +315,6 @@
 				>
 					<MenuToggleIcon open={!navCollapsed} />
 				</button>
-				{#if !navCollapsed}
-					<div class="ml-auto">
-						<ThemeToggle />
-					</div>
-				{/if}
 			</div>
 
 			<div class="w-full md:px-4 md:pt-4">
@@ -340,6 +336,17 @@
 						</li>
 					{/each}
 				</ul>
+			</div>
+
+			<div class={`mt-auto ${navCollapsed ? 'flex justify-center p-2' : 'p-4'}`}>
+				{#if navCollapsed}
+					<ThemeToggle />
+				{:else}
+					<div class="flex items-center justify-between gap-3">
+						<span class="text-sm font-medium" style="color: rgb(var(--color-text));">Theme</span>
+						<ThemeToggle />
+					</div>
+				{/if}
 			</div>
 
 		</nav>

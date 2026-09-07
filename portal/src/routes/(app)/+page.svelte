@@ -4,10 +4,9 @@
 	import calendarEventIcon from '@iconify-icons/tabler/calendar-event';
 	import clockIcon from '@iconify-icons/tabler/clock';
 	import historyIcon from '@iconify-icons/tabler/history';
-	import externalLinkIcon from '@iconify-icons/tabler/external-link';
 	import { callApi } from '$lib/api';
 	import type { Booking, EventType, ManagedUser } from '$lib/types';
-	import HostBadges from '$lib/components/HostBadges.svelte';
+	import BookingList from '$lib/components/BookingList.svelte';
 	import PageTitle from '$lib/components/PageTitle.svelte';
 
 	let bookings = $state<Booking[]>([]);
@@ -16,6 +15,8 @@
 	let loading = $state(true);
 	let now = $state(new Date());
 	let clock: number | undefined;
+
+	const blockStyle = 'background: rgb(var(--color-foreground)); box-shadow: var(--shadow-small);';
 
 	const upcoming = $derived(
 		bookings
@@ -50,108 +51,86 @@
 		if (clock !== undefined) window.clearInterval(clock);
 	});
 
-	function relativeTime(value: string): string {
-		const seconds = (new Date(value).getTime() - now.getTime()) / 1000;
-		const formatter = new Intl.RelativeTimeFormat(undefined, { numeric: 'always' });
-		if (Math.abs(seconds) < 3600) return formatter.format(Math.round(seconds / 60), 'minute');
-		if (Math.abs(seconds) < 86_400) return formatter.format(Math.round(seconds / 3600), 'hour');
-		return formatter.format(Math.round(seconds / 86_400), 'day');
-	}
-
-	function localDate(value: string): string {
-		return new Intl.DateTimeFormat(undefined, {
-			dateStyle: 'full',
-			timeStyle: 'short'
-		}).format(new Date(value));
-	}
-
-	function bookingHosts(booking: Booking) {
-		const eventType = eventTypes.find((candidate) => candidate.eventSlug === booking.eventSlug);
-		return booking.recipientEmails.map((email) => ({
-			email,
-			role: eventType?.requiredHostEmails.includes(email)
-				? ('Required' as const)
-				: eventType?.optionalHostEmails.includes(email)
-					? ('Optional' as const)
-					: ('Host' as const)
-		}));
-	}
 </script>
 
 <PageTitle title="Bookings" />
 
-<section aria-labelledby="bookings-title">
-	<div>
-		<h1 id="bookings-title" class="text-2xl font-semibold tracking-tight">Bookings</h1>
-		<p class="mt-2 text-sm">Upcoming appointments and booking history.</p>
+<section aria-labelledby="bookings-title" class="flex flex-col gap-4">
+	<div class="rounded-lg p-4 sm:p-5" style={blockStyle}>
+		<div class="flex min-w-0 items-center gap-4">
+			<div
+				class="grid size-12 shrink-0 place-items-center rounded-lg"
+				style="background: rgb(var(--color-primary) / 0.12); color: rgb(var(--color-primary));"
+			>
+				<Icon icon={calendarEventIcon} width="24" height="24" />
+			</div>
+			<div>
+				<div class="flex items-center gap-3">
+					<h1 id="bookings-title" class="text-2xl font-semibold tracking-tight" style="color: rgb(var(--color-text));">Bookings</h1>
+					<span class="inline-flex items-center rounded-md px-2 py-1 text-xs font-semibold" style="background: rgb(var(--color-primary) / 0.1); color: rgb(var(--color-primary));">
+						{loading ? 'Loading…' : `${bookings.length} ${bookings.length === 1 ? 'booking' : 'bookings'}`}
+					</span>
+				</div>
+				<p class="text-sm" style="color: rgb(var(--color-text) / 0.65);">Upcoming appointments and booking history.</p>
+			</div>
+		</div>
 	</div>
 
 	{#if loading}
-		<p class="mt-6 border border-black p-6 text-sm">Loading bookings…</p>
+		<div class="rounded-lg" style={blockStyle}>
+			<p class="p-8 text-sm" style="color: rgb(var(--color-text) / 0.65);">Loading bookings…</p>
+		</div>
 	{:else if bookings.length === 0}
-		<div class="grid min-h-[60vh] place-items-center text-center">
-			<div>
-				<Icon icon={calendarEventIcon} width="36" height="36" class="mx-auto" />
-				<p class="mt-4 font-medium">No booking yet</p>
+		<div class="rounded-lg" style={blockStyle}>
+			<div class="px-5 py-14 text-center">
+				<div class="mx-auto flex max-w-xs flex-col items-center">
+					<Icon icon={calendarEventIcon} width="30" height="30" style="color: rgb(var(--color-text) / 0.65);" />
+					<p class="mt-3 font-semibold" style="color: rgb(var(--color-text));">No bookings yet</p>
+					<p class="mt-1 text-xs" style="color: rgb(var(--color-text) / 0.65);">New appointments will appear here.</p>
+				</div>
 			</div>
 		</div>
 	{:else}
-		<section class="mt-8" aria-labelledby="upcoming-title">
-			<div class="flex items-center gap-2 border-b border-black pb-3">
-				<Icon icon={clockIcon} width="20" height="20" />
-				<h2 id="upcoming-title" class="text-lg font-semibold">Upcoming</h2>
+		<section class="booking-group overflow-hidden rounded-lg" style={blockStyle} aria-labelledby="upcoming-title">
+			<div class="booking-group-heading">
+				<Icon icon={clockIcon} width="18" height="18" />
+				<h2 id="upcoming-title" class="text-sm font-semibold">Upcoming</h2>
+				<span class="group-count">{upcoming.length}</span>
 			</div>
-			<div class="mt-4 grid gap-3">
-				{#each upcoming as booking (booking.id)}
-					<article class="grid gap-4 border border-black p-4 sm:grid-cols-[1fr_auto] sm:items-center">
-						<div>
-							<h3 class="font-semibold">{booking.title}</h3>
-							<p class="mt-1 text-sm">{booking.attendeeName} · {booking.attendeeEmail}</p>
-							<p class="mt-2 text-xs">{localDate(booking.time)}</p>
-							<div class="mt-3"><HostBadges hosts={bookingHosts(booking)} {users} /></div>
-						</div>
-						<div class="flex items-center gap-2">
-							<p class="w-fit border border-black px-3 py-2 text-sm font-medium">{relativeTime(booking.time)}</p>
-							{#if booking.manageURL}
-								<a class="grid size-10 place-items-center border border-black hover:bg-black hover:text-white" href={booking.manageURL} aria-label={`Manage ${booking.title}`} title="Open booking page">
-									<Icon icon={externalLinkIcon} width="18" height="18" />
-								</a>
-							{/if}
-						</div>
-					</article>
-				{:else}
-					<p class="border border-black p-6 text-sm">No upcoming bookings.</p>
-				{/each}
-			</div>
+			{#if upcoming.length > 0}
+				<BookingList bookings={upcoming} {eventTypes} {users} {now} />
+			{:else}
+				<p class="p-5 text-sm" style="color: rgb(var(--color-text) / 0.65);">No upcoming bookings.</p>
+			{/if}
 		</section>
 
 		{#if history.length > 0}
-			<section class="mt-12" aria-labelledby="history-title">
-				<div class="flex items-center gap-2 border-b border-black pb-3">
-					<Icon icon={historyIcon} width="20" height="20" />
-					<h2 id="history-title" class="text-lg font-semibold">Booking history</h2>
+			<section class="booking-group overflow-hidden rounded-lg" style={blockStyle} aria-labelledby="history-title">
+				<div class="booking-group-heading">
+					<Icon icon={historyIcon} width="18" height="18" />
+					<h2 id="history-title" class="text-sm font-semibold">Booking history</h2>
+					<span class="group-count">{history.length}</span>
 				</div>
-				<div class="mt-4 grid gap-3">
-					{#each history as booking (booking.id)}
-						<article class="grid gap-3 border border-black p-4 opacity-60 sm:grid-cols-[1fr_auto] sm:items-center">
-							<div>
-								<h3 class="font-semibold">{booking.title}</h3>
-								<p class="mt-1 text-sm">{booking.attendeeName} · {booking.attendeeEmail}</p>
-								<p class="mt-2 text-xs">{localDate(booking.time)}</p>
-								<div class="mt-3"><HostBadges hosts={bookingHosts(booking)} {users} /></div>
-							</div>
-							<div class="flex items-center gap-3">
-								<p class="text-sm">{booking.canceledAt ? 'Canceled' : relativeTime(booking.time)}</p>
-								{#if booking.manageURL}
-									<a class="grid size-10 place-items-center border border-black hover:bg-black hover:text-white" href={booking.manageURL} aria-label={`Manage ${booking.title}`} title="Open booking page">
-										<Icon icon={externalLinkIcon} width="18" height="18" />
-									</a>
-								{/if}
-							</div>
-						</article>
-					{/each}
-				</div>
+				<BookingList bookings={history} {eventTypes} {users} {now} historical />
 			</section>
 		{/if}
 	{/if}
 </section>
+
+<style>
+	.booking-group-heading {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		border-bottom: 1px solid rgb(var(--color-border));
+		padding: 0.75rem 1rem;
+		background: rgb(var(--color-text) / 0.06);
+		color: rgb(var(--color-text));
+	}
+
+	.group-count {
+		color: rgb(var(--color-text) / 0.45);
+		font-size: 0.75rem;
+		font-variant-numeric: tabular-nums;
+	}
+</style>

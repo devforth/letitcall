@@ -392,7 +392,11 @@
 										<!-- The wrappers collapse to display: contents above the phone
 										     breakpoint, where the three labels stack centred as before. -->
 										<span class="bk-head-icon" aria-hidden="true">
-											<Icon icon={step.icon} width="22" height="22" />
+											{#if stepState(i) === 'is-done'}
+												<Icon icon={boldCheckIcon} width="14" height="14" />
+											{:else}
+												{i + 1}
+											{/if}
 										</span>
 										<span class="bk-head-text">
 											<span class="bk-head-line">
@@ -732,7 +736,7 @@
 		pointer-events: none;
 	}
 
-	/* Booking progress: one filling rail, a marker per step, labels beneath. */
+	/* Booking progress: horizontal arrow stepper on desktop */
 	.bk-stepper {
 		display: flex;
 		flex: 1;
@@ -740,22 +744,18 @@
 		flex-direction: column;
 		gap: 0;
 	}
-	/* The rail row is as tall as a marker, so the circles never overlap the labels. */
+	/* The rail is hidden on desktop, shown on mobile */
 	.bk-rail {
-		display: flex;
-		align-items: center;
-		height: 36px;
+		display: none;
 	}
 	.bk-track {
 		position: relative;
 		flex: 1;
 		height: 6px;
-		/* Ends sit under the centres of the outer labels, a sixth in from each side. */
 		margin: 0 calc(100% / 6);
 		border-radius: 999px;
 		background: rgb(var(--color-text) / 0.12);
 	}
-	/* Fill spans from the first marker to the furthest one reached. */
 	.bk-fill {
 		position: absolute;
 		inset: 0 auto 0 0;
@@ -764,7 +764,6 @@
 		background: rgb(var(--color-primary));
 		transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 	}
-	/* Markers straddle the ends of the track, so they sit centred on it. */
 	.bk-marks {
 		position: absolute;
 		inset: 0 -18px;
@@ -796,96 +795,151 @@
 		box-shadow: inset 0 0 0 2px rgb(var(--color-primary));
 		color: rgb(var(--color-primary));
 	}
-	/* Scale plain markers inside a fixed footprint so changing steps does not
-	   reflow the rail while the active icon appears. */
 	.bk-dot:not(.is-active) {
 		transform: scale(0.5);
 	}
 	.bk-labels {
-		display: grid;
-		grid-template-columns: repeat(3, minmax(0, 1fr));
-		list-style: none;
-		margin: 0;
-		padding: 0;
-	}
-	.bk-head {
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		gap: 2px;
-		width: 100%;
-		padding: 0;
-		border: 0;
-		background: transparent;
-		font: inherit;
-		color: rgb(var(--color-text) / 0.5);
-		text-align: center;
-	}
-	.bk-head:not(:disabled) {
-		cursor: pointer;
-	}
-	.bk-head:not(:disabled):hover .bk-title {
-		text-decoration: underline;
-	}
-	/* Phone-only parts of the head; the wrappers hand their children straight back to
-	   the column layout everywhere else. */
-	.bk-head-icon {
 		display: none;
 	}
-	.bk-head-text,
-	.bk-head-line {
-		display: contents;
-	}
-	/* Only the phone layout shows it — wider screens have all three labels on screen,
-	   which says the same thing. */
-	.bk-count {
-		display: none;
-		font-size: 12px;
-		font-weight: 600;
-		line-height: 1.3;
-		color: rgb(var(--color-text) / 0.5);
-	}
-	/* Only the step you are on is coloured; the total stays quiet beside it. */
-	.bk-step.is-active .bk-count-current {
-		color: rgb(var(--color-primary));
-	}
-	/* The divider carries no weight of its own — both numbers keep theirs. */
-	.bk-count-slash {
-		margin: 0 0.2em;
-		font-weight: 400;
-	}
-	.bk-title {
-		font-size: 15px;
-		font-weight: 600;
-		line-height: 1.25;
-		transition: font-size 0.3s;
-	}
-	.bk-step.is-done .bk-head {
-		color: rgb(var(--color-primary));
-	}
-	.bk-step.is-active .bk-head {
-		color: rgb(var(--color-primary));
-	}
-	.bk-step.is-active .bk-title {
-		font-size: 17px;
-	}
-	.bk-sub {
-		font-size: 12.5px;
-		font-weight: 500;
-		line-height: 1.35;
-		color: rgb(var(--color-text) / 0.5);
-	}
-	.bk-step.is-active .bk-sub {
-		color: rgb(var(--color-text) / 0.7);
-	}
-	.bk-step.is-upcoming .bk-sub {
-		color: rgb(var(--color-text) / 0.35);
+	/* Desktop: horizontal arrow stepper bar */
+	@media (min-width: 641px) {
+		.bk-labels {
+			display: flex;
+			list-style: none;
+			margin: 0 0 2rem 0;
+			padding: 0;
+			gap: 0;
+			height: 3.5rem;
+			background: rgb(var(--color-background));
+			border-radius: 8px;
+			overflow: hidden;
+			flex-shrink: 0;
+		}
+		.bk-step {
+			flex: 1;
+			position: relative;
+			display: flex;
+			align-items: stretch;
+			border: 1px solid rgb(var(--color-border));
+		}
+		.bk-step.is-upcoming {
+			background: rgb(var(--color-background));
+			color: rgb(var(--color-text) / 0.5);
+		}
+		.bk-step.is-done {
+			background: rgb(var(--color-background));
+			color: rgb(var(--color-text) / 0.75);
+		}
+		.bk-step.is-active {
+			background: rgb(var(--color-primary));
+			color: rgb(var(--color-contrast-text));
+		}
+		.bk-step:not(:last-child)::after {
+			content: '';
+			position: absolute;
+			right: -17px;
+			top: -1px;
+			bottom: -1px;
+			width: 32px;
+			background: rgb(var(--color-border));
+			clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 50%, calc(100% - 12px) 100%, 0 100%);
+			z-index: 1;
+		}
+		.bk-step:not(:last-child)::before {
+			content: '';
+			position: absolute;
+			right: -16px;
+			top: 0;
+			bottom: 0;
+			width: 32px;
+			background: inherit;
+			clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 50%, calc(100% - 12px) 100%, 0 100%);
+			z-index: 2;
+		}
+		.bk-step:not(:disabled):not(.is-upcoming) {
+			cursor: pointer;
+		}
+		.bk-step.is-done:not(:disabled):hover {
+			background: color-mix(in srgb, rgb(var(--color-primary)) 12%, rgb(var(--color-background)));
+		}
+		.bk-step.is-active:not(:disabled):hover {
+			background: color-mix(in srgb, rgb(var(--color-primary)), white 12%);
+		}
+		.bk-head {
+			display: flex;
+			flex-direction: row;
+			align-items: center;
+			justify-content: center;
+			gap: 0.75rem;
+			width: 100%;
+			padding: 0 1.5rem;
+			border: 0;
+			background: transparent;
+			font: inherit;
+			color: inherit;
+			text-align: center;
+			position: relative;
+			z-index: 1;
+		}
+		.bk-head:disabled {
+			cursor: not-allowed;
+		}
+		.bk-head-icon {
+			display: flex;
+			flex-shrink: 0;
+			align-items: center;
+			justify-content: center;
+			width: 26px;
+			height: 26px;
+			border-radius: 999px;
+			font-size: 13px;
+			font-weight: 700;
+			box-shadow: inset 0 0 0 2px rgb(var(--color-text) / 0.3);
+			color: rgb(var(--color-text) / 0.55);
+			transition: background 0.3s, box-shadow 0.3s, color 0.3s;
+		}
+		.bk-step.is-done .bk-head-icon {
+			box-shadow: none;
+			background: rgb(var(--color-primary));
+			color: rgb(var(--color-contrast-text));
+		}
+		.bk-step.is-active .bk-head-icon {
+			box-shadow: none;
+			background: rgb(var(--color-contrast-text));
+			color: rgb(var(--color-primary));
+		}
+		.bk-head-text {
+			display: flex;
+			flex-direction: row;
+			align-items: center;
+			gap: 0.75rem;
+			min-width: 0;
+		}
+		.bk-head-line {
+			display: flex;
+			align-items: baseline;
+			gap: 0.5rem;
+		}
+		.bk-count {
+			display: none;
+		}
+		.bk-count-slash {
+			margin: 0 0.1em;
+			font-weight: 400;
+		}
+		.bk-title {
+			font-size: 15px;
+			font-weight: 600;
+			line-height: 1.3;
+		}
+		.bk-sub {
+			display: none;
+		}
 	}
 	.bk-content {
 		flex: 1;
 		min-height: 0;
 		overflow: hidden;
-		margin-top: 52px;
 	}
 
 	.bk-content-without-stepper {
@@ -981,18 +1035,22 @@
 			justify-content: center;
 		}
 
-		/* No rail on a phone: the current step's own icon, count and text carry it,
-		   left aligned like the rest of the panel. */
+		/* Show rail on mobile: the current step's own icon, count and text carry it */
 		.bk-rail {
-			display: none;
+			display: flex;
 		}
 
 		.bk-labels {
+			display: grid !important;
 			grid-template-columns: minmax(0, 1fr);
 		}
 
-		.bk-step:not(.is-active) {
+		.bk-step {
 			display: none;
+		}
+
+		.bk-step.is-active {
+			display: flex;
 		}
 
 		.bk-head {
@@ -1003,16 +1061,19 @@
 			gap: 0.625rem;
 			padding-right: 3rem;
 			text-align: left;
+			background: transparent !important;
+			color: rgb(var(--color-text)) !important;
 		}
 
-		/* Same marker the rail draws for the active step, minus the rail. */
 		.bk-head-icon {
-			display: grid;
+			display: grid !important;
 			place-items: center;
 			width: 36px;
 			height: 36px;
 			flex-shrink: 0;
 			border-radius: 999px;
+			font-size: 15px;
+			font-weight: 700;
 			background: rgb(var(--color-foreground));
 			box-shadow: inset 0 0 0 2px rgb(var(--color-primary));
 			color: rgb(var(--color-primary));
@@ -1032,22 +1093,23 @@
 			gap: 0.375rem;
 		}
 
-		/* With the other two steps hidden, the count says how far along this one is —
-		   parked on the far right, clear of the title and its subtitle. */
 		.bk-count {
-			display: block;
+			display: block !important;
 			position: absolute;
 			top: 0;
 			right: 0;
+			color: rgb(var(--color-primary));
+			font-size: 19px;
+			font-weight: 700;
 		}
 
 		.bk-step.is-active .bk-title {
 			font-size: 19px;
 		}
 
-		.bk-count {
-			font-size: 19px;
-			font-weight: 700;
+		.bk-sub {
+			display: block !important;
+			color: rgb(var(--color-text) / 0.7) !important;
 		}
 
 		.bk-content {

@@ -20,7 +20,7 @@
 		{id}
 		bind:value
 		{disabled}
-		class="min-h-11 w-full rounded-[10px] border-2 bg-[rgb(var(--color-foreground))] px-3 py-2 text-[rgb(var(--color-text))] outline-none transition focus:border-[rgb(var(--color-primary))] focus:ring-2 focus:ring-[rgb(var(--color-primary))]/25 disabled:cursor-not-allowed disabled:opacity-40"
+		class="m-[3px] min-h-11 w-[calc(100%_-_6px)] rounded-[10px] border-0 bg-[rgb(var(--color-foreground))] px-3 py-2 text-[rgb(var(--color-text))] shadow-[0_0_0_1px_rgb(var(--color-border))] outline-none transition focus:shadow-[0_0_0_1px_rgb(var(--color-primary)),0_0_0_3px_rgb(var(--color-primary)/0.25)] disabled:cursor-not-allowed disabled:opacity-40"
 	>
 		{#each options as option (option.value)}
 			<option value={option.value}>{option.label}</option>

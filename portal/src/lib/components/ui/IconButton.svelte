@@ -5,12 +5,14 @@
 		label,
 		children,
 		disabled = false,
+		filled = false,
 		tone = 'neutral',
 		onclick
 	}: {
 		label: string;
 		children: Snippet;
 		disabled?: boolean;
+		filled?: boolean;
 		tone?: 'neutral' | 'primary' | 'danger';
 		onclick?: (event: MouseEvent) => void;
 	} = $props();
@@ -22,7 +24,7 @@
 	title={label}
 	{disabled}
 	{onclick}
-	class="icon-button tone-{tone} grid size-10 shrink-0 cursor-pointer place-items-center rounded-[10px] transition focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent"
+	class="icon-button tone-{tone} grid size-10 shrink-0 cursor-pointer place-items-center rounded-[10px] transition focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent {filled ? 'filled' : ''}"
 >
 	{@render children()}
 </button>
@@ -37,12 +39,14 @@
 		--tw-ring-color: var(--ring-color);
 	}
 
-	.tone-neutral:hover:not(:disabled) {
+	.tone-neutral:hover:not(:disabled),
+	.tone-neutral.filled:not(:disabled) {
 		background: rgb(var(--color-text) / 0.1);
 		color: rgb(var(--color-text));
 	}
 
-	.tone-primary:hover:not(:disabled) {
+	.tone-primary:hover:not(:disabled),
+	.tone-primary.filled:not(:disabled) {
 		background: rgb(var(--color-primary) / 0.14);
 		color: rgb(var(--color-primary));
 	}
@@ -51,7 +55,8 @@
 		--ring-color: rgb(var(--error));
 	}
 
-	.tone-danger:hover:not(:disabled) {
+	.tone-danger:hover:not(:disabled),
+	.tone-danger.filled:not(:disabled) {
 		background: rgb(var(--error) / 0.14);
 		color: rgb(var(--error));
 	}

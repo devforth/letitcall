@@ -105,7 +105,7 @@
 			<div
 				class:calendar-month-next={monthDirection > 0}
 				class:calendar-month-previous={monthDirection < 0}
-				class="calendar-month grid grid-cols-7 gap-1"
+				class="calendar-month grid grid-cols-7 gap-0.5 sm:gap-1"
 			>
 				{#each Array(leadingDays) as _}
 					<span></span>
@@ -136,8 +136,14 @@
 <style>
 	.calendar-dates {
 		border-radius: 0.75rem;
-		padding: 1rem;
+		padding: 0.75rem;
 		background: color-mix(in srgb, rgb(var(--color-text)) 5%, rgb(var(--color-foreground)));
+	}
+
+	@media (min-width: 640px) {
+		.calendar-dates {
+			padding: 1rem;
+		}
 	}
 
 	/* Hover pop for bookable days. :global because the class is applied via a

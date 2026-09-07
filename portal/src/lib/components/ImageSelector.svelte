@@ -25,10 +25,11 @@
 	const imageTemplate = `
 		<cropper-canvas background scale-step="0.1">
 			<cropper-image initial-center-size="cover" rotatable scalable translatable></cropper-image>
+			<cropper-shade class="round-shade" theme-color="rgba(0, 0, 0, 0.35)"></cropper-shade>
 			<cropper-handle action="move" plain></cropper-handle>
 			<cropper-selection class="round-selection" initial-aspect-ratio="1" aspect-ratio="1" initial-coverage="0.8" theme-color="#000" outlined>
 				<cropper-crosshair centered theme-color="#000"></cropper-crosshair>
-				<cropper-handle action="move" theme-color="rgba(0, 0, 0, 0.35)"></cropper-handle>
+				<cropper-handle action="move" plain></cropper-handle>
 			</cropper-selection>
 		</cropper-canvas>
 	`;
@@ -138,7 +139,7 @@
 		<div class="upload-mark">
 			<Icon icon={photoIcon} width="22" height="22" />
 		</div>
-		<div class="min-w-0">
+		<div class="upload-copy min-w-0">
 			<p class="upload-title">{source ? 'Replace selected image' : `Upload ${legend.toLowerCase()}`}</p>
 			<p class="upload-hint">Drop a JPG, PNG, or WebP here, or choose one to crop before saving.</p>
 		</div>
@@ -195,16 +196,18 @@
 
 <style>
 	.image-selector {
-		border: 2px solid rgb(var(--color-border));
+		border: 0;
 		border-radius: 8px;
 		padding: 1rem;
+		box-shadow: 0 0 0 1px rgb(var(--color-border));
 	}
 
 	.selector-legend {
-		padding: 0 0.5rem;
-		font-size: 0.875rem;
-		font-weight: 600;
-		color: rgb(var(--color-text));
+		padding: 0 0.25rem;
+		background: rgb(var(--color-foreground));
+		font-size: 0.72rem;
+		font-weight: 400;
+		color: rgb(var(--color-primary));
 	}
 
 	.current-avatar {
@@ -234,6 +237,26 @@
 		flex-wrap: wrap;
 		align-items: flex-start;
 		gap: 1rem;
+	}
+
+	.selector-body.has-image {
+		align-items: stretch;
+	}
+
+	.selector-body.has-image .upload-surface {
+		grid-template-columns: 1fr;
+		align-content: center;
+		justify-items: center;
+		text-align: center;
+	}
+
+	.selector-body.has-image .upload-copy {
+		max-width: 15rem;
+	}
+
+	.selector-body.has-image .file-trigger {
+		grid-column: auto;
+		justify-self: center;
 	}
 
 	.upload-surface {
@@ -329,6 +352,10 @@
 	.cropper-host :global(cropper-selection.round-selection) {
 		border-radius: 50%;
 		overflow: hidden;
+	}
+
+	.cropper-host :global(cropper-shade.round-shade) {
+		border-radius: 50%;
 	}
 
 	@media (max-width: 480px) {

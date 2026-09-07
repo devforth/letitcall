@@ -8,6 +8,9 @@ importers:
 
   .:
     dependencies:
+      '@iconify-icons/charm':
+        specifier: ^2.0.1
+        version: 2.0.1
       '@iconify-icons/humbleicons':
         specifier: ^1.2.4
         version: 1.2.4
@@ -110,6 +113,9 @@ packages:
 
   '@emnapi/wasi-threads@1.2.2':
     resolution: {integrity: sha512-c95qOXkHdydNKhscBTebqEC1CVAZpyqOfVfBzQ1qgzyl3gfeldUjIggDbIZgDKsHLgnsM+igH7TJ/eAasaVuMA==}
+
+  '@iconify-icons/charm@2.0.1':
+    resolution: {integrity: sha512-BU/p1OZSy4aatRWn4cmH78u6ouJh1qSb/oqr9H8BrAFrPal5a2KxmGVOR3qn9nVyjEAVYMDEGmeqyQ8SRuzMBg==}
 
   '@iconify-icons/humbleicons@1.2.4':
     resolution: {integrity: sha512-J0tKxbuwEy9sQZrNpzeVsgDpeQVWPWY4nO1826q7sq4q83LA+3H6jAHvxwGRjQmovJnuomq/NlG5eJLpy9CJCA==}
@@ -801,6 +807,10 @@ snapshots:
     dependencies:
       tslib: 2.8.1
     optional: true
+
+  '@iconify-icons/charm@2.0.1':
+    dependencies:
+      '@iconify/types': 2.0.0
 
   '@iconify-icons/humbleicons@1.2.4':
     dependencies:

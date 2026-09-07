@@ -184,6 +184,7 @@
 	.input-group {
 		position: relative;
 		align-self: start;
+		margin: 3px;
 	}
 
 	.input {
@@ -192,12 +193,13 @@
 		font-size: 0.9rem;
 		color: rgb(var(--color-text));
 		background: rgb(var(--color-foreground));
-		border: 2px solid rgb(var(--color-border));
+		border: 0;
 		border-radius: 10px;
 		padding: 10px 5rem 10px 12px;
 		min-height: 44px;
 		outline: none;
-		transition: border-color 0.18s, box-shadow 0.18s;
+		box-shadow: 0 0 0 1px rgb(var(--color-border));
+		transition: box-shadow 0.18s;
 	}
 
 	.has-icon .input {
@@ -264,8 +266,9 @@
 	}
 
 	.input:focus {
-		border-color: rgb(var(--color-primary));
-		box-shadow: 0 0 0 3px rgb(var(--color-primary) / 0.25);
+		box-shadow:
+			0 0 0 1px rgb(var(--color-primary)),
+			0 0 0 3px rgb(var(--color-primary) / 0.25);
 	}
 
 	.input:disabled {
@@ -353,10 +356,10 @@
 		max-height: 16rem;
 		overflow-y: auto;
 		padding: 0.375rem;
-		border: 2px solid rgb(var(--color-border));
+		border: 0;
 		border-radius: 10px;
 		background: rgb(var(--color-foreground));
-		box-shadow: var(--shadow-small);
+		box-shadow: 0 0 0 1px rgb(var(--color-border)), var(--shadow-small);
 		scrollbar-color: rgb(var(--color-border)) transparent;
 		scrollbar-width: thin;
 	}

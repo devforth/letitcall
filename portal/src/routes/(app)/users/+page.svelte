@@ -206,24 +206,20 @@
 	{#if showForm}
 		<div class="rounded-[0.625rem] border-2" style={newUserContainerStyle}>
 			<form
-				class="ml-1 grid gap-5 rounded-md rounded-l-lg p-4 sm:p-5 lg:grid-cols-3"
+				class="ml-1 grid gap-5 rounded-md rounded-l-lg p-4 sm:p-5 lg:grid-cols-2"
 				style="background: rgb(var(--color-foreground));"
 				onsubmit={createUser}
 			>
-				<div class="lg:col-span-3">
+				<div class="flex items-center gap-3 lg:col-span-2">
+					<div
+						class="grid size-10 shrink-0 place-items-center rounded-lg"
+						style="background: rgb(var(--color-primary) / 0.12); color: rgb(var(--color-primary));"
+					>
+						<Icon icon={addUserIcon} width="20" height="20" />
+					</div>
 					<h2 class="font-semibold" style="color: rgb(var(--color-text));">New user</h2>
-					<p class="mt-1 text-sm" style="color: rgb(var(--color-text) / 0.65);">Add their details and optional sign-in password.</p>
 				</div>
 				<Input id="new-email" label="Email" type="email" bind:value={email} required autocomplete="off" />
-				<Input id="new-full-name" label="Full name (optional)" bind:value={fullName} autocomplete="name" />
-				<Input
-					id="new-password"
-					label="Temporary password (optional)"
-					type="password"
-					bind:value={password}
-					minlength={12}
-					autocomplete="new-password"
-				/>
 				<SearchableSelect
 					id="new-timezone"
 					emptyText="No matching timezones"
@@ -233,10 +229,19 @@
 					bind:value={timezone}
 					required
 				/>
-				<div class="lg:col-span-3">
-					<ImageSelector id="new-avatar" legend="Avatar" bind:this={avatarSelector} />
+				<Input id="new-full-name" label="Full name (optional)" bind:value={fullName} autocomplete="name" />
+				<Input
+					id="new-password"
+					label="Temporary password (optional)"
+					type="password"
+					bind:value={password}
+					minlength={12}
+					autocomplete="new-password"
+				/>
+				<div class="lg:col-span-2">
+					<ImageSelector id="new-avatar" legend="Avatar (optional)" bind:this={avatarSelector} />
 				</div>
-				<div class="flex items-end gap-3 lg:col-span-3">
+				<div class="flex items-end justify-end gap-3 lg:col-span-2">
 					<Button variant="secondary" onclick={() => (showForm = false)}>
 						<span class="flex items-center gap-2">
 							<Icon icon={xIcon} width="18" height="18" class="cancel-icon shrink-0" />
@@ -255,7 +260,7 @@
 	{/if}
 
 	<div class="overflow-hidden rounded-lg" style={blockStyle}>
-		<div class="flex flex-wrap items-end justify-between gap-4 border-b-2 p-3 sm:p-4" style="border-color: rgb(var(--color-border));">
+		<div class="flex flex-wrap items-end justify-between gap-4 border-b p-3 sm:p-4" style="border-color: rgb(var(--color-border));">
 			<div>
 				<h2 class="font-semibold" style="color: rgb(var(--color-text));">People</h2>
 				<p class="mt-1 text-sm" style="color: rgb(var(--color-text) / 0.65);">

@@ -3,11 +3,13 @@
 	import { onMount } from 'svelte';
 	import Icon from '@iconify/svelte';
 	import calendarEventIcon from '@iconify-icons/tabler/calendar-event';
+	import dotsVerticalIcon from '@iconify-icons/tabler/dots-vertical';
 	import editIcon from '@iconify-icons/mdi/edit';
-	import externalLinkIcon from '@iconify-icons/tabler/external-link';
+	import externalLinkIcon from '@iconify-icons/charm/link-external';
 	import plusIcon from '@iconify-icons/tabler/plus';
+	import trashIcon from '@iconify-icons/tabler/trash';
 	import { appPath, callApi } from '$lib/api';
-	import EventTypeActionsMenu from '$lib/components/EventTypeActionsMenu.svelte';
+	import EventTypeEditor from '$lib/components/EventTypeEditor.svelte';
 	import HostBadges from '$lib/components/HostBadges.svelte';
 	import ConfirmationDialog from '$lib/components/ui/ConfirmationDialog.svelte';
 	import IconButton from '$lib/components/ui/IconButton.svelte';
@@ -18,11 +20,12 @@
 	let eventTypes = $state<EventType[]>([]);
 	let users = $state<ManagedUser[]>([]);
 	let loading = $state(true);
+	let showForm = $state(false);
 	let deletingSlug = $state('');
 	let eventTypeToDelete = $state<EventType | null>(null);
 
 	const blockStyle =
-		'background: rgb(var(--color-foreground)); border-color: rgb(var(--color-border)); box-shadow: var(--shadow-small);';
+		'background: rgb(var(--color-foreground)); box-shadow: 0 0 0 1px rgb(var(--color-border)), var(--shadow-small);';
 
 	onMount(async () => {
 		try {
@@ -46,6 +49,11 @@
 		];
 	}
 
+	function addEventType(eventType: EventType) {
+		eventTypes = [...eventTypes, eventType].sort((a, b) => a.eventSlug.localeCompare(b.eventSlug));
+		showForm = false;
+	}
+
 	async function deleteEventType() {
 		const eventType = eventTypeToDelete!;
 		deletingSlug = eventType.eventSlug;
@@ -64,7 +72,7 @@
 <PageTitle title="Scheduling" />
 
 <section aria-labelledby="scheduling-title" class="flex flex-col gap-4">
-	<div class="rounded-lg border-2 p-4 sm:p-5" style={blockStyle}>
+	<div class="rounded-lg p-4 sm:p-5" style={blockStyle}>
 		<div class="flex flex-wrap items-center justify-between gap-5">
 			<div class="flex min-w-0 items-center gap-4">
 				<div
@@ -83,21 +91,27 @@
 					<p class="text-sm" style="color: rgb(var(--color-text) / 0.65);">Manage shared event types and their booking availability.</p>
 				</div>
 			</div>
-			<Button onclick={() => void goto(appPath('/scheduling/new'))}>
-				<span class="flex items-center gap-2">
-					<Icon icon={plusIcon} width="18" height="18" class="add-event-type-plus shrink-0" />
-					Add event type
-				</span>
-			</Button>
+			{#if !showForm}
+				<Button onclick={() => (showForm = true)}>
+					<span class="flex items-center gap-2">
+						<Icon icon={plusIcon} width="18" height="18" class="add-event-type-plus shrink-0" />
+						Add event type
+					</span>
+				</Button>
+			{/if}
 		</div>
 	</div>
 
-	<div class="overflow-hidden rounded-lg border-2" style={blockStyle}>
-		<div class="border-b-2 p-3 sm:p-4" style="border-color: rgb(var(--color-border));">
+	{#if showForm}
+		<EventTypeEditor embedded oncancel={() => (showForm = false)} oncreate={addEventType} />
+	{/if}
+
+	<div class="overflow-hidden rounded-lg" style={blockStyle}>
+		<div
+			class="p-3 sm:p-4"
+			style="background: rgb(var(--color-text) / 0.06); box-shadow: inset 0 -1px rgb(var(--color-border));"
+		>
 			<h2 class="font-semibold" style="color: rgb(var(--color-text));">Event types</h2>
-			<p class="mt-1 text-sm" style="color: rgb(var(--color-text) / 0.65);">
-				{loading ? 'Loading event types…' : `${eventTypes.length} ${eventTypes.length === 1 ? 'event type' : 'event types'} configured`}
-			</p>
 		</div>
 
 		{#if loading}
@@ -121,23 +135,32 @@
 								</div>
 							</div>
 						</div>
-						<div class="event-actions flex gap-2 sm:justify-end">
-							<a
-								class="event-icon-link"
-								href={appPath(`/book/${eventType.eventSlug}`)}
-								title="Open booking page"
-								aria-label={`Open booking page for ${eventType.name}`}
-							>
-								<Icon icon={externalLinkIcon} width="20" height="20" />
-							</a>
-							<IconButton tone="primary" label={`Edit ${eventType.name}`} onclick={() => void goto(appPath(`/scheduling/${eventType.eventSlug}`))}>
-								<Icon icon={editIcon} width="20" height="20" />
-							</IconButton>
-							<EventTypeActionsMenu
-								name={eventType.name}
-								deleting={deletingSlug === eventType.eventSlug}
-								ondelete={() => (eventTypeToDelete = eventType)}
-							/>
+						<div class="action-slot">
+							<span class="event-action-hint" aria-hidden="true">
+								<Icon icon={dotsVerticalIcon} width="22" height="22" />
+							</span>
+							<div class="event-actions flex gap-2">
+								<a
+									class="event-icon-link"
+									href={appPath(`/book/${eventType.eventSlug}`)}
+									title="Open booking page"
+									aria-label={`Open booking page for ${eventType.name}`}
+								>
+									<Icon icon={externalLinkIcon} width="20" height="20" />
+								</a>
+								<IconButton filled tone="primary" label={`Edit ${eventType.name}`} onclick={() => void goto(appPath(`/scheduling/${eventType.eventSlug}`))}>
+									<Icon icon={editIcon} width="20" height="20" />
+								</IconButton>
+								<IconButton
+									filled
+									tone="danger"
+									label={`Delete ${eventType.name}`}
+									disabled={deletingSlug === eventType.eventSlug}
+									onclick={() => (eventTypeToDelete = eventType)}
+								>
+									<Icon icon={trashIcon} width="20" height="20" />
+								</IconButton>
+							</div>
 						</div>
 					</article>
 				{:else}
@@ -204,18 +227,39 @@
 		flex-shrink: 0;
 		place-items: center;
 		border-radius: 10px;
-		color: rgb(var(--color-text));
+		background: rgb(var(--color-text) / 0.08);
+		color: rgb(var(--color-text) / 0.65);
 		transition: background 0.15s ease, color 0.15s ease;
 	}
 
 	.event-icon-link:hover {
-		background: rgb(var(--color-text) / 0.1);
+		background: rgb(var(--color-text) / 0.14);
 		color: rgb(var(--color-text));
 	}
 
 	.event-icon-link:focus-visible {
-		outline: 2px solid rgb(var(--color-primary));
+		outline: 2px solid rgb(var(--color-text) / 0.65);
 		outline-offset: 2px;
+	}
+
+	.action-slot {
+		position: relative;
+		display: flex;
+		min-height: 2.5rem;
+		align-items: center;
+		justify-content: flex-end;
+	}
+
+	.event-action-hint {
+		position: absolute;
+		right: 0;
+		display: grid;
+		width: 2.5rem;
+		height: 2.5rem;
+		place-items: center;
+		color: rgb(var(--color-text) / 0.6);
+		pointer-events: none;
+		transition: opacity 0.18s ease, transform 0.18s ease;
 	}
 
 	.event-actions {
@@ -232,6 +276,12 @@
 		transform: translateX(0);
 	}
 
+	.event-type-row:hover .event-action-hint,
+	.event-type-row:focus-within .event-action-hint {
+		opacity: 0;
+		transform: translateX(-0.5rem) scale(0.85);
+	}
+
 	:global(.add-event-type-plus path) {
 		stroke-width: 3;
 	}
@@ -242,10 +292,15 @@
 			pointer-events: auto;
 			transform: none;
 		}
+
+		.event-action-hint {
+			display: none;
+		}
 	}
 
 	@media (prefers-reduced-motion: reduce) {
 		.event-type-row,
+		.event-action-hint,
 		.event-actions {
 			transition: none;
 		}

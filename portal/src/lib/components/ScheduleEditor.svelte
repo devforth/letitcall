@@ -1,5 +1,6 @@
 <script lang="ts">
 	import Icon from '@iconify/svelte';
+	import chevronRightIcon from '@iconify-icons/tabler/chevron-right';
 	import plusIcon from '@iconify-icons/tabler/plus';
 	import xIcon from '@iconify-icons/tabler/x';
 	import AvailabilityCopyMenu from '$lib/components/AvailabilityCopyMenu.svelte';
@@ -9,7 +10,13 @@
 	import TimeInput from '$lib/components/ui/TimeInput.svelte';
 	import type { ScheduleDay, TimeRange } from '$lib/types';
 
-	let { schedule = $bindable() }: { schedule: ScheduleDay[] } = $props();
+	let {
+		schedule = $bindable(),
+		embedded = false
+	}: {
+		schedule: ScheduleDay[];
+		embedded?: boolean;
+	} = $props();
 
 	let applyWeekdays = $state(true);
 	let applyWeekends = $state(false);
@@ -94,37 +101,59 @@
 </script>
 
 <section
-	class="grid gap-4 rounded-lg border-2 p-4 sm:p-5"
+	class={`grid gap-4 px-4 pt-4 pb-0 sm:px-5 sm:pt-5 ${embedded ? '' : 'rounded-lg border-2'}`}
 	aria-labelledby="schedule-title"
-	style="background: rgb(var(--color-foreground)); border-color: rgb(var(--color-border)); box-shadow: var(--shadow-small);"
+	style={embedded
+		? undefined
+		: 'background: rgb(var(--color-foreground)); border-color: rgb(var(--color-border)); box-shadow: var(--shadow-small);'}
 >
-	<div>
+	<div class="flex items-baseline gap-2">
 		<h2 id="schedule-title" class="font-semibold" style="color: rgb(var(--color-text));">Weekly schedule</h2>
-		<p class="mt-1 text-sm" style="color: rgb(var(--color-text) / 0.65);">Start with one range, then customize only the days that differ.</p>
+		<p class="text-sm" style="color: rgb(var(--color-text) / 0.65);">— Start with one range, then customize only the days that differ.</p>
 	</div>
 
-	<div class="grid gap-4 rounded-md border p-4" style="border-color: rgb(var(--color-border)); background: rgb(var(--color-text) / 0.035);">
-		<h3 class="text-sm font-semibold" style="color: rgb(var(--color-text));">Quick setup</h3>
-		<div class="flex flex-wrap gap-x-6">
-			<Checkbox id="quick-weekdays" label="Weekdays" bind:checked={applyWeekdays} />
-			<Checkbox id="quick-weekends" label="Weekends" bind:checked={applyWeekends} />
+	<div class="overflow-hidden rounded-md border" style="border-color: rgb(var(--color-border));">
+		<details open>
+			<summary
+				id="quick-preset-title"
+				class="schedule-summary flex cursor-pointer items-center gap-2 px-3 py-3 text-sm font-normal"
+				style="background: rgb(var(--color-text) / 0.06); color: rgb(var(--color-text));"
+			>
+				<Icon icon={chevronRightIcon} width="18" height="18" class="details-chevron" aria-hidden="true" />
+				Set quick preset
+			</summary>
+		<div
+			class="grid gap-4 border-t p-4"
+			aria-labelledby="quick-preset-title"
+			style={`border-color: rgb(var(--color-border)); ${embedded ? '' : 'background: rgb(var(--color-text) / 0.035);'}`}
+		>
+			<div class="flex flex-wrap gap-x-6">
+				<Checkbox id="quick-weekdays" label="Weekdays" bind:checked={applyWeekdays} />
+				<Checkbox id="quick-weekends" label="Weekends" bind:checked={applyWeekends} />
+			</div>
+			<div class="grid gap-3 sm:grid-cols-[1fr_1fr_auto] sm:items-center">
+				<TimeInput id="quick-start" label="From" bind:value={quickStart} />
+				<TimeInput id="quick-end" label="To" bind:value={quickEnd} />
+				<Button variant="secondary" onclick={applyQuickHours}>Apply</Button>
+			</div>
 		</div>
-		<div class="grid gap-3 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
-			<TimeInput id="quick-start" label="From" bind:value={quickStart} />
-			<TimeInput id="quick-end" label="To" bind:value={quickEnd} />
-			<Button variant="secondary" onclick={applyQuickHours}>Apply to selected days</Button>
-		</div>
-	</div>
+		</details>
 
-	<details class="overflow-hidden rounded-md border" style="border-color: rgb(var(--color-border));">
-		<summary class="cursor-pointer px-4 py-3 text-sm font-semibold" style="color: rgb(var(--color-text)); background: rgb(var(--color-text) / 0.035);">Customize individual days</summary>
+		<details open class="border-t" style="border-color: rgb(var(--color-border));">
+		<summary
+			class="schedule-summary flex cursor-pointer items-center gap-2 px-3 py-3 text-sm font-normal"
+			style="background: rgb(var(--color-text) / 0.06); color: rgb(var(--color-text));"
+		>
+			<Icon icon={chevronRightIcon} width="18" height="18" class="details-chevron" aria-hidden="true" />
+			Customize individual days
+		</summary>
 		<div class="grid border-t" style="border-color: rgb(var(--color-border));">
 			{#each schedule as day (day.day)}
 				{@const ranges = availabilityRanges(day)}
 				<div class="grid gap-4 border-b p-4 last:border-b-0 lg:grid-cols-[9rem_1fr_auto] lg:items-start" style="border-color: rgb(var(--color-border));">
 					<div class="flex min-h-11 items-center gap-3">
-						<span class="grid size-9 shrink-0 place-items-center rounded-full text-xs font-semibold" style="background: rgb(var(--color-primary) / 0.14); color: rgb(var(--color-primary));" aria-hidden="true">
-							{labels[day.day].slice(0, 1)}
+						<span class="grid size-[38px] shrink-0 place-items-center rounded-full text-xs font-semibold" style="background: rgb(var(--color-primary) / 0.14); color: rgb(var(--color-primary));" aria-hidden="true">
+							{labels[day.day].slice(0, 3)}
 						</span>
 						<span class="text-sm font-medium" style="color: rgb(var(--color-text));">{labels[day.day]}</span>
 					</div>
@@ -132,21 +161,20 @@
 					{#if day.enabled}
 						<div class="grid gap-3">
 							{#each ranges as range, index (`${day.day}-${index}`)}
-								<div class="grid gap-3 sm:grid-cols-[1fr_auto_1fr_auto] sm:items-end">
+								<div class="grid gap-3 sm:grid-cols-[7.5rem_7.5rem_auto] sm:items-center sm:justify-start">
 									<TimeInput
 										id={`${day.day}-${index}-start`}
 										label="From"
 										value={range.start}
 										onchange={(value) => updateRange(day, index, 'start', value)}
 									/>
-									<span class="hidden min-h-11 items-center sm:flex" aria-hidden="true">–</span>
 									<TimeInput
 										id={`${day.day}-${index}-end`}
 										label="To"
 										value={range.end}
 										onchange={(value) => updateRange(day, index, 'end', value)}
 									/>
-									<IconButton tone="danger" label={`Remove ${labels[day.day]} range ${index + 1}`} onclick={() => removeRange(day, index)}>
+									<IconButton filled tone="danger" label={`Remove ${labels[day.day]} range ${index + 1}`} onclick={() => removeRange(day, index)}>
 										<Icon icon={xIcon} width="22" height="22" />
 									</IconButton>
 								</div>
@@ -156,8 +184,8 @@
 						<p class="flex min-h-11 items-center text-sm" style="color: rgb(var(--color-text) / 0.65);">Unavailable</p>
 					{/if}
 
-					<div class="flex gap-2 lg:pt-6">
-						<IconButton tone="primary" label={`Add ${labels[day.day]} range`} onclick={() => addRange(day)}>
+					<div class="flex min-h-11 items-center gap-2">
+						<IconButton filled tone="primary" label={`Add ${labels[day.day]} range`} onclick={() => addRange(day)}>
 							<Icon icon={plusIcon} width="22" height="22" />
 						</IconButton>
 						{#if day.enabled}
@@ -174,5 +202,20 @@
 				</div>
 			{/each}
 		</div>
-	</details>
+		</details>
+	</div>
 </section>
+
+<style>
+	.schedule-summary::-webkit-details-marker {
+		display: none;
+	}
+
+	.details-chevron {
+		transition: transform 0.15s ease;
+	}
+
+	details[open] :global(.details-chevron) {
+		transform: rotate(90deg);
+	}
+</style>

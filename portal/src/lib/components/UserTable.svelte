@@ -4,6 +4,7 @@
 	import calendarXIcon from '@iconify-icons/tabler/x';
 	import checkIcon from '@iconify-icons/tabler/circle-check-filled';
 	import editIcon from '@iconify-icons/mdi/edit';
+	import dotsIcon from '@iconify-icons/tabler/dots-vertical';
 	import trashIcon from '@iconify-icons/tabler/trash';
 	import usersIcon from '@iconify-icons/tabler/users';
 	import worldIcon from '@iconify-icons/tabler/world';
@@ -148,20 +149,26 @@
 						</span>
 					</td>
 					<td class="px-5 py-4">
-						<div class="user-actions flex justify-end gap-2">
-							<IconButton tone="primary" label={`Edit ${user.email}`} onclick={() => onedit(user.email)}>
-								<Icon icon={editIcon} width="20" height="20" />
-							</IconButton>
-							{#if user.email !== currentEmail}
-								<IconButton
-									tone="danger"
-									label={checkingEmail === user.email ? 'Checking…' : deletingEmail === user.email ? 'Deleting…' : `Delete ${user.email}`}
-									disabled={checkingEmail === user.email || deletingEmail === user.email}
-									onclick={() => ondelete(user.email)}
-								>
-									<Icon icon={trashIcon} width="20" height="20" />
+						<div class="action-slot">
+							<span class="user-action-hint" aria-hidden="true">
+								<Icon icon={dotsIcon} width="22" height="22" />
+							</span>
+							<div class="user-actions flex justify-end gap-2">
+								<IconButton filled tone="primary" label={`Edit ${user.email}`} onclick={() => onedit(user.email)}>
+									<Icon icon={editIcon} width="20" height="20" />
 								</IconButton>
-							{/if}
+								{#if user.email !== currentEmail}
+									<IconButton
+										filled
+										tone="danger"
+										label={checkingEmail === user.email ? 'Checking…' : deletingEmail === user.email ? 'Deleting…' : `Delete ${user.email}`}
+										disabled={checkingEmail === user.email || deletingEmail === user.email}
+										onclick={() => ondelete(user.email)}
+									>
+										<Icon icon={trashIcon} width="20" height="20" />
+									</IconButton>
+								{/if}
+							</div>
 						</div>
 					</td>
 				</tr>
@@ -190,7 +197,7 @@
 	}
 
 	.user-table thead th {
-		border-bottom: 2px solid rgb(var(--color-border));
+		border-bottom: 1px solid rgb(var(--color-border));
 		color: rgb(var(--color-text));
 		font-size: 0.75rem;
 		font-weight: 700;
@@ -252,6 +259,28 @@
 		background: rgb(var(--color-primary) / 0.045);
 	}
 
+	.action-slot {
+		position: relative;
+		display: flex;
+		min-height: 2.5rem;
+		align-items: center;
+		justify-content: flex-end;
+	}
+
+	.user-action-hint {
+		position: absolute;
+		right: 0;
+		display: grid;
+		width: 2.5rem;
+		height: 2.5rem;
+		place-items: center;
+		color: rgb(var(--color-text) / 0.6);
+		pointer-events: none;
+		transition:
+			opacity 0.18s ease,
+			transform 0.18s ease;
+	}
+
 	.user-actions {
 		opacity: 0;
 		pointer-events: none;
@@ -268,21 +297,17 @@
 		transform: translateX(0);
 	}
 
+	.user-table tbody tr:hover .user-action-hint,
+	.user-table tbody tr:focus-within .user-action-hint {
+		opacity: 0;
+		transform: translateX(-0.5rem) scale(0.85);
+	}
+
 	@media (prefers-reduced-motion: reduce) {
-		.user-actions {
+		.user-actions,
+		.user-action-hint {
 			transition: none;
 		}
-	}
-
-	/* Action buttons always show their hover appearance (tinted background + tone color) */
-	:global(.user-actions .tone-primary:not(:disabled)) {
-		background: rgb(var(--color-primary) / 0.14);
-		color: rgb(var(--color-primary));
-	}
-
-	:global(.user-actions .tone-danger:not(:disabled)) {
-		background: rgb(var(--error) / 0.14);
-		color: rgb(var(--error));
 	}
 
 	:global(.calendar-status path) {
