@@ -6,4 +6,4 @@
 
 <PageTitle title="Edit event type" />
 
-<EventTypeEditor slug={page.params.slug} />
+<EventTypeEditor embedded slug={page.params.slug} />

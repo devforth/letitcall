@@ -39,13 +39,13 @@
 	id="hosts"
 	tabindex="-1"
 	aria-describedby={error ? 'hosts-error' : 'hosts-description'}
-	class={`p-4 outline-none sm:p-5 ${embedded ? '' : 'rounded-lg border-2'}`}
+	class={`px-4 pb-4 pt-0 outline-none sm:px-5 sm:pb-5 sm:pt-0 ${embedded ? '' : 'rounded-lg border-2'}`}
 	style={embedded
 		? undefined
 		: 'background: rgb(var(--color-foreground)); border-color: rgb(var(--color-border)); box-shadow: var(--shadow-small);'}
 >
 	<legend class={`text-sm font-semibold ${embedded ? '' : 'px-2'}`} style="color: rgb(var(--color-text));">Hosts</legend>
-	<p id="hosts-description" class="mb-4 text-sm" style="color: rgb(var(--color-text) / 0.65);">Required hosts determine availability. Optional hosts receive the booking without blocking a time.</p>
+	<p id="hosts-description" class="mt-2 mb-4 text-sm" style="color: rgb(var(--color-text) / 0.65);">Required hosts determine availability. Optional hosts receive the booking without blocking a time.</p>
 	<div class="grid gap-2">
 		{#each users as user (user.email)}
 			<div

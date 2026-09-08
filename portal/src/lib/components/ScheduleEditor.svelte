@@ -56,6 +56,16 @@
 		return ranges;
 	}
 
+	function availabilityHours(day: ScheduleDay) {
+		const minutes = availabilityRanges(day).reduce((total, range) => {
+			if (!range.start || !range.end) return total;
+			const [startHours, startMinutes] = range.start.split(':').map(Number);
+			const [endHours, endMinutes] = range.end.split(':').map(Number);
+			return total + endHours * 60 + endMinutes - startHours * 60 - startMinutes;
+		}, 0);
+		return minutes % 60 ? `${Math.floor(minutes / 60)}h ${minutes % 60}m` : `${minutes / 60}h`;
+	}
+
 	function setAvailabilityRanges(day: ScheduleDay, ranges: TimeRange[]) {
 		if (ranges.length === 0) {
 			day.enabled = false;
@@ -100,6 +110,12 @@
 	}
 </script>
 
+{#snippet durationChip(day: ScheduleDay)}
+	<span class="inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium" style="background: rgb(var(--color-foreground)); border-color: rgb(var(--color-border)); color: rgb(var(--color-text) / 0.65);">
+		{availabilityHours(day)}
+	</span>
+{/snippet}
+
 <section
 	class={`grid gap-4 px-4 pt-4 pb-0 sm:px-5 sm:pt-5 ${embedded ? '' : 'rounded-lg border-2'}`}
 	aria-labelledby="schedule-title"
@@ -107,9 +123,9 @@
 		? undefined
 		: 'background: rgb(var(--color-foreground)); border-color: rgb(var(--color-border)); box-shadow: var(--shadow-small);'}
 >
-	<div class="flex items-baseline gap-2">
+	<div class="grid gap-1">
 		<h2 id="schedule-title" class="font-semibold" style="color: rgb(var(--color-text));">Weekly schedule</h2>
-		<p class="text-sm" style="color: rgb(var(--color-text) / 0.65);">— Start with one range, then customize only the days that differ.</p>
+		<p class="text-sm" style="color: rgb(var(--color-text) / 0.65);">Start with one range, then customize only the days that differ.</p>
 	</div>
 
 	<div class="overflow-hidden rounded-md border" style="border-color: rgb(var(--color-border));">
@@ -131,15 +147,15 @@
 				<Checkbox id="quick-weekdays" label="Weekdays" bind:checked={applyWeekdays} />
 				<Checkbox id="quick-weekends" label="Weekends" bind:checked={applyWeekends} />
 			</div>
-			<div class="grid gap-3 sm:grid-cols-[1fr_1fr_auto] sm:items-center">
+			<div class="grid gap-3 sm:grid-cols-[12rem_12rem_auto] sm:items-center">
 				<TimeInput id="quick-start" label="From" bind:value={quickStart} />
 				<TimeInput id="quick-end" label="To" bind:value={quickEnd} />
-				<Button variant="secondary" onclick={applyQuickHours}>Apply</Button>
+				<Button class="justify-self-start" variant="secondary" onclick={applyQuickHours}>Apply</Button>
 			</div>
 		</div>
 		</details>
 
-		<details open class="border-t" style="border-color: rgb(var(--color-border));">
+		<details class="border-t" style="border-color: rgb(var(--color-border));">
 		<summary
 			class="schedule-summary flex cursor-pointer items-center gap-2 px-3 py-3 text-sm font-normal"
 			style="background: rgb(var(--color-text) / 0.06); color: rgb(var(--color-text));"
@@ -151,34 +167,41 @@
 			{#each schedule as day (day.day)}
 				{@const ranges = availabilityRanges(day)}
 				<div class="grid gap-4 border-b p-4 last:border-b-0 lg:grid-cols-[9rem_1fr_auto] lg:items-start" style="border-color: rgb(var(--color-border));">
-					<div class="flex min-h-11 items-center gap-3">
-						<span class="grid size-[38px] shrink-0 place-items-center rounded-full text-xs font-semibold" style="background: rgb(var(--color-primary) / 0.14); color: rgb(var(--color-primary));" aria-hidden="true">
-							{labels[day.day].slice(0, 3)}
-						</span>
+					<div class="flex min-h-11 items-center gap-2">
 						<span class="text-sm font-medium" style="color: rgb(var(--color-text));">{labels[day.day]}</span>
+						{#if day.enabled && ranges.length > 1}
+							{@render durationChip(day)}
+						{/if}
 					</div>
 
 					{#if day.enabled}
-						<div class="grid gap-3">
-							{#each ranges as range, index (`${day.day}-${index}`)}
-								<div class="grid gap-3 sm:grid-cols-[7.5rem_7.5rem_auto] sm:items-center sm:justify-start">
-									<TimeInput
-										id={`${day.day}-${index}-start`}
-										label="From"
-										value={range.start}
-										onchange={(value) => updateRange(day, index, 'start', value)}
-									/>
-									<TimeInput
-										id={`${day.day}-${index}-end`}
-										label="To"
-										value={range.end}
-										onchange={(value) => updateRange(day, index, 'end', value)}
-									/>
-									<IconButton filled tone="danger" label={`Remove ${labels[day.day]} range ${index + 1}`} onclick={() => removeRange(day, index)}>
-										<Icon icon={xIcon} width="22" height="22" />
-									</IconButton>
+						<div class="grid gap-3 lg:grid-cols-[auto_1fr] lg:items-center">
+							<div class="grid gap-3">
+								{#each ranges as range, index (`${day.day}-${index}`)}
+									<div class="grid gap-3 sm:grid-cols-[7.5rem_7.5rem_auto] sm:items-center sm:justify-start">
+										<TimeInput
+											id={`${day.day}-${index}-start`}
+											label="From"
+											value={range.start}
+											onchange={(value) => updateRange(day, index, 'start', value)}
+										/>
+										<TimeInput
+											id={`${day.day}-${index}-end`}
+											label="To"
+											value={range.end}
+											onchange={(value) => updateRange(day, index, 'end', value)}
+										/>
+										<IconButton filled tone="danger" label={`Remove ${labels[day.day]} range ${index + 1}`} onclick={() => removeRange(day, index)}>
+											<Icon icon={xIcon} width="22" height="22" />
+										</IconButton>
+									</div>
+								{/each}
 								</div>
-							{/each}
+							{#if ranges.length === 1}
+								<div class="w-20 justify-self-center">
+									{@render durationChip(day)}
+								</div>
+							{/if}
 						</div>
 					{:else}
 						<p class="flex min-h-11 items-center text-sm" style="color: rgb(var(--color-text) / 0.65);">Unavailable</p>

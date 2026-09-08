@@ -3,6 +3,7 @@
 	import { onDestroy, onMount } from 'svelte';
 	import Icon from '@iconify/svelte';
 	import calendarEventIcon from '@iconify-icons/tabler/calendar-event';
+	import calendarPlusIcon from '@iconify-icons/tabler/calendar-plus';
 	import checkIcon from '@iconify-icons/tabler/check';
 	import clockIcon from '@iconify-icons/tabler/clock';
 	import usersIcon from '@iconify-icons/tabler/users';
@@ -177,13 +178,29 @@
 		<p class="text-sm" style="color: rgb(var(--color-text) / 0.65);">Loading event type…</p>
 	</div>
 {:else}
+	{#if embedded && slug}
+		<div class="mb-4 rounded-lg border-2 p-4 sm:p-5" style={blockStyle}>
+			<div class="flex min-w-0 items-center gap-4">
+				<div
+					class="grid size-12 shrink-0 place-items-center rounded-lg"
+					style="background: rgb(var(--color-primary) / 0.12); color: rgb(var(--color-primary));"
+				>
+					<Icon icon={calendarEventIcon} width="24" height="24" />
+				</div>
+				<div>
+					<h1 class="text-2xl font-semibold tracking-tight" style="color: rgb(var(--color-text));">Edit event type</h1>
+					<p class="text-sm" style="color: rgb(var(--color-text) / 0.65);">Configure the booking duration, recipients and availability.</p>
+				</div>
+			</div>
+		</div>
+	{/if}
 	<form
 		class={embedded ? 'rounded-[0.625rem] border-2' : 'flex flex-col gap-4'}
-		style={embedded ? eventDetailsContainerStyle : undefined}
+		style={embedded ? (slug ? blockStyle : eventDetailsContainerStyle) : undefined}
 		onsubmit={save}
 	>
 		<div
-			class={embedded ? 'ml-1 flex flex-col rounded-md rounded-l-lg' : 'contents'}
+			class={embedded ? `${slug ? '' : 'ml-1 rounded-l-lg'} flex flex-col rounded-md` : 'contents'}
 			style={embedded ? 'background: rgb(var(--color-foreground));' : undefined}
 		>
 		{#if !embedded}
@@ -196,30 +213,30 @@
 						<Icon icon={calendarEventIcon} width="24" height="24" />
 					</div>
 					<div>
-						<h1 class="text-2xl font-semibold tracking-tight" style="color: rgb(var(--color-text));">{slug ? 'Edit event type' : 'New event type'}</h1>
+						<h1 class="inline-flex items-center rounded-lg px-4 py-2 text-xl font-semibold tracking-tight" style="background: rgb(var(--color-primary) / 0.1); color: rgb(var(--color-primary)); box-shadow: 0 0 0 1px rgb(var(--color-primary) / 0.14);">{slug ? 'Edit event type' : 'New event type'}</h1>
 						<p class="text-sm" style="color: rgb(var(--color-text) / 0.65);">Configure the booking duration, recipients and availability.</p>
 					</div>
 				</div>
+			</div>
+		{/if}
+		{#if embedded && !slug}
+			<div class="flex min-w-0 items-center gap-2 rounded-t-md p-3 sm:p-4" style="background: linear-gradient(110deg, rgb(var(--color-primary) / 0.12), rgb(var(--color-foreground)) 42%); box-shadow: inset 0 -1px 0 rgb(var(--color-border));">
+				<span class="grid size-8 shrink-0 place-items-center rounded-md" style="background: rgb(var(--color-primary) / 0.12); color: rgb(var(--color-primary));">
+					<Icon icon={slug ? calendarEventIcon : calendarPlusIcon} width="18" height="18" aria-hidden="true" />
+				</span>
+				<h1 class="text-xl font-semibold" style="color: rgb(var(--color-text));">New event type</h1>
 			</div>
 		{/if}
 
 		<div class={embedded ? '' : 'rounded-[0.625rem] border-2'} style={embedded ? undefined : eventDetailsContainerStyle}>
 			<section
 				class={`grid gap-5 p-4 sm:grid-cols-2 sm:p-5 ${embedded ? '' : 'ml-1 rounded-md rounded-l-lg'}`}
-				style={embedded ? undefined : 'background: rgb(var(--color-foreground));'}
+				style={`border-color: rgb(var(--color-border)); ${embedded ? '' : 'background: rgb(var(--color-foreground));'}`}
 				aria-labelledby="event-details-title"
 			>
-				<div class="flex items-center gap-3 sm:col-span-2">
-					{#if embedded}
-						<div
-							class="grid size-10 shrink-0 place-items-center rounded-lg"
-							style="background: rgb(var(--color-primary) / 0.12); color: rgb(var(--color-primary));"
-						>
-							<Icon icon={calendarEventIcon} width="20" height="20" />
-						</div>
-					{/if}
+				<div class="-mb-2 sm:col-span-2">
 					<div>
-						<h2 id="event-details-title" class="font-semibold" style="color: rgb(var(--color-text));">{embedded ? 'New event type' : 'Event details'}</h2>
+						<h2 id="event-details-title" class="font-semibold" style="color: rgb(var(--color-text));">Event details</h2>
 						<p class="mt-1 text-sm" style="color: rgb(var(--color-text) / 0.65);">Set the booking length, availability window and schedule timezone.</p>
 					</div>
 				</div>
@@ -251,14 +268,16 @@
 			</section>
 		</div>
 
-		<HostSelector
-			{users}
-			{embedded}
-			bind:required={requiredHostEmails}
-			bind:optional={optionalHostEmails}
-			error={hostsError}
-			onchange={() => (hostsError = '')}
-		/>
+		<div class={embedded ? 'mt-4' : ''}>
+			<HostSelector
+				{users}
+				{embedded}
+				bind:required={requiredHostEmails}
+				bind:optional={optionalHostEmails}
+				error={hostsError}
+				onchange={() => (hostsError = '')}
+			/>
+		</div>
 		<ScheduleEditor bind:schedule {embedded} />
 
 		<div class={`flex flex-wrap items-center gap-3 ${embedded ? 'justify-end p-4 sm:p-5' : ''}`}>

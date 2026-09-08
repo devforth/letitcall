@@ -64,6 +64,7 @@
 	const bareContent = $derived(
 		page.url.pathname === appPath('/') ||
 		page.url.pathname === appPath('/scheduling') ||
+		page.url.pathname.startsWith(`${appPath('/scheduling')}/`) ||
 		page.url.pathname === appPath('/users')
 	);
 
