@@ -16,6 +16,9 @@
 	let googleEnabled = $state(false);
 	let submitting = $state(false);
 	let error = $state('');
+	let flashlightX = $state(-160);
+	let flashlightY = $state(-160);
+	let flashlightStarted = $state(false);
 
 	onMount(async () => {
 		try {
@@ -32,6 +35,15 @@
 		} catch (cause) {
 			error = cause instanceof Error ? cause.message : 'Unable to load login settings';
 		}
+	});
+
+	onMount(() => {
+		window.addEventListener('pointermove', moveFlashlight);
+		window.addEventListener('blur', hideFlashlight);
+		return () => {
+			window.removeEventListener('pointermove', moveFlashlight);
+			window.removeEventListener('blur', hideFlashlight);
+		};
 	});
 
 	async function login(event: SubmitEvent) {
@@ -55,11 +67,76 @@
 	function googleLogin() {
 		window.location.assign(appPath('/api/auth/google/start'));
 	}
+
+	function moveFlashlight(event: PointerEvent) {
+		flashlightStarted = true;
+		flashlightX = event.clientX;
+		flashlightY = event.clientY;
+	}
+
+	function hideFlashlight() {
+		flashlightX = -160;
+		flashlightY = -160;
+	}
 </script>
 
 <style>
 	:global(.login-bg) {
-		background-color: rgb(var(--color-background));
+		background-color: rgb(var(--color-foreground));
+		background-image: radial-gradient(circle, rgb(var(--color-text) / 0.08) 1.5px, transparent 1.5px);
+		background-size: 18px 18px;
+	}
+
+	.background-dot-layer {
+		background-image: radial-gradient(circle, rgb(var(--color-primary) / 0.5) 1.5px, transparent 1.5px);
+		background-size: 18px 18px;
+		mask-image: radial-gradient(circle 9rem at var(--flashlight-x) var(--flashlight-y), black 0%, black 35%, rgb(0 0 0 / 0.65) 56%, transparent 100%);
+		-webkit-mask-image: radial-gradient(circle 9rem at var(--flashlight-x) var(--flashlight-y), black 0%, black 35%, rgb(0 0 0 / 0.65) 56%, transparent 100%);
+	}
+
+	.background-dot-layer.initial {
+		mask-image:
+			radial-gradient(circle 9rem at center, black 0%, black 35%, rgb(0 0 0 / 0.65) 56%, transparent 100%),
+			radial-gradient(circle 9rem at center, black 0%, black 35%, rgb(0 0 0 / 0.65) 56%, transparent 100%);
+		mask-position: 8% 12%, 82% 72%;
+		mask-repeat: no-repeat;
+		mask-size: 18rem 18rem, 18rem 18rem;
+		-webkit-mask-image:
+			radial-gradient(circle 9rem at center, black 0%, black 35%, rgb(0 0 0 / 0.65) 56%, transparent 100%),
+			radial-gradient(circle 9rem at center, black 0%, black 35%, rgb(0 0 0 / 0.65) 56%, transparent 100%);
+		-webkit-mask-position: 8% 12%, 82% 72%;
+		-webkit-mask-repeat: no-repeat;
+		-webkit-mask-size: 18rem 18rem, 18rem 18rem;
+		animation: initial-flashlight 12s ease-in-out infinite;
+	}
+
+	.login-form-panel {
+		border: 1px solid transparent;
+		background:
+			linear-gradient(rgb(var(--color-foreground)), rgb(var(--color-foreground))) padding-box,
+			linear-gradient(135deg, rgb(var(--color-border) / 0.4), rgb(var(--color-border)) 35% 65%, rgb(var(--color-border) / 0.4)) border-box;
+	}
+
+	@keyframes initial-flashlight {
+		0%, 100% {
+			mask-position: 8% 12%, 82% 72%;
+			-webkit-mask-position: 8% 12%, 82% 72%;
+		}
+
+		30% {
+			mask-position: 72% 20%, 18% 82%;
+			-webkit-mask-position: 72% 20%, 18% 82%;
+		}
+
+		58% {
+			mask-position: 84% 78%, 28% 16%;
+			-webkit-mask-position: 84% 78%, 28% 16%;
+		}
+
+		82% {
+			mask-position: 26% 68%, 70% 42%;
+			-webkit-mask-position: 26% 68%, 70% 42%;
+		}
 	}
 
 	/* Label styling */
@@ -80,31 +157,25 @@
 
 <PageTitle title="Sign in" />
 
-<div class="relative min-h-screen overflow-hidden login-bg">
-	<div class="absolute top-0 right-0 bottom-0 w-3/5"></div>
-	<div class="absolute top-0 right-12 w-96 h-96 bg-white/10 rounded-full blur-3xl -mr-48 -mt-48"></div>
-	<div class="absolute bottom-0 right-1/4 w-96 h-96 bg-white/10 rounded-full blur-3xl"></div>
-
-	<div class="fixed right-4 top-4 z-50">
-		<ThemeToggle />
+<div
+	class="relative min-h-screen overflow-hidden login-bg"
+	style={`--flashlight-x: ${flashlightX}px; --flashlight-y: ${flashlightY}px;`}
+>
+	<div class:initial={!flashlightStarted} class="background-dot-layer pointer-events-none absolute inset-0" aria-hidden="true"></div>
+	<div class="fixed right-4 top-4 z-20 flex items-center gap-1.5">
+		<span class="text-xs opacity-45">Theme</span>
+		<ThemeToggle compact />
 	</div>
 
-	<main class="relative z-10 grid min-h-screen grid-cols-1 lg:grid-cols-4 items-center gap-8 lg:gap-0">
-		<div class="hidden lg:flex lg:col-span-2 flex-col justify-center px-12 xl:px-20">
-			<h2 class="mb-8 text-3xl xl:text-4xl font-bold leading-tight">
-				<span class="mb-3 text-3xl xl:text-5xl flex flex-col items-start gap-4 text-primary leading-none">
-					<BrandLogo class="size-16 rounded-xl object-cover shadow-[0_0_0_1px_rgb(var(--color-border))]" />
-					{branding.name.toUpperCase()}
-				</span>
-				<span>Scheduling Admin Panel</span>
-			</h2>
-		</div>
-
-		<section class="w-full max-w-md mx-auto lg:mx-0 lg:col-span-2 px-4 lg:pl-8 xl:pl-12" aria-labelledby="login-title">
-			<div class="p-8 sm:p-10 rounded-2xl" style="background: rgb(var(--color-foreground)); box-shadow: 0 0 0 1px rgb(var(--color-border)), var(--shadow);">
-				<div class="mb-8">
-					<h1 id="login-title" class="text-3xl font-normal tracking-tight">Welcome Back</h1>
-					<p class="mt-2 text-sm">Sign in to manage your team's schedule</p>
+	<main class="relative z-10 grid min-h-screen place-items-center p-4">
+		<section class="w-full max-w-md" aria-label="Sign in">
+			<div class="login-form-panel p-8 sm:p-10">
+				<div class="mb-14 flex flex-col items-center text-center">
+					<div class="flex items-center justify-center gap-4">
+						<BrandLogo class="size-12 object-cover" />
+						<p class="text-3xl font-bold leading-none text-primary">{branding.name.toUpperCase()}</p>
+					</div>
+					<p class="mt-3 text-2xl font-normal leading-tight">Scheduling Admin Panel</p>
 				</div>
 
 				{#if error}
@@ -121,7 +192,7 @@
 						required
 						autocomplete="current-password"
 					/>
-					<Button type="submit" fullWidth class="mt-2 lg-pd" disabled={submitting}>
+					<Button type="submit" fullWidth class="mt-8 lg-pd" disabled={submitting}>
 						{submitting ? 'Signing in…' : 'Sign in'}
 					</Button>
 				</form>

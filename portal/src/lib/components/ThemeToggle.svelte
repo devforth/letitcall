@@ -1,6 +1,8 @@
 <script lang="ts">
 	import { theme } from '$lib/stores/theme';
 
+	let { compact = false }: { compact?: boolean } = $props();
+
 	function handleToggle() {
 		const newTheme = $theme === 'light' ? 'dark' : 'light';
 		theme.setTheme(newTheme);
@@ -12,6 +14,7 @@
 	aria-label="Toggle theme"
 	class="toggle-switch"
 	class:dark={$theme === 'dark'}
+	class:compact
 >
 	<svg class="sun-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
 		<circle cx="12" cy="12" r="5" />
@@ -79,5 +82,26 @@
 	.toggle-switch.dark .moon-icon {
 		opacity: 1 !important;
 		transform: scale(1) translateX(0) !important;
+	}
+
+	.toggle-switch.compact {
+		width: 40px !important;
+		height: 22px !important;
+		border-width: 1px !important;
+		box-shadow: none !important;
+	}
+
+	.toggle-switch.compact .sun-icon,
+	.toggle-switch.compact .moon-icon {
+		width: 12px !important;
+		height: 12px !important;
+	}
+
+	.toggle-switch.compact .sun-icon {
+		left: 4px !important;
+	}
+
+	.toggle-switch.compact .moon-icon {
+		right: 4px !important;
 	}
 </style>
