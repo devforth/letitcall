@@ -2,8 +2,12 @@
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
 	import { onMount } from 'svelte';
+	import Icon from '@iconify/svelte';
+	import checkIcon from '@iconify-icons/tabler/check';
 	import worldIcon from '@iconify-icons/tabler/world';
+	import xIcon from '@iconify-icons/tabler/x';
 	import { callApi, appPath, avatarURL } from '$lib/api';
+	import addUserIcon from '$lib/icons/add-user';
 	import ImageSelector from '$lib/components/ImageSelector.svelte';
 	import PageTitle from '$lib/components/PageTitle.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
@@ -70,9 +74,19 @@
 <PageTitle title="Edit user" />
 
 <section aria-labelledby="edit-user-title">
-	<div class="mb-6">
-		<h1 id="edit-user-title" class="text-2xl font-semibold tracking-tight">Edit user</h1>
-		<p class="mt-2 text-sm">Update account settings without changing the sign-in email.</p>
+	<div class="mb-8">
+		<div class="flex min-w-0 items-center gap-4">
+			<div
+				class="grid size-12 shrink-0 place-items-center rounded-lg"
+				style="background: rgb(var(--color-primary) / 0.12); color: rgb(var(--color-primary));"
+			>
+				<Icon icon={addUserIcon} width="24" height="24" />
+			</div>
+			<div>
+				<h1 id="edit-user-title" class="text-2xl font-semibold tracking-tight" style="color: rgb(var(--color-text));">Edit user</h1>
+				<p class="text-sm" style="color: rgb(var(--color-text) / 0.65);">Update account settings without changing the sign-in email.</p>
+			</div>
+		</div>
 	</div>
 
 	{#if error}
@@ -96,8 +110,7 @@
 			/>
 			<Input
 				id="edit-password"
-				label="New password"
-				hint="Leave blank to keep current"
+				label="New password (leave blank to keep current)"
 				type="password"
 				bind:value={password}
 				minlength={12}
@@ -112,9 +125,19 @@
 					bind:this={avatarSelector}
 				/>
 			</div>
-			<div class="flex flex-wrap gap-2 lg:col-span-2">
-				<Button type="submit" disabled={saving}>{saving ? 'Saving…' : 'Save changes'}</Button>
-				<Button variant="secondary" onclick={() => goto(appPath('/users'))}>Cancel</Button>
+			<div class="mt-3 flex flex-wrap justify-end gap-3 lg:col-span-2">
+				<Button variant="secondary" onclick={() => goto(appPath('/users'))}>
+					<span class="flex items-center gap-2">
+						<Icon icon={xIcon} width="18" height="18" />
+						Cancel
+					</span>
+				</Button>
+				<Button type="submit" disabled={saving}>
+					<span class="flex items-center gap-2">
+						<Icon icon={checkIcon} width="18" height="18" />
+						{saving ? 'Saving…' : 'Save changes'}
+					</span>
+				</Button>
 			</div>
 		</form>
 	{/if}

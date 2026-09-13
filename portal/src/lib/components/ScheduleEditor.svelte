@@ -12,10 +12,12 @@
 
 	let {
 		schedule = $bindable(),
-		embedded = false
+		embedded = false,
+		flush = false
 	}: {
 		schedule: ScheduleDay[];
 		embedded?: boolean;
+		flush?: boolean;
 	} = $props();
 
 	let applyWeekdays = $state(true);
@@ -117,11 +119,11 @@
 {/snippet}
 
 <section
-	class={`grid gap-4 px-4 pt-4 pb-0 sm:px-5 sm:pt-5 ${embedded ? '' : 'rounded-lg border-2'}`}
+	class={`grid gap-4 pt-4 pb-0 sm:pt-5 ${flush ? '' : 'px-4 sm:px-5'} ${embedded ? '' : 'rounded-lg border-2'}`}
 	aria-labelledby="schedule-title"
 	style={embedded
 		? undefined
-		: 'background: rgb(var(--color-foreground)); border-color: rgb(var(--color-border)); box-shadow: var(--shadow-small);'}
+		: 'background: rgb(var(--color-foreground)); border-color: rgb(var(--color-border));'}
 >
 	<div class="grid gap-1">
 		<h2 id="schedule-title" class="font-semibold" style="color: rgb(var(--color-text));">Weekly schedule</h2>

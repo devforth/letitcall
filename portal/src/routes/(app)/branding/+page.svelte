@@ -216,7 +216,6 @@
 	.current-logo img {
 		width: 6rem;
 		height: 6rem;
-		border: 1px solid rgb(var(--color-border));
 		object-fit: cover;
 	}
 

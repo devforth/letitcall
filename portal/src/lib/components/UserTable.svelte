@@ -118,7 +118,7 @@
 					<td class="px-5 py-4">
 						<div class="flex min-w-0 items-center gap-3">
 							<span class="avatar-wrap">
-								<Avatar name={user.fullName} email={user.email} avatarPath={user.avatarPath} size={40} ring />
+								<Avatar name={user.fullName} email={user.email} avatarPath={user.avatarPath} size={40} />
 							</span>
 							<div class="min-w-0">
 								<div class="flex items-center gap-2">

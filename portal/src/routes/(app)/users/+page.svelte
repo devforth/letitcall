@@ -45,9 +45,10 @@
 		{ value: 'notConnected', label: 'Not connected' }
 	];
 
-	const blockStyle =
-		'background: rgb(var(--color-foreground)); box-shadow: var(--shadow-small);';
-	const newUserContainerStyle = `${blockStyle} background: rgb(var(--color-primary)); border-color: rgb(var(--color-primary));`;
+	const newUserContainerStyle =
+		'background: rgb(var(--color-primary)); box-shadow: 0 0 0 1px rgb(var(--color-border));';
+	const tableBlockStyle =
+		'background: rgb(var(--color-foreground)); box-shadow: 0 0 0 1px rgb(var(--color-border));';
 
 	const searchMatches = $derived(
 		users.filter((candidate) => {
@@ -172,8 +173,8 @@
 
 <PageTitle title="Users" />
 
-<section aria-labelledby="users-title" class="flex flex-col gap-4">
-	<div class="rounded-lg p-4 sm:p-5" style={blockStyle}>
+<section aria-labelledby="users-title" class="flex flex-col gap-6">
+	<div class="mb-2">
 		<div class="flex flex-wrap items-center justify-between gap-5">
 			<div class="flex min-w-0 items-center gap-4">
 				<div
@@ -193,7 +194,7 @@
 				</div>
 			</div>
 			{#if !showForm}
-				<Button onclick={() => (showForm = true)}>
+				<Button class="self-start" onclick={() => (showForm = true)}>
 					<span class="flex items-center gap-2">
 						<Icon icon={plusIcon} width="18" height="18" class="add-user-plus shrink-0" />
 						Add user
@@ -204,62 +205,67 @@
 	</div>
 
 	{#if showForm}
-		<div class="rounded-[0.625rem] border-2" style={newUserContainerStyle}>
+		<div class="mb-2 overflow-hidden rounded-[0.625rem]" style={newUserContainerStyle}>
 			<form
-				class="ml-1 grid gap-5 rounded-md rounded-l-lg p-4 sm:p-5 lg:grid-cols-2"
+				class="ml-1 flex flex-col rounded-md rounded-l-lg"
 				style="background: rgb(var(--color-foreground));"
 				onsubmit={createUser}
 			>
-				<div class="flex items-center gap-3 lg:col-span-2">
-					<div
-						class="grid size-10 shrink-0 place-items-center rounded-lg"
+				<div
+					class="flex min-w-0 items-center gap-2 rounded-t-md p-3 sm:p-4"
+					style="background: linear-gradient(110deg, rgb(var(--color-primary) / 0.12), rgb(var(--color-foreground)) 42%); box-shadow: inset 0 -1px 0 rgb(var(--color-border));"
+				>
+					<span
+						class="grid size-8 shrink-0 place-items-center rounded-md"
 						style="background: rgb(var(--color-primary) / 0.12); color: rgb(var(--color-primary));"
 					>
-						<Icon icon={addUserIcon} width="20" height="20" />
+						<Icon icon={addUserIcon} width="18" height="18" />
+					</span>
+					<h2 class="text-xl font-semibold" style="color: rgb(var(--color-text));">New user</h2>
+				</div>
+				<div class="grid gap-5 p-4 sm:p-5 lg:grid-cols-2">
+					<Input id="new-email" label="Email" type="email" bind:value={email} required autocomplete="off" />
+					<SearchableSelect
+						id="new-timezone"
+						emptyText="No matching timezones"
+						label="Timezone"
+						icon={worldIcon}
+						options={timezones}
+						bind:value={timezone}
+						required
+					/>
+					<Input id="new-full-name" label="Full name (optional)" bind:value={fullName} autocomplete="name" />
+					<Input
+						id="new-password"
+						label="Temporary password (optional)"
+						type="password"
+						bind:value={password}
+						minlength={12}
+						autocomplete="new-password"
+					/>
+					<div class="lg:col-span-2">
+						<ImageSelector id="new-avatar" legend="Avatar (optional)" bind:this={avatarSelector} />
 					</div>
-					<h2 class="font-semibold" style="color: rgb(var(--color-text));">New user</h2>
-				</div>
-				<Input id="new-email" label="Email" type="email" bind:value={email} required autocomplete="off" />
-				<SearchableSelect
-					id="new-timezone"
-					emptyText="No matching timezones"
-					label="Timezone"
-					icon={worldIcon}
-					options={timezones}
-					bind:value={timezone}
-					required
-				/>
-				<Input id="new-full-name" label="Full name (optional)" bind:value={fullName} autocomplete="name" />
-				<Input
-					id="new-password"
-					label="Temporary password (optional)"
-					type="password"
-					bind:value={password}
-					minlength={12}
-					autocomplete="new-password"
-				/>
-				<div class="lg:col-span-2">
-					<ImageSelector id="new-avatar" legend="Avatar (optional)" bind:this={avatarSelector} />
-				</div>
-				<div class="flex items-end justify-end gap-3 lg:col-span-2">
-					<Button variant="secondary" onclick={() => (showForm = false)}>
-						<span class="flex items-center gap-2">
-							<Icon icon={xIcon} width="18" height="18" class="cancel-icon shrink-0" />
-							Cancel
-						</span>
-					</Button>
-					<Button type="submit" disabled={saving}>
-						<span class="flex items-center gap-2">
-							<Icon icon={checkIcon} width="18" height="18" class="create-user-icon shrink-0" />
-							{saving ? 'Creating…' : 'Create user'}
-						</span>
-					</Button>
+					<div class="flex items-end justify-end gap-3 lg:col-span-2">
+						<Button variant="secondary" onclick={() => (showForm = false)}>
+							<span class="flex items-center gap-2">
+								<Icon icon={xIcon} width="18" height="18" class="cancel-icon shrink-0" />
+								Cancel
+							</span>
+						</Button>
+						<Button type="submit" disabled={saving}>
+							<span class="flex items-center gap-2">
+								<Icon icon={checkIcon} width="18" height="18" class="create-user-icon shrink-0" />
+								{saving ? 'Creating…' : 'Create user'}
+							</span>
+						</Button>
+					</div>
 				</div>
 			</form>
 		</div>
 	{/if}
 
-	<div class="overflow-hidden rounded-lg" style={blockStyle}>
+	<div class="overflow-hidden rounded-lg" style={tableBlockStyle}>
 		<div class="flex flex-wrap items-end justify-between gap-4 border-b p-3 sm:p-4" style="border-color: rgb(var(--color-border));">
 			<div>
 				<h2 class="font-semibold" style="color: rgb(var(--color-text));">People</h2>

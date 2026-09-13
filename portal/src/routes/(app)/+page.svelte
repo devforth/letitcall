@@ -16,7 +16,8 @@
 	let now = $state(new Date());
 	let clock: number | undefined;
 
-	const blockStyle = 'background: rgb(var(--color-foreground)); box-shadow: var(--shadow-small);';
+	const blockStyle =
+		'background: rgb(var(--color-foreground)); box-shadow: 0 0 0 1px rgb(var(--color-border));';
 
 	const upcoming = $derived(
 		bookings
@@ -55,8 +56,8 @@
 
 <PageTitle title="Bookings" />
 
-<section aria-labelledby="bookings-title" class="flex flex-col gap-4">
-	<div class="rounded-lg p-4 sm:p-5" style={blockStyle}>
+<section aria-labelledby="bookings-title" class="flex flex-col gap-6">
+	<div class="mb-2">
 		<div class="flex min-w-0 items-center gap-4">
 			<div
 				class="grid size-12 shrink-0 place-items-center rounded-lg"
@@ -94,8 +95,10 @@
 		<section class="booking-group overflow-hidden rounded-lg" style={blockStyle} aria-labelledby="upcoming-title">
 			<div class="booking-group-heading">
 				<Icon icon={clockIcon} width="18" height="18" />
-				<h2 id="upcoming-title" class="text-sm font-semibold">Upcoming</h2>
-				<span class="group-count">{upcoming.length}</span>
+				<div class="group-label">
+					<h2 id="upcoming-title">Upcoming</h2>
+					<span class="group-count">· {upcoming.length}</span>
+				</div>
 			</div>
 			{#if upcoming.length > 0}
 				<BookingList bookings={upcoming} {eventTypes} {users} {now} />
@@ -108,8 +111,10 @@
 			<section class="booking-group overflow-hidden rounded-lg" style={blockStyle} aria-labelledby="history-title">
 				<div class="booking-group-heading">
 					<Icon icon={historyIcon} width="18" height="18" />
-					<h2 id="history-title" class="text-sm font-semibold">Booking history</h2>
-					<span class="group-count">{history.length}</span>
+					<div class="group-label">
+						<h2 id="history-title">Booking history</h2>
+						<span class="group-count">· {history.length}</span>
+					</div>
 				</div>
 				<BookingList bookings={history} {eventTypes} {users} {now} historical />
 			</section>
@@ -128,9 +133,16 @@
 		color: rgb(var(--color-text));
 	}
 
+	.group-label {
+		display: flex;
+		align-items: baseline;
+		gap: 0.25rem;
+		font-size: 0.875rem;
+		font-weight: 500;
+	}
+
 	.group-count {
-		color: rgb(var(--color-text) / 0.45);
-		font-size: 0.75rem;
+		opacity: 0.45;
 		font-variant-numeric: tabular-nums;
 	}
 </style>

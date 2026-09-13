@@ -8,6 +8,7 @@
 		optional = $bindable([]),
 		error = '',
 		embedded = false,
+		flush = false,
 		onchange
 	}: {
 		users: ManagedUser[];
@@ -15,6 +16,7 @@
 		optional?: string[];
 		error?: string;
 		embedded?: boolean;
+		flush?: boolean;
 		onchange?: () => void;
 	} = $props();
 
@@ -39,10 +41,10 @@
 	id="hosts"
 	tabindex="-1"
 	aria-describedby={error ? 'hosts-error' : 'hosts-description'}
-	class={`px-4 pb-4 pt-0 outline-none sm:px-5 sm:pb-5 sm:pt-0 ${embedded ? '' : 'rounded-lg border-2'}`}
+	class={`pb-4 pt-0 outline-none sm:pb-5 sm:pt-0 ${flush ? '' : 'px-4 sm:px-5'} ${embedded ? '' : 'rounded-lg border-2'}`}
 	style={embedded
 		? undefined
-		: 'background: rgb(var(--color-foreground)); border-color: rgb(var(--color-border)); box-shadow: var(--shadow-small);'}
+		: 'background: rgb(var(--color-foreground)); border-color: rgb(var(--color-border));'}
 >
 	<legend class={`text-sm font-semibold ${embedded ? '' : 'px-2'}`} style="color: rgb(var(--color-text));">Hosts</legend>
 	<p id="hosts-description" class="mt-2 mb-4 text-sm" style="color: rgb(var(--color-text) / 0.65);">Required hosts determine availability. Optional hosts receive the booking without blocking a time.</p>
@@ -53,7 +55,7 @@
 				style={`border-color: rgb(var(--color-border)); ${embedded ? '' : 'background: rgb(var(--color-text) / 0.035);'}`}
 			>
 				<div class="flex min-w-0 items-center gap-3">
-					<Avatar name={user.fullName} email={user.email} avatarPath={user.avatarPath} size={36} ring />
+					<Avatar name={user.fullName} email={user.email} avatarPath={user.avatarPath} size={36} />
 					<span class="min-w-0 text-sm">
 						<span class="block truncate font-medium" style="color: rgb(var(--color-text));">{user.email}</span>
 						<span class="block text-xs" style="color: rgb(var(--color-text) / 0.65);">{user.googleConnected ? 'Google Calendar connected' : 'Email only'}</span>

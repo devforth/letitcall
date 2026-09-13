@@ -3,9 +3,9 @@
 	import { page } from '$app/state';
 	import { onMount, type Snippet } from 'svelte';
 	import Icon from '@iconify/svelte';
+	import bracesIcon from '@iconify-icons/tabler/braces';
 	import calendarIcon from '@iconify-icons/tabler/calendar-filled';
 	import clockIcon from '@iconify-icons/tabler/clock-filled';
-	import functionIcon from '@iconify-icons/tabler/function-filled';
 	import moonIcon from '@iconify-icons/tabler/moon';
 	import paintIcon from '@iconify-icons/tabler/paint-filled';
 	import timelineIcon from '@iconify-icons/tabler/timeline-event-filled';
@@ -51,7 +51,7 @@
 		{ label: 'Scheduling', href: '/scheduling', exact: false, icon: clockIcon },
 		{ label: 'Users', href: '/users', exact: false, icon: addUserIcon },
 		{ label: 'Branding', href: '/branding', exact: false, icon: paintIcon },
-		{ label: 'API Integration', href: '/api-integration', exact: false, icon: functionIcon },
+		{ label: 'API Integration', href: '/api-integration', exact: false, icon: bracesIcon },
 		{ label: 'Audit log', href: '/audit-log', exact: false, icon: timelineIcon }
 	];
 
@@ -65,7 +65,8 @@
 		page.url.pathname === appPath('/') ||
 		page.url.pathname === appPath('/scheduling') ||
 		page.url.pathname.startsWith(`${appPath('/scheduling')}/`) ||
-		page.url.pathname === appPath('/users')
+		page.url.pathname === appPath('/users') ||
+		page.url.pathname.startsWith(`${appPath('/users')}/`)
 	);
 
 	async function logout() {
@@ -129,7 +130,7 @@
 >
 	<header
 		class="sticky top-0 z-20 md:h-[66px]"
-		style="background: rgb(var(--color-foreground)); box-shadow: inset 0 -1px rgb(var(--color-border)), 0 0.75rem 1rem -0.75rem rgb(0 0 0 / 0.2);"
+		style="background: rgb(var(--color-foreground)); border-bottom: 1px solid rgb(var(--color-border));"
 	>
 		<div
 			class="mx-auto flex w-full max-w-[76rem] flex-wrap items-center justify-between gap-4 px-4 py-2 sm:px-6 lg:px-8"
@@ -152,10 +153,10 @@
 					<MenuToggleIcon open={navOpen} />
 				</button>
 				<a class="flex min-w-0 items-center gap-3 tracking-tight" href={appPath('/')}>
-					<BrandLogo class="size-10 shrink-0 rounded-lg object-cover shadow-[0_0_0_1px_rgb(var(--color-border))]" />
+					<BrandLogo class="size-10 shrink-0 object-cover" />
 					<span class="flex min-w-0 flex-col leading-tight">
 						<span class="truncate text-lg font-bold" style="color: rgb(var(--color-primary));">{branding.name}</span>
-						<span class="hidden text-sm font-bold sm:block">Scheduling Admin Panel</span>
+						<span class="hidden text-sm font-normal sm:block">Scheduling Admin Panel</span>
 					</span>
 				</a>
 			</div>
@@ -175,7 +176,7 @@
 						aria-label="Account menu"
 						onclick={toggleMenu}
 					>
-						<Avatar name={user.fullName} email={user.email} avatarPath={user.avatarPath} size={36} ring />
+						<Avatar name={user.fullName} email={user.email} avatarPath={user.avatarPath} size={36} />
 						<span class="hidden max-w-[10rem] truncate text-sm font-bold sm:inline" style="color: rgb(var(--color-text));">
 							{user.fullName || user.email}
 						</span>
@@ -278,17 +279,11 @@
 		></button>
 	{/if}
 
-	<div
-		aria-hidden="true"
-		class="pointer-events-none fixed bottom-0 top-[66px] z-30 hidden w-4 transition-[left] duration-300 ease-out motion-reduce:transition-none md:block"
-		style="left: var(--sidebar-w); background: linear-gradient(90deg, rgb(0 0 0 / 0.06), transparent);"
-	></div>
-
 	<div class="contents">
 		<nav
 			id="app-sidebar"
 			class={`fixed inset-y-0 left-0 z-40 flex w-72 flex-col overflow-y-auto p-4 transition-[transform,width] duration-300 ease-out motion-reduce:transition-none ${navOpen ? 'translate-x-0' : '-translate-x-full'} md:w-[var(--sidebar-w)] md:min-w-0 md:p-0 md:translate-x-0 md:overflow-hidden`}
-			style="background: rgb(var(--color-foreground)); box-shadow: inset -1px 0 rgb(var(--color-border));"
+			style="background: rgb(var(--color-foreground)); border-right: 1px solid rgb(var(--color-border));"
 			aria-label="Primary navigation"
 			inert={isMobile && !navOpen}
 		>

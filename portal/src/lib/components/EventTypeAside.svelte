@@ -81,7 +81,6 @@
 					size={host.avatarSize}
 					rounded="full"
 					onBrand
-					class="shadow-[0_0_0_4px_rgb(var(--color-primary))]"
 				/>
 			</span>
 		{/each}

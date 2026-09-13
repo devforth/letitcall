@@ -6,6 +6,7 @@
 	import dotsVerticalIcon from '@iconify-icons/tabler/dots-vertical';
 	import editIcon from '@iconify-icons/mdi/edit';
 	import externalLinkIcon from '@iconify-icons/charm/link-external';
+	import listDetailsIcon from '@iconify-icons/tabler/list-details';
 	import plusIcon from '@iconify-icons/tabler/plus';
 	import trashIcon from '@iconify-icons/tabler/trash';
 	import { appPath, callApi } from '$lib/api';
@@ -25,7 +26,7 @@
 	let eventTypeToDelete = $state<EventType | null>(null);
 
 	const blockStyle =
-		'background: rgb(var(--color-foreground)); box-shadow: 0 0 0 1px rgb(var(--color-border)), var(--shadow-small);';
+		'background: rgb(var(--color-foreground)); box-shadow: 0 0 0 1px rgb(var(--color-border));';
 
 	onMount(async () => {
 		try {
@@ -71,8 +72,8 @@
 
 <PageTitle title="Scheduling" />
 
-<section aria-labelledby="scheduling-title" class="flex flex-col gap-4">
-	<div class="rounded-lg p-4 sm:p-5" style={blockStyle}>
+<section aria-labelledby="scheduling-title" class="flex flex-col gap-6">
+	<div class="mb-2">
 		<div class="flex flex-wrap items-center justify-between gap-5">
 			<div class="flex min-w-0 items-center gap-4">
 				<div
@@ -92,7 +93,7 @@
 				</div>
 			</div>
 			{#if !showForm}
-				<Button onclick={() => (showForm = true)}>
+				<Button class="self-start" onclick={() => (showForm = true)}>
 					<span class="flex items-center gap-2">
 						<Icon icon={plusIcon} width="18" height="18" class="add-event-type-plus shrink-0" />
 						Add event type
@@ -108,10 +109,11 @@
 
 	<div class="overflow-hidden rounded-lg" style={blockStyle}>
 		<div
-			class="p-3 sm:p-4"
-			style="background: rgb(var(--color-text) / 0.06); box-shadow: inset 0 -1px rgb(var(--color-border));"
+			class="flex items-center gap-2 border-b px-4 py-3"
+			style="border-color: rgb(var(--color-border)); background: rgb(var(--color-text) / 0.06); color: rgb(var(--color-text));"
 		>
-			<h2 class="font-semibold" style="color: rgb(var(--color-text));">Event types</h2>
+			<Icon icon={listDetailsIcon} width="18" height="18" />
+			<h2 class="text-sm font-medium">Event types</h2>
 		</div>
 
 		{#if loading}
@@ -119,27 +121,22 @@
 		{:else}
 			<div class="event-type-list">
 				{#each eventTypes as eventType (eventType.eventSlug)}
-					<article class="event-type-row grid gap-4 p-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center sm:p-5">
-						<div class="flex min-w-0 items-start gap-3">
-							<div class="event-type-icon grid size-10 shrink-0 place-items-center rounded-xl" aria-hidden="true">
-								<Icon icon={calendarEventIcon} width="20" height="20" />
+					<article class="event-type-row grid gap-4 p-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-start sm:p-5">
+						<div class="min-w-0">
+							<div class="flex flex-wrap items-center gap-2">
+								<h3 class="truncate font-semibold" style="color: rgb(var(--color-text));">{eventType.name}</h3>
+								<span class="duration-chip">{eventType.durationMinutes} minutes</span>
 							</div>
-							<div class="min-w-0">
-								<div class="flex flex-wrap items-center gap-2">
-									<h3 class="truncate font-semibold" style="color: rgb(var(--color-text));">{eventType.name}</h3>
-									<span class="duration-chip">{eventType.durationMinutes} minutes</span>
-								</div>
-								<p class="mt-0.5 truncate text-xs" style="color: rgb(var(--color-text) / 0.65);">/{eventType.eventSlug}</p>
-								<div class="mt-3">
-									<HostBadges hosts={hosts(eventType)} {users} />
-								</div>
+							<p class="mt-0.5 truncate text-xs" style="color: rgb(var(--color-text) / 0.65);">/{eventType.eventSlug}</p>
+							<div class="mt-3">
+								<HostBadges hosts={hosts(eventType)} {users} />
 							</div>
 						</div>
 						<div class="action-slot">
 							<span class="event-action-hint" aria-hidden="true">
 								<Icon icon={dotsVerticalIcon} width="22" height="22" />
 							</span>
-							<div class="event-actions flex gap-2">
+							<div class="event-actions">
 								<a
 									class="event-icon-link"
 									href={appPath(`/book/${eventType.eventSlug}`)}
@@ -204,11 +201,6 @@
 		background: rgb(var(--color-primary) / 0.045);
 	}
 
-	.event-type-icon {
-		background: rgb(var(--color-primary) / 0.14);
-		color: rgb(var(--color-primary));
-	}
-
 	.duration-chip {
 		border: 1px solid rgb(var(--color-border));
 		border-radius: 999px;
@@ -227,24 +219,25 @@
 		flex-shrink: 0;
 		place-items: center;
 		border-radius: 10px;
-		background: rgb(var(--color-text) / 0.08);
-		color: rgb(var(--color-text) / 0.65);
+		background: rgb(var(--color-primary) / 0.14);
+		color: rgb(var(--color-primary));
 		transition: background 0.15s ease, color 0.15s ease;
 	}
 
 	.event-icon-link:hover {
-		background: rgb(var(--color-text) / 0.14);
-		color: rgb(var(--color-text));
+		background: rgb(var(--color-primary) / 0.22);
+		color: rgb(var(--color-primary));
 	}
 
 	.event-icon-link:focus-visible {
-		outline: 2px solid rgb(var(--color-text) / 0.65);
+		outline: 2px solid rgb(var(--color-primary));
 		outline-offset: 2px;
 	}
 
 	.action-slot {
 		position: relative;
 		display: flex;
+		min-width: 8.5rem;
 		min-height: 2.5rem;
 		align-items: center;
 		justify-content: flex-end;
@@ -259,43 +252,35 @@
 		place-items: center;
 		color: rgb(var(--color-text) / 0.6);
 		pointer-events: none;
-		transition: opacity 0.18s ease, transform 0.18s ease;
+		transition:
+			opacity 0.18s ease,
+			transform 0.18s ease;
 	}
 
 	.event-actions {
+		display: flex;
+		gap: 0.5rem;
 		opacity: 0;
 		pointer-events: none;
 		transform: translateX(0.5rem);
-		transition: opacity 0.18s ease, transform 0.18s ease;
+		transition:
+			opacity 0.18s ease,
+			transform 0.18s ease;
 	}
 
-	.event-type-row:hover .event-actions,
-	.event-type-row:focus-within .event-actions {
+	.event-type-row:hover .event-actions {
 		opacity: 1;
 		pointer-events: auto;
 		transform: translateX(0);
 	}
 
-	.event-type-row:hover .event-action-hint,
-	.event-type-row:focus-within .event-action-hint {
+	.event-type-row:hover .event-action-hint {
 		opacity: 0;
 		transform: translateX(-0.5rem) scale(0.85);
 	}
 
 	:global(.add-event-type-plus path) {
 		stroke-width: 3;
-	}
-
-	@media (hover: none) {
-		.event-actions {
-			opacity: 1;
-			pointer-events: auto;
-			transform: none;
-		}
-
-		.event-action-hint {
-			display: none;
-		}
 	}
 
 	@media (prefers-reduced-motion: reduce) {

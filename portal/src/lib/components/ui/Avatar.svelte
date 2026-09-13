@@ -7,7 +7,6 @@
 		avatarPath = '',
 		size = 40,
 		rounded = 'full',
-		ring = false,
 		onBrand = false,
 		class: klass = ''
 	}: {
@@ -18,8 +17,6 @@
 		/** Rendered width/height in pixels. */
 		size?: number;
 		rounded?: 'full' | 'xl' | 'lg' | 'md' | 'sm' | 'none';
-		/** 1px border ring in the theme border color. */
-		ring?: boolean;
 		/** Set when the avatar sits on a --color-primary surface; see initialsBg. */
 		onBrand?: boolean;
 		class?: string;
@@ -35,7 +32,6 @@
 	};
 
 	const radius = $derived(radii[rounded]);
-	const ringStyle = $derived(ring ? 'box-shadow: 0 0 0 1px rgb(var(--color-border));' : '');
 	const fontSize = $derived(Math.round(size * 0.36));
 
 	// Brand mesh — the one fallback treatment, for every size and call site. Two soft
@@ -76,12 +72,12 @@
 		src={avatarURL(avatarPath)}
 		alt=""
 		class={klass}
-		style="width: {size}px; height: {size}px; border-radius: {radius}; object-fit: cover; {ringStyle}"
+		style="width: {size}px; height: {size}px; border-radius: {radius}; object-fit: cover;"
 	/>
 {:else}
 	<span
 		class={klass}
 		aria-label="Avatar"
-		style="width: {size}px; height: {size}px; border-radius: {radius}; display: inline-flex; align-items: center; justify-content: center; font-weight: 700; line-height: 1; font-size: {fontSize}px; {initialsBg} {ringStyle}"
+		style="width: {size}px; height: {size}px; border-radius: {radius}; display: inline-flex; align-items: center; justify-content: center; font-weight: 700; line-height: 1; font-size: {fontSize}px; {initialsBg}"
 	>{initials}</span>
 {/if}

@@ -46,8 +46,12 @@
 
 	const eventSlug = $derived(slug || slugify(name));
 	const blockStyle =
-		'background: rgb(var(--color-foreground)); border-color: rgb(var(--color-border)); box-shadow: var(--shadow-small);';
+		'background: rgb(var(--color-foreground)); border-color: rgb(var(--color-border));';
+	const outlinedBlockStyle =
+		'background: rgb(var(--color-foreground)); box-shadow: 0 0 0 1px rgb(var(--color-border));';
 	const eventDetailsContainerStyle = `${blockStyle} background: rgb(var(--color-primary));`;
+	const newEventContainerStyle =
+		'background: rgb(var(--color-primary)); box-shadow: 0 0 0 1px rgb(var(--color-border));';
 	let clock: number | undefined;
 
 	onMount(async () => {
@@ -174,12 +178,12 @@
 </script>
 
 {#if loading}
-	<div class="rounded-lg border-2 p-8" style={blockStyle}>
+	<div class="rounded-lg p-8" style={outlinedBlockStyle}>
 		<p class="text-sm" style="color: rgb(var(--color-text) / 0.65);">Loading event type…</p>
 	</div>
 {:else}
 	{#if embedded && slug}
-		<div class="mb-4 rounded-lg border-2 p-4 sm:p-5" style={blockStyle}>
+		<div class="mb-8">
 			<div class="flex min-w-0 items-center gap-4">
 				<div
 					class="grid size-12 shrink-0 place-items-center rounded-lg"
@@ -195,8 +199,8 @@
 		</div>
 	{/if}
 	<form
-		class={embedded ? 'rounded-[0.625rem] border-2' : 'flex flex-col gap-4'}
-		style={embedded ? (slug ? blockStyle : eventDetailsContainerStyle) : undefined}
+		class={embedded ? (slug ? '' : 'overflow-hidden rounded-[0.625rem]') : 'flex flex-col gap-4'}
+		style={embedded && !slug ? newEventContainerStyle : undefined}
 		onsubmit={save}
 	>
 		<div
@@ -230,7 +234,7 @@
 
 		<div class={embedded ? '' : 'rounded-[0.625rem] border-2'} style={embedded ? undefined : eventDetailsContainerStyle}>
 			<section
-				class={`grid gap-5 p-4 sm:grid-cols-2 sm:p-5 ${embedded ? '' : 'ml-1 rounded-md rounded-l-lg'}`}
+				class={`grid gap-5 sm:grid-cols-2 ${embedded && slug ? '' : 'p-4 sm:p-5'} ${embedded ? '' : 'ml-1 rounded-md rounded-l-lg'}`}
 				style={`border-color: rgb(var(--color-border)); ${embedded ? '' : 'background: rgb(var(--color-foreground));'}`}
 				aria-labelledby="event-details-title"
 			>
@@ -268,19 +272,20 @@
 			</section>
 		</div>
 
-		<div class={embedded ? 'mt-4' : ''}>
+		<div class={embedded ? (slug ? 'mt-8' : 'mt-4') : ''}>
 			<HostSelector
 				{users}
 				{embedded}
+				flush={embedded && Boolean(slug)}
 				bind:required={requiredHostEmails}
 				bind:optional={optionalHostEmails}
 				error={hostsError}
 				onchange={() => (hostsError = '')}
 			/>
 		</div>
-		<ScheduleEditor bind:schedule {embedded} />
+		<ScheduleEditor bind:schedule {embedded} flush={embedded && Boolean(slug)} />
 
-		<div class={`flex flex-wrap items-center gap-3 ${embedded ? 'justify-end p-4 sm:p-5' : ''}`}>
+		<div class={`flex flex-wrap items-center gap-3 ${embedded ? `justify-end ${slug ? 'mt-8' : 'p-4 sm:p-5'}` : ''}`}>
 			<Button variant="secondary" onclick={cancel}>
 				<span class="flex items-center gap-2">
 					<Icon icon={xIcon} width="18" height="18" class="cancel-event-type-icon shrink-0" />

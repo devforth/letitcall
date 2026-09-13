@@ -145,7 +145,7 @@
 
 		color-scheme: light;
 		color: rgb(var(--color-text));
-		background: rgb(var(--color-background));
+		background: rgb(var(--color-foreground));
 	}
 
 	/* 
@@ -172,7 +172,7 @@
 
 
 		color-scheme: dark;
-		background: rgb(var(--color-background));
+		background: rgb(var(--color-foreground));
 	}
 
 	* {

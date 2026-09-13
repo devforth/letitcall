@@ -110,11 +110,36 @@
 		animation: initial-flashlight 12s ease-in-out infinite;
 	}
 
+	.background-dot-core {
+		background-image: radial-gradient(circle, rgb(var(--color-primary) / 0.5) 2.5px, transparent 2.5px);
+		background-size: 18px 18px;
+		mask-image: radial-gradient(circle 4rem at var(--flashlight-x) var(--flashlight-y), black 0%, black 35%, rgb(0 0 0 / 0.65) 56%, transparent 100%);
+		-webkit-mask-image: radial-gradient(circle 4rem at var(--flashlight-x) var(--flashlight-y), black 0%, black 35%, rgb(0 0 0 / 0.65) 56%, transparent 100%);
+	}
+
+	.background-dot-core.initial {
+		mask-image:
+			radial-gradient(circle 4rem at center, black 0%, black 35%, rgb(0 0 0 / 0.65) 56%, transparent 100%),
+			radial-gradient(circle 4rem at center, black 0%, black 35%, rgb(0 0 0 / 0.65) 56%, transparent 100%);
+		mask-position: 8% 12%, 82% 72%;
+		mask-repeat: no-repeat;
+		mask-size: 18rem 18rem, 18rem 18rem;
+		-webkit-mask-image:
+			radial-gradient(circle 4rem at center, black 0%, black 35%, rgb(0 0 0 / 0.65) 56%, transparent 100%),
+			radial-gradient(circle 4rem at center, black 0%, black 35%, rgb(0 0 0 / 0.65) 56%, transparent 100%);
+		-webkit-mask-position: 8% 12%, 82% 72%;
+		-webkit-mask-repeat: no-repeat;
+		-webkit-mask-size: 18rem 18rem, 18rem 18rem;
+		animation: initial-flashlight 12s ease-in-out infinite;
+	}
+
 	.login-form-panel {
-		border: 1px solid transparent;
-		background:
-			linear-gradient(rgb(var(--color-foreground)), rgb(var(--color-foreground))) padding-box,
-			linear-gradient(135deg, rgb(var(--color-border) / 0.4), rgb(var(--color-border)) 35% 65%, rgb(var(--color-border) / 0.4)) border-box;
+		background: rgb(var(--color-foreground));
+		box-shadow: 0 0 0 1px rgb(var(--color-border));
+	}
+
+	.login-theme-toggle {
+		background: rgb(var(--color-foreground));
 	}
 
 	@keyframes initial-flashlight {
@@ -162,7 +187,8 @@
 	style={`--flashlight-x: ${flashlightX}px; --flashlight-y: ${flashlightY}px;`}
 >
 	<div class:initial={!flashlightStarted} class="background-dot-layer pointer-events-none absolute inset-0" aria-hidden="true"></div>
-	<div class="fixed right-4 top-4 z-20 flex items-center gap-1.5">
+	<div class:initial={!flashlightStarted} class="background-dot-core pointer-events-none absolute inset-0" aria-hidden="true"></div>
+	<div class="login-theme-toggle fixed right-4 top-4 z-20 flex items-center gap-2 px-3 py-2">
 		<span class="text-xs opacity-45">Theme</span>
 		<ThemeToggle compact />
 	</div>

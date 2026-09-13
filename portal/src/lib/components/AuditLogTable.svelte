@@ -50,7 +50,7 @@
 			{#each auditLogs as auditLog (auditLog.id)}
 				<tr class="border-b border-black">
 					<td class="px-4 py-3 align-top">
-						<Avatar name={auditLog.actor.fullName} email={auditLog.actor.email} avatarPath={auditLog.actor.avatarPath} size={44} rounded="none" class="border border-black" />
+						<Avatar name={auditLog.actor.fullName} email={auditLog.actor.email} avatarPath={auditLog.actor.avatarPath} size={44} rounded="none" />
 					</td>
 					<td class="px-4 py-3 align-top">
 						<div class="font-medium">{auditLog.actor.fullName || '—'}</div>
