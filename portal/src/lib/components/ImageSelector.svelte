@@ -115,12 +115,16 @@
 	<legend class="selector-legend">{legend}</legend>
 	{#if current && !source && !editing}
 		<div class="current-avatar">
-			<img src={current} alt={`Current ${legend.toLowerCase()}`} />
+			<img class:round-image={legend.toLowerCase().startsWith('avatar')} src={current} alt={`Current ${legend.toLowerCase()}`} />
+			<div class="current-copy">
+				<p class="current-title">Current {legend.toLowerCase()}</p>
+				<p class="current-hint">Edit the image or remove it.</p>
+			</div>
 			<div class="current-actions">
-				<IconButton tone="primary" label={`Edit ${legend.toLowerCase()}`} onclick={() => (editing = true)}>
+				<IconButton filled tone="primary" label={`Edit ${legend.toLowerCase()}`} onclick={() => (editing = true)}>
 					<Icon icon={editIcon} width="20" height="20" />
 				</IconButton>
-				<IconButton tone="danger" label={`Delete ${legend.toLowerCase()}`} onclick={() => ondelete?.()}>
+				<IconButton filled tone="danger" label={`Delete ${legend.toLowerCase()}`} onclick={() => ondelete?.()}>
 					<Icon icon={trashIcon} width="20" height="20" />
 				</IconButton>
 			</div>
@@ -211,12 +215,29 @@
 	}
 
 	.current-avatar {
-		display: flex;
+		display: grid;
+		grid-template-columns: auto minmax(0, 1fr) auto;
 		align-items: center;
-		gap: 1rem;
-		margin-bottom: 1rem;
+		gap: 0.875rem;
+		min-height: 5.25rem;
+		padding: 0.75rem;
+		border: 1px dashed rgb(var(--color-border));
+		border-radius: 8px;
+		background: rgb(var(--color-text) / 0.06);
 		font-size: 0.8125rem;
 		color: rgb(var(--color-text) / 0.75);
+	}
+
+	.current-title {
+		margin: 0;
+		font-weight: 600;
+		color: rgb(var(--color-text));
+	}
+
+	.current-hint {
+		margin: 0.1875rem 0 0;
+		font-size: 0.75rem;
+		color: rgb(var(--color-text) / 0.65);
 	}
 
 	.current-actions {
@@ -225,11 +246,13 @@
 	}
 
 	.current-avatar img {
-		width: 6rem;
-		height: 6rem;
-		border-radius: 50%;
+		width: 4.5rem;
+		height: 4.5rem;
 		object-fit: cover;
-		box-shadow: 0 0 0 1px rgb(var(--color-border));
+	}
+
+	.current-avatar img.round-image {
+		border-radius: 50%;
 	}
 
 	.selector-body {
@@ -359,6 +382,14 @@
 	}
 
 	@media (max-width: 480px) {
+		.current-avatar {
+			grid-template-columns: auto minmax(0, 1fr);
+		}
+
+		.current-actions {
+			grid-column: 2;
+		}
+
 		.upload-surface {
 			grid-template-columns: auto minmax(0, 1fr);
 		}

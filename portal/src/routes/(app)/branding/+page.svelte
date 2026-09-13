@@ -1,5 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import Icon from '@iconify/svelte';
+	import paintIcon from '@iconify-icons/tabler/paint-filled';
 	import { callApi, logoURL } from '$lib/api';
 	import { defaultBrandingTheme, loadBranding } from '$lib/stores/branding.svelte';
 	import { generateThemeColors } from '$lib/theme-colors';
@@ -98,10 +100,20 @@
 
 <PageTitle title="Branding" />
 
-<section aria-labelledby="branding-title">
-	<div class="mb-6">
-		<h1 id="branding-title" class="text-2xl font-semibold tracking-tight">Branding</h1>
-		<p class="mt-2 text-sm">Set the identity and light and dark color themes shown across the portal and booking pages.</p>
+<section aria-labelledby="branding-title" class="flex flex-col gap-6">
+	<div class="mb-2">
+		<div class="flex min-w-0 items-center gap-4">
+			<div
+				class="grid size-12 shrink-0 place-items-center rounded-lg"
+				style="background: rgb(var(--color-primary) / 0.12); color: rgb(var(--color-primary));"
+			>
+				<Icon icon={paintIcon} width="24" height="24" />
+			</div>
+			<div>
+				<h1 id="branding-title" class="text-2xl font-semibold tracking-tight" style="color: rgb(var(--color-text));">Branding</h1>
+				<p class="text-sm" style="color: rgb(var(--color-text) / 0.65);">Set the identity and light and dark color themes shown across the portal and booking pages.</p>
+			</div>
+		</div>
 	</div>
 
 	{#if loading}
@@ -169,40 +181,40 @@
 				</div>
 			</fieldset>
 
-			<div><Button type="submit" disabled={saving}>{saving ? 'Applying…' : 'Apply'}</Button></div>
+			<div class="branding-actions"><Button type="submit" disabled={saving}>{saving ? 'Applying…' : 'Apply'}</Button></div>
 		</form>
 	{/if}
 </section>
 
 <style>
-	.loading-panel,
-	.branding-form,
-	.section {
-		border: 1px solid rgb(var(--color-border));
+	.loading-panel {
+		border: 0;
+		border-radius: 8px;
+		background: rgb(var(--color-foreground));
+		box-shadow: 0 0 0 1px rgb(var(--color-border));
 	}
 
 	.branding-form {
 		display: grid;
-		max-width: 64rem;
-		gap: 1.25rem;
-		padding: 1.25rem;
-		background: rgb(var(--color-foreground));
+		gap: 2rem;
 	}
 
 	.section {
 		min-width: 0;
-		padding: 1rem;
+		padding: 0;
+		border: 0;
 	}
 
 	.section legend {
-		padding: 0 0.5rem;
+		padding: 0;
 		font-size: 1rem;
-		font-weight: 700;
+		font-weight: 600;
 	}
 
 	.identity-fields {
 		display: grid;
 		gap: 1rem;
+		margin-top: 1rem;
 		max-width: 36rem;
 	}
 
@@ -220,13 +232,15 @@
 	}
 
 	.section-description {
-		margin: 0 0 1rem;
+		margin: 0.5rem 0 1rem;
 		font-size: 0.875rem;
 		color: rgb(var(--color-text) / 0.75);
 	}
 
 	.theme-table-wrap {
-		border: 1px solid rgb(var(--color-border));
+		overflow: hidden;
+		border-radius: 8px;
+		box-shadow: 0 0 0 1px rgb(var(--color-border));
 	}
 
 	.theme-table {
@@ -244,7 +258,7 @@
 	}
 
 	.theme-table thead th {
-		background: rgb(var(--color-background));
+		background: rgb(var(--color-text) / 0.06);
 		font-size: 0.75rem;
 		text-transform: uppercase;
 		letter-spacing: 0.05em;
@@ -268,19 +282,16 @@
 		margin-top: 0.5rem;
 	}
 
+	.branding-actions {
+		display: flex;
+		justify-content: flex-end;
+		margin-top: 0.5rem;
+	}
+
 	@media (max-width: 800px) {
 		.theme-table-wrap {
 			overflow-x: auto;
 		}
 	}
 
-	@media (max-width: 640px) {
-		.branding-form {
-			padding: 0.875rem;
-		}
-
-		.section {
-			padding: 0.75rem;
-		}
-	}
 </style>

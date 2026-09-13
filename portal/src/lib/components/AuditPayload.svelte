@@ -24,10 +24,13 @@
 	const showsDiff = $derived(action === 'edited' && fields.every(([, value]) => isChange(value)));
 </script>
 
-<div class="overflow-x-auto border border-black bg-white text-black">
-	<table class="w-full min-w-[38rem] border-collapse text-left text-sm">
+<div
+	class="audit-payload overflow-x-auto rounded-md"
+	style="background: rgb(var(--color-foreground)); box-shadow: 0 0 0 1px rgb(var(--color-border));"
+>
+	<table class="w-full min-w-[38rem] text-left text-sm">
 		<thead>
-			<tr class="border-b border-black">
+			<tr>
 				<th class="px-4 py-3 font-semibold">Field</th>
 				{#if showsDiff}
 					<th class="px-4 py-3 font-semibold">Previous value</th>
@@ -39,7 +42,7 @@
 		</thead>
 		<tbody>
 			{#each fields as [field, value] (field)}
-				<tr class="border-b border-black last:border-b-0">
+				<tr>
 					<th class="px-4 py-3 align-top font-medium">{field}</th>
 					{#if showsDiff && isChange(value)}
 						<td class="px-4 py-3 align-top"><pre class="whitespace-pre-wrap break-words font-mono text-xs">{formatValue(value.before)}</pre></td>
@@ -54,3 +57,33 @@
 		</tbody>
 	</table>
 </div>
+
+<style>
+	.audit-payload table {
+		border-collapse: collapse;
+	}
+
+	.audit-payload thead {
+		background: rgb(var(--color-text) / 0.06);
+	}
+
+	.audit-payload thead th {
+		border-bottom: 1px solid rgb(var(--color-border));
+		color: rgb(var(--color-text));
+		font-size: 0.75rem;
+		letter-spacing: 0.025em;
+	}
+
+	.audit-payload tbody tr {
+		border-bottom: 1px solid rgb(var(--color-border));
+	}
+
+	.audit-payload tbody tr:last-child {
+		border-bottom: 0;
+	}
+
+	.audit-payload td,
+	.audit-payload tbody th {
+		color: rgb(var(--color-text));
+	}
+</style>

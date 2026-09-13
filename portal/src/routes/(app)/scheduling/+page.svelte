@@ -3,6 +3,7 @@
 	import { onMount } from 'svelte';
 	import Icon from '@iconify/svelte';
 	import calendarEventIcon from '@iconify-icons/tabler/calendar-event';
+	import calendarCogIcon from '@iconify-icons/tabler/calendar-cog';
 	import dotsVerticalIcon from '@iconify-icons/tabler/dots-vertical';
 	import editIcon from '@iconify-icons/mdi/edit';
 	import externalLinkIcon from '@iconify-icons/charm/link-external';
@@ -80,7 +81,7 @@
 					class="grid size-12 shrink-0 place-items-center rounded-lg"
 					style="background: rgb(var(--color-primary) / 0.12); color: rgb(var(--color-primary));"
 				>
-					<Icon icon={calendarEventIcon} width="24" height="24" />
+					<Icon icon={calendarCogIcon} width="24" height="24" />
 				</div>
 				<div>
 					<div class="flex items-center gap-3">

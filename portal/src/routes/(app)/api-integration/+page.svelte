@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import Icon from '@iconify/svelte';
+	import codeIcon from '@iconify-icons/tabler/code';
 	import copyIcon from '@iconify-icons/tabler/copy';
 	import externalLinkIcon from '@iconify-icons/tabler/external-link';
 	import { callApi } from '$lib/api';
@@ -65,22 +66,32 @@
 
 <PageTitle title="API Integration" />
 
-<section aria-labelledby="api-integration-title">
-	<div class="mb-6">
-		<h1 id="api-integration-title" class="text-2xl font-semibold tracking-tight">API Integration</h1>
-		<p class="mt-2 text-sm">Connect lead-generation and scheduling systems to this installation.</p>
+<section aria-labelledby="api-integration-title" class="flex flex-col gap-6">
+	<div class="mb-2">
+		<div class="flex min-w-0 items-center gap-4">
+			<div
+				class="grid size-12 shrink-0 place-items-center rounded-lg"
+				style="background: rgb(var(--color-primary) / 0.12); color: rgb(var(--color-primary));"
+			>
+				<Icon icon={codeIcon} width="24" height="24" />
+			</div>
+			<div>
+				<h1 id="api-integration-title" class="text-2xl font-semibold tracking-tight" style="color: rgb(var(--color-text));">API Integration</h1>
+				<p class="text-sm" style="color: rgb(var(--color-text) / 0.65);">Connect lead-generation and scheduling systems to this installation.</p>
+			</div>
+		</div>
 	</div>
 
 	{#if loading}
-		<p class="border border-black p-6 text-sm">Loading API integration…</p>
+		<p class="outlined-block p-6 text-sm">Loading API integration…</p>
 	{:else if integration}
-		<div class="grid max-w-4xl gap-8">
-			<section class="grid gap-4 border border-black p-5" aria-labelledby="connection-title">
-				<h2 id="connection-title" class="text-lg font-semibold">Connection</h2>
+		<div class="grid gap-8">
+			<section class="grid gap-4" aria-labelledby="connection-title">
+				<h2 id="connection-title" class="font-semibold">Connection</h2>
 				<Input id="api-base-url" label="Base URL" value={integration.baseURL} readonly />
 				<div class="flex flex-wrap gap-3 text-sm">
 					<a
-						class="inline-flex min-h-11 items-center gap-2 border border-black px-4 py-2 font-medium hover:bg-black hover:text-white"
+						class="documentation-link"
 						href={integration.swaggerURL}
 						target="_blank"
 						rel="noreferrer"
@@ -88,7 +99,7 @@
 						Swagger documentation <Icon icon={externalLinkIcon} class="size-4" />
 					</a>
 					<a
-						class="inline-flex min-h-11 items-center gap-2 border border-black px-4 py-2 font-medium hover:bg-black hover:text-white"
+						class="documentation-link"
 						href={integration.openAPIURL}
 						target="_blank"
 						rel="noreferrer"
@@ -98,10 +109,10 @@
 				</div>
 			</section>
 
-			<section class="grid gap-5 border border-black p-5" aria-labelledby="tokens-title">
+			<section class="grid gap-5" aria-labelledby="tokens-title">
 				<div>
-					<h2 id="tokens-title" class="text-lg font-semibold">Personal access tokens</h2>
-					<p class="mt-2 text-sm">Use a token as a bearer credential. Each secret is shown only once.</p>
+					<h2 id="tokens-title" class="font-semibold">Personal access tokens</h2>
+					<p class="mt-1 text-sm" style="color: rgb(var(--color-text) / 0.65);">Use a token as a bearer credential. Each secret is shown only once.</p>
 				</div>
 
 				<form class="flex flex-col items-stretch gap-3 sm:flex-row sm:items-end" onsubmit={createToken}>
@@ -112,7 +123,7 @@
 				</form>
 
 				{#if generatedToken}
-					<div class="grid gap-3 border border-black p-4" role="status">
+					<div class="outlined-block grid gap-3 p-4" role="status">
 						<p class="text-sm font-medium">Copy this token now. It cannot be shown again.</p>
 						<Input id="generated-api-token" label="New token" value={generatedToken} readonly />
 						<div class="flex flex-wrap gap-2">
@@ -125,11 +136,11 @@
 				{/if}
 
 				{#if integration.tokens.length === 0}
-					<p class="border border-black p-4 text-sm">No tokens have been generated.</p>
+					<p class="outlined-block p-4 text-sm">No tokens have been generated.</p>
 				{:else}
 					<ul class="grid gap-3">
 						{#each integration.tokens as token (token.id)}
-							<li class="flex flex-wrap items-center justify-between gap-4 border border-black p-4">
+							<li class="outlined-block flex flex-wrap items-center justify-between gap-4 p-4">
 								<div>
 									<p class="font-medium">{token.name}</p>
 									<p class="mt-1 text-sm">Created {new Date(token.createdAt).toLocaleString()}</p>
@@ -154,3 +165,36 @@
 	onconfirm={revokeToken}
 	oncancel={() => (tokenToRevoke = null)}
 />
+
+<style>
+	.outlined-block {
+		border: 0;
+		border-radius: 8px;
+		background: rgb(var(--color-foreground));
+		box-shadow: 0 0 0 1px rgb(var(--color-border));
+	}
+
+	.documentation-link {
+		display: inline-flex;
+		min-height: 2.75rem;
+		align-items: center;
+		gap: 0.5rem;
+		padding: 0.5rem 1rem;
+		border-radius: 10px;
+		background: rgb(var(--color-foreground));
+		box-shadow: 0 0 0 1px rgb(var(--color-border));
+		color: rgb(var(--color-text));
+		font-weight: 500;
+		transition: background 0.15s ease, color 0.15s ease;
+	}
+
+	.documentation-link:hover {
+		background: rgb(var(--color-primary) / 0.1);
+		color: rgb(var(--color-primary));
+	}
+
+	.documentation-link:focus-visible {
+		outline: 2px solid rgb(var(--color-primary));
+		outline-offset: 2px;
+	}
+</style>

@@ -3,15 +3,15 @@
 	import { page } from '$app/state';
 	import { onMount, type Snippet } from 'svelte';
 	import Icon from '@iconify/svelte';
-	import bracesIcon from '@iconify-icons/tabler/braces';
-	import calendarIcon from '@iconify-icons/tabler/calendar-filled';
-	import clockIcon from '@iconify-icons/tabler/clock-filled';
+	import calendarCogIcon from '@iconify-icons/tabler/calendar-cog';
+	import calendarIcon from '@iconify-icons/tabler/calendar-event';
+	import codeIcon from '@iconify-icons/tabler/code';
+	import colorSwatchIcon from '@iconify-icons/tabler/color-swatch';
+	import historyIcon from '@iconify-icons/tabler/history';
 	import moonIcon from '@iconify-icons/tabler/moon';
-	import paintIcon from '@iconify-icons/tabler/paint-filled';
-	import timelineIcon from '@iconify-icons/tabler/timeline-event-filled';
+	import usersIcon from '@iconify-icons/tabler/users';
 	import xIcon from '@iconify-icons/tabler/x';
 	import { callApi, appPath } from '$lib/api';
-	import addUserIcon from '$lib/icons/add-user';
 	import type { SessionUser } from '$lib/types';
 	import ThemeToggle from '$lib/components/ThemeToggle.svelte';
 	import BrandLogo from '$lib/components/BrandLogo.svelte';
@@ -48,11 +48,11 @@
 
 	const navItems = [
 		{ label: 'Bookings', href: '/', exact: true, icon: calendarIcon },
-		{ label: 'Scheduling', href: '/scheduling', exact: false, icon: clockIcon },
-		{ label: 'Users', href: '/users', exact: false, icon: addUserIcon },
-		{ label: 'Branding', href: '/branding', exact: false, icon: paintIcon },
-		{ label: 'API Integration', href: '/api-integration', exact: false, icon: bracesIcon },
-		{ label: 'Audit log', href: '/audit-log', exact: false, icon: timelineIcon }
+		{ label: 'Scheduling', href: '/scheduling', exact: false, icon: calendarCogIcon },
+		{ label: 'Users', href: '/users', exact: false, icon: usersIcon },
+		{ label: 'Branding', href: '/branding', exact: false, icon: colorSwatchIcon },
+		{ label: 'API Integration', href: '/api-integration', exact: false, icon: codeIcon },
+		{ label: 'Audit log', href: '/audit-log', exact: false, icon: historyIcon }
 	];
 
 	function isActive(item: { href: string; exact: boolean }) {
@@ -66,7 +66,10 @@
 		page.url.pathname === appPath('/scheduling') ||
 		page.url.pathname.startsWith(`${appPath('/scheduling')}/`) ||
 		page.url.pathname === appPath('/users') ||
-		page.url.pathname.startsWith(`${appPath('/users')}/`)
+		page.url.pathname.startsWith(`${appPath('/users')}/`) ||
+		page.url.pathname === appPath('/branding') ||
+		page.url.pathname === appPath('/api-integration') ||
+		page.url.pathname === appPath('/audit-log')
 	);
 
 	async function logout() {
@@ -80,9 +83,9 @@
 
 	let menuHoverTimer: number | undefined;
 
-	function toggleMenu(event: MouseEvent) {
+	function openMenu(event: MouseEvent) {
 		event.stopPropagation();
-		menuOpen = !menuOpen;
+		menuOpen = true;
 	}
 
 	function closeMenu() {
@@ -170,11 +173,11 @@
 					<button
 						type="button"
 						class="flex items-center gap-2 rounded-full py-1 pl-1 pr-3"
-						style="background: rgb(var(--color-foreground)); border: 0; box-shadow: 0 0 0 1px rgb(var(--color-border)), var(--shadow-small); outline: none;"
+						style="background: rgb(var(--color-foreground)); border: 0; box-shadow: 0 0 0 1px rgb(var(--color-border)); outline: none;"
 						aria-haspopup="menu"
 						aria-expanded={menuOpen}
 						aria-label="Account menu"
-						onclick={toggleMenu}
+						onclick={openMenu}
 					>
 						<Avatar name={user.fullName} email={user.email} avatarPath={user.avatarPath} size={36} />
 						<span class="hidden max-w-[10rem] truncate text-sm font-bold sm:inline" style="color: rgb(var(--color-text));">
@@ -198,7 +201,7 @@
 						<!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
 						<div
 							class="absolute right-0 z-40 mt-2 w-64 overflow-hidden rounded-xl p-2"
-							style="background: rgb(var(--color-foreground)); border: 0; box-shadow: 0 0 0 1px rgb(var(--color-border)), var(--shadow);"
+							style="background: rgb(var(--color-foreground)); border: 0; box-shadow: 0 0 0 1px rgb(var(--color-border));"
 							role="menu"
 							tabindex="-1"
 							onclick={(e) => e.stopPropagation()}
