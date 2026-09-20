@@ -8,9 +8,15 @@ importers:
 
   .:
     dependencies:
+      '@iconify-icons/at-icons':
+        specifier: ^2.0.1
+        version: 2.0.1
       '@iconify-icons/charm':
         specifier: ^2.0.1
         version: 2.0.1
+      '@iconify-icons/hugeicons':
+        specifier: ^2.0.2
+        version: 2.0.2
       '@iconify-icons/humbleicons':
         specifier: ^1.2.4
         version: 1.2.4
@@ -114,8 +120,14 @@ packages:
   '@emnapi/wasi-threads@1.2.2':
     resolution: {integrity: sha512-c95qOXkHdydNKhscBTebqEC1CVAZpyqOfVfBzQ1qgzyl3gfeldUjIggDbIZgDKsHLgnsM+igH7TJ/eAasaVuMA==}
 
+  '@iconify-icons/at-icons@2.0.1':
+    resolution: {integrity: sha512-WV70SgryvST/FYq2d0dp1c4pbITn6rKlSIBqHXZN4u0qJwQeKhWllHfwt/2Rn24puHddOs/37goEcCLzIg2w4g==}
+
   '@iconify-icons/charm@2.0.1':
     resolution: {integrity: sha512-BU/p1OZSy4aatRWn4cmH78u6ouJh1qSb/oqr9H8BrAFrPal5a2KxmGVOR3qn9nVyjEAVYMDEGmeqyQ8SRuzMBg==}
+
+  '@iconify-icons/hugeicons@2.0.2':
+    resolution: {integrity: sha512-NGervUGXqntEK1PKxYjN99Q8A0F5K3TdH207SQBiokc59amn3RrHWOFWn/8h2qh7QVkQh05p/D5CCaWibGumSw==}
 
   '@iconify-icons/humbleicons@1.2.4':
     resolution: {integrity: sha512-J0tKxbuwEy9sQZrNpzeVsgDpeQVWPWY4nO1826q7sq4q83LA+3H6jAHvxwGRjQmovJnuomq/NlG5eJLpy9CJCA==}
@@ -808,7 +820,15 @@ snapshots:
       tslib: 2.8.1
     optional: true
 
+  '@iconify-icons/at-icons@2.0.1':
+    dependencies:
+      '@iconify/types': 2.0.0
+
   '@iconify-icons/charm@2.0.1':
+    dependencies:
+      '@iconify/types': 2.0.0
+
+  '@iconify-icons/hugeicons@2.0.2':
     dependencies:
       '@iconify/types': 2.0.0
 

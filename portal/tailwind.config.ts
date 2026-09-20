@@ -6,14 +6,11 @@ export default {
 			extend: {
 			colors: {
 				// Override with CSS variables for theming
-				foreground: 'rgb(var(--color-foreground) / <alpha-value>)',
 				background: 'rgb(var(--color-background) / <alpha-value>)',
 				text: 'rgb(var(--color-text) / <alpha-value>)',
 				'contrast-text': 'rgb(var(--color-contrast-text) / <alpha-value>)',
 				border: 'rgb(var(--color-border) / <alpha-value>)',
-				primary: 'rgb(var(--color-primary) / <alpha-value>)',
-				secondary: 'rgb(var(--color-secondary) / <alpha-value>)',
-				'secondary-hover': 'rgb(var(--color-secondary-hover) / <alpha-value>)'
+				primary: 'rgb(var(--color-primary) / <alpha-value>)'
 			}
 		}
 	}

@@ -193,10 +193,13 @@ func TestBrandingAPIsStoreAndServeLogo(t *testing.T) {
 	f := newFixture(t, false)
 	initial := expectStatus(t, f.request(http.MethodGet, "/api/branding", nil), http.StatusOK)
 	if !strings.Contains(string(initial), `"name":"Let It Call"`) ||
-		!strings.Contains(string(initial), `"light":{"primary":"#00C950"`) ||
-		!strings.Contains(string(initial), `"border":"#D8D8D8"`) ||
-		!strings.Contains(string(initial), `"dark":{"primary":"#00C950"`) ||
-		!strings.Contains(string(initial), `"border":"#787878"`) {
+		!strings.Contains(string(initial), `"light":{"primary":"#0284C7","primaryContrast":"#FFFFFF"`) ||
+		!strings.Contains(string(initial), `"background":"#FFFFFF"`) ||
+		!strings.Contains(string(initial), `"dark":{"primary":"#0284C7","primaryContrast":"#FFFFFF"`) ||
+		!strings.Contains(string(initial), `"background":"#646464"`) ||
+		strings.Contains(string(initial), `"secondary"`) ||
+		strings.Contains(string(initial), `"shadow"`) ||
+		strings.Contains(string(initial), `"border"`) {
 		t.Fatalf("unexpected initial branding: %s", initial)
 	}
 	expectStatus(t, f.request(http.MethodPut, "/api/branding", map[string]string{"name": "DevForth"}), http.StatusUnauthorized)
@@ -204,13 +207,12 @@ func TestBrandingAPIsStoreAndServeLogo(t *testing.T) {
 
 	theme := model.DefaultBrandingTheme()
 	theme.Light.Primary = "#123abc"
-	theme.Light.Border = "#abcdef"
 	updated := expectStatus(t, f.request(http.MethodPut, "/api/branding", map[string]any{
 		"name": "DevForth", "logo": jpegDataURL(t, 512, 512), "theme": theme,
 	}), http.StatusOK)
 	logoFilename := logoFilenameFromResponse(t, updated)
 	branding, err := f.store.GetBranding()
-	if err != nil || branding.Name != "DevForth" || branding.LogoPath != logoFilename || branding.Theme.Light.Primary != "#123ABC" || branding.Theme.Light.Border != "#ABCDEF" {
+	if err != nil || branding.Name != "DevForth" || branding.LogoPath != logoFilename || branding.Theme.Light.Primary != "#123ABC" {
 		t.Fatalf("branding was not stored: branding=%#v err=%v", branding, err)
 	}
 	if _, err := os.Stat(filepath.Join(f.dataPath, "branding.leveldb")); err != nil {
@@ -245,6 +247,23 @@ func TestBrandingAPIsStoreAndServeLogo(t *testing.T) {
 		t.Fatalf("previous logo was not removed: %v", err)
 	}
 	expectStatus(t, f.request(http.MethodGet, "/content/logos/not-a-logo.txt", nil), http.StatusNotFound)
+}
+
+func TestBrandingFillsMissingBackgrounds(t *testing.T) {
+	f := newFixture(t, false)
+	branding := model.Branding{Name: model.DefaultBrandName, Theme: model.DefaultBrandingTheme()}
+	branding.Theme.Light.Background = "#F5F5F0"
+	branding.Theme.Dark.Background = ""
+	if err := f.store.PutBranding(branding); err != nil {
+		t.Fatal(err)
+	}
+	stored, err := f.store.GetBranding()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if stored.Theme.Light.Background != "#FFFFFF" || stored.Theme.Dark.Background != "#646464" {
+		t.Fatalf("legacy backgrounds were not defaulted: %#v", stored.Theme)
+	}
 }
 
 func TestBrandingAPIValidatesNameAndLogo(t *testing.T) {

@@ -7,11 +7,8 @@ const DefaultBrandName = "Let It Call"
 type ThemeColors struct {
 	Primary         string `json:"primary"`
 	PrimaryContrast string `json:"primaryContrast"`
-	Foreground      string `json:"foreground"`
 	Text            string `json:"text"`
 	Background      string `json:"background"`
-	Border          string `json:"border"`
-	Shadow          string `json:"shadow"`
 }
 
 type BrandingTheme struct {
@@ -22,22 +19,16 @@ type BrandingTheme struct {
 func DefaultBrandingTheme() BrandingTheme {
 	return BrandingTheme{
 		Light: ThemeColors{
-			Primary:         "#00C950",
+			Primary:         "#0284C7",
 			PrimaryContrast: "#FFFFFF",
-			Foreground:      "#FFFFFF",
 			Text:            "#646464",
-			Background:      "#F5F5F0",
-			Border:          "#D8D8D8",
-			Shadow:          "#000000",
+			Background:      "#FFFFFF",
 		},
 		Dark: ThemeColors{
-			Primary:         "#00C950",
+			Primary:         "#0284C7",
 			PrimaryContrast: "#FFFFFF",
-			Foreground:      "#646464",
 			Text:            "#FFFFFF",
-			Background:      "#333333",
-			Border:          "#787878",
-			Shadow:          "#000000",
+			Background:      "#646464",
 		},
 	}
 }

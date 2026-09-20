@@ -42,9 +42,9 @@
 		max-width: 15rem;
 		transform: translateX(-50%);
 		padding: 0.5rem 0.625rem;
-		border: 1px solid rgb(var(--color-border));
+		border: 1px solid var(--color-border);
 		border-radius: 8px;
-		background: rgb(var(--color-foreground));
+		background: rgb(var(--color-background));
 		box-shadow: var(--shadow-small);
 		color: rgb(var(--color-text));
 		font-size: 0.75rem;

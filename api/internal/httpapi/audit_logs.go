@@ -21,6 +21,20 @@ func (s *Server) listAuditLogs(w http.ResponseWriter, _ *http.Request) {
 		internalError(w, err, "list audit logs")
 		return
 	}
+	users, err := s.store.ListUsers()
+	if err != nil {
+		internalError(w, err, "list users for audit logs")
+		return
+	}
+	avatarPaths := make(map[string]string, len(users))
+	for _, user := range users {
+		avatarPaths[user.Email] = user.AvatarPath
+	}
+	for index := range entries {
+		if avatarPath, ok := avatarPaths[entries[index].Actor.Email]; ok {
+			entries[index].Actor.AvatarPath = avatarPath
+		}
+	}
 	writeJSON(w, http.StatusOK, map[string]any{"auditLogs": entries})
 }
 

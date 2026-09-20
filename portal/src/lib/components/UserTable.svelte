@@ -3,10 +3,11 @@
 	import calendarCheckIcon from '@iconify-icons/tabler/check';
 	import calendarXIcon from '@iconify-icons/tabler/x';
 	import checkIcon from '@iconify-icons/tabler/circle-check-filled';
+	import arrowDownIcon from '@iconify-icons/tabler/arrow-down';
+	import arrowUpIcon from '@iconify-icons/tabler/arrow-up';
 	import editIcon from '@iconify-icons/mdi/edit';
 	import dotsIcon from '@iconify-icons/tabler/dots-vertical';
 	import trashIcon from '@iconify-icons/tabler/trash';
-	import usersIcon from '@iconify-icons/tabler/users';
 	import worldIcon from '@iconify-icons/tabler/world';
 	import type { ManagedUser } from '$lib/types';
 	import IconButton from '$lib/components/ui/IconButton.svelte';
@@ -72,7 +73,7 @@
 					<th
 						aria-sort={sortKey === column.key ? sortDirection : 'none'}
 						class:text-center={column.key === 'calendar'}
-						class={`${column.padding} py-3.5 font-semibold`}
+						class={`${column.padding} py-3.5`}
 					>
 						<button
 							type="button"
@@ -80,36 +81,14 @@
 							class="sort-button"
 							onclick={() => toggleSort(column.key)}
 						>
-							{column.label}
-							<svg
-								class="sort-chevrons"
-								viewBox="0 0 24 24"
-								width="22"
-								height="22"
-								fill="none"
-								stroke="currentColor"
-								stroke-width="2"
-								stroke-linecap="round"
-								stroke-linejoin="round"
-								aria-hidden="true"
-							>
-								<path
-									class="chev"
-									class:strong={sortKey === column.key && sortDirection === 'ascending'}
-									class:faint={sortKey === column.key && sortDirection === 'descending'}
-									d="M8 10l4 -4l4 4"
-								/>
-								<path
-									class="chev"
-									class:strong={sortKey === column.key && sortDirection === 'descending'}
-									class:faint={sortKey === column.key && sortDirection === 'ascending'}
-									d="M8 14l4 4l4 -4"
-								/>
-							</svg>
+							<span class="sort-label">{column.label}</span>
+							<span class:inactive-sort={sortKey !== column.key} class="sort-arrow">
+								<Icon icon={sortDirection === 'ascending' ? arrowUpIcon : arrowDownIcon} width="16" height="16" aria-hidden="true" />
+							</span>
 						</button>
 					</th>
 				{/each}
-				<th aria-label="Actions" class="px-5 py-3.5 text-right font-semibold"></th>
+				<th aria-label="Actions" class="px-5 py-3.5 text-right"></th>
 			</tr>
 		</thead>
 		<tbody>
@@ -136,7 +115,7 @@
 					<td class="px-4 py-4">
 						<div class="calendar-cell">
 							{#if user.googleConnected}
-								<Icon icon={calendarCheckIcon} width="20" height="20" class="calendar-status" aria-label="Calendar connected" style="color: rgb(var(--color-primary));" />
+								<Icon icon={calendarCheckIcon} width="20" height="20" class="calendar-status" aria-label="Calendar connected" style="color: rgb(var(--success));" />
 							{:else}
 								<Icon icon={calendarXIcon} width="20" height="20" class="calendar-status" aria-label="Calendar not connected" style="color: rgb(var(--color-text) / 0.65);" />
 							{/if}
@@ -174,13 +153,7 @@
 				</tr>
 			{:else}
 				<tr>
-					<td class="px-5 py-14 text-center" colspan="4">
-						<div class="mx-auto flex max-w-xs flex-col items-center">
-							<Icon icon={usersIcon} width="30" height="30" style="color: rgb(var(--color-text) / 0.65);" />
-							<p class="mt-3 font-semibold" style="color: rgb(var(--color-text));">No users found</p>
-							<p class="mt-1 text-xs" style="color: rgb(var(--color-text) / 0.65);">Try a different search or connection filter.</p>
-						</div>
-					</td>
+					<td class="empty-table-cell" colspan="4">No users found</td>
 				</tr>
 			{/each}
 		</tbody>
@@ -197,10 +170,10 @@
 	}
 
 	.user-table thead th {
-		border-bottom: 1px solid rgb(var(--color-border));
+		border-bottom: 1px solid var(--color-border);
 		color: rgb(var(--color-text));
 		font-size: 0.75rem;
-		font-weight: 700;
+		font-weight: 400;
 		letter-spacing: 0.025em;
 		text-transform: none;
 	}
@@ -208,7 +181,7 @@
 	.sort-button {
 		display: inline-flex;
 		align-items: center;
-		gap: 0.25rem;
+		gap: 0.0625rem;
 		border: 0;
 		padding: 0;
 		background: transparent;
@@ -225,26 +198,25 @@
 		color: rgb(var(--color-primary));
 	}
 
+	.sort-label {
+		color: rgb(var(--color-primary));
+	}
+
 	.sort-button:focus-visible {
 		outline: 2px solid rgb(var(--color-primary));
 		outline-offset: 3px;
 	}
 
-	.sort-chevrons .chev {
-		opacity: 0.5;
-		transition: opacity 0.15s ease;
+	.sort-arrow {
+		color: rgb(var(--color-primary));
 	}
 
-	.sort-chevrons .chev.strong {
-		opacity: 1;
-	}
-
-	.sort-chevrons .chev.faint {
-		opacity: 0.28;
+	.sort-arrow.inactive-sort {
+		visibility: hidden;
 	}
 
 	.user-table tbody td {
-		border-bottom: 1px solid rgb(var(--color-border));
+		border-bottom: 1px solid var(--color-border);
 	}
 
 	.user-table tbody tr:last-child td {
@@ -257,6 +229,13 @@
 
 	.user-table tbody tr:hover {
 		background: rgb(var(--color-primary) / 0.045);
+	}
+
+	.empty-table-cell {
+		padding: 2.5rem 1rem;
+		color: rgb(var(--color-text) / 0.65);
+		font-size: 0.875rem;
+		text-align: center;
 	}
 
 	.action-slot {
@@ -324,7 +303,7 @@
 		display: inline-flex;
 		align-items: center;
 		gap: 0.375rem;
-		border: 1px solid rgb(var(--color-border));
+		border: 1px solid var(--color-border);
 		border-radius: 999px;
 		padding: 0.25rem 0.5rem;
 		font-size: 0.75rem;
@@ -340,7 +319,7 @@
 	.current-user-marker {
 		display: inline-flex;
 		transform: translateY(1px);
-		color: rgb(var(--color-primary));
+		color: rgb(var(--success));
 	}
 
 	.avatar-wrap {

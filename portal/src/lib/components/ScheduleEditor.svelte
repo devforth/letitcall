@@ -1,6 +1,7 @@
 <script lang="ts">
 	import Icon from '@iconify/svelte';
 	import chevronRightIcon from '@iconify-icons/tabler/chevron-right';
+	import copyIcon from '@iconify-icons/tabler/copy';
 	import plusIcon from '@iconify-icons/tabler/plus';
 	import xIcon from '@iconify-icons/tabler/x';
 	import AvailabilityCopyMenu from '$lib/components/AvailabilityCopyMenu.svelte';
@@ -113,7 +114,7 @@
 </script>
 
 {#snippet durationChip(day: ScheduleDay)}
-	<span class="inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium" style="background: rgb(var(--color-foreground)); border-color: rgb(var(--color-border)); color: rgb(var(--color-text) / 0.65);">
+	<span class="inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium" style="background: rgb(var(--color-background)); border-color: var(--color-border); color: rgb(var(--color-text) / 0.65);">
 		{availabilityHours(day)}
 	</span>
 {/snippet}
@@ -123,14 +124,14 @@
 	aria-labelledby="schedule-title"
 	style={embedded
 		? undefined
-		: 'background: rgb(var(--color-foreground)); border-color: rgb(var(--color-border));'}
+		: 'background: rgb(var(--color-background)); border-color: var(--color-border);'}
 >
 	<div class="grid gap-1">
 		<h2 id="schedule-title" class="font-semibold" style="color: rgb(var(--color-text));">Weekly schedule</h2>
-		<p class="text-sm" style="color: rgb(var(--color-text) / 0.65);">Start with one range, then customize only the days that differ.</p>
+		<p class="text-sm" style="color: rgb(var(--color-text) / 0.65);">Start with one range, then customize only the days that differ</p>
 	</div>
 
-	<div class="overflow-hidden rounded-md border" style="border-color: rgb(var(--color-border));">
+	<div class="overflow-hidden rounded-md border" style="border-color: var(--color-border);">
 		<details open>
 			<summary
 				id="quick-preset-title"
@@ -143,7 +144,7 @@
 		<div
 			class="grid gap-4 border-t p-4"
 			aria-labelledby="quick-preset-title"
-			style={`border-color: rgb(var(--color-border)); ${embedded ? '' : 'background: rgb(var(--color-text) / 0.035);'}`}
+			style={`border-color: var(--color-border); ${embedded ? '' : 'background: rgb(var(--color-text) / 0.035);'}`}
 		>
 			<div class="flex flex-wrap gap-x-6">
 				<Checkbox id="quick-weekdays" label="Weekdays" bind:checked={applyWeekdays} />
@@ -152,12 +153,22 @@
 			<div class="grid gap-3 sm:grid-cols-[12rem_12rem_auto] sm:items-center">
 				<TimeInput id="quick-start" label="From" bind:value={quickStart} />
 				<TimeInput id="quick-end" label="To" bind:value={quickEnd} />
-				<Button class="justify-self-start" variant="secondary" onclick={applyQuickHours}>Apply</Button>
+				<Button
+					class="outlined-action-button justify-self-start"
+					variant="primary-outline"
+					style="padding-right: 1.125rem !important; padding-bottom: 0.5rem !important;"
+					onclick={applyQuickHours}
+				>
+					<span class="flex items-center gap-2">
+						<Icon icon={copyIcon} width="20" height="20" />
+						Apply
+					</span>
+				</Button>
 			</div>
 		</div>
 		</details>
 
-		<details class="border-t" style="border-color: rgb(var(--color-border));">
+		<details class="border-t" style="border-color: var(--color-border);">
 		<summary
 			class="schedule-summary flex cursor-pointer items-center gap-2 px-3 py-3 text-sm font-normal"
 			style="background: rgb(var(--color-text) / 0.06); color: rgb(var(--color-text));"
@@ -165,10 +176,10 @@
 			<Icon icon={chevronRightIcon} width="18" height="18" class="details-chevron" aria-hidden="true" />
 			Customize individual days
 		</summary>
-		<div class="grid border-t" style="border-color: rgb(var(--color-border));">
+		<div class="grid border-t" style="border-color: var(--color-border);">
 			{#each schedule as day (day.day)}
 				{@const ranges = availabilityRanges(day)}
-				<div class="grid gap-4 border-b p-4 last:border-b-0 lg:grid-cols-[9rem_1fr_auto] lg:items-start" style="border-color: rgb(var(--color-border));">
+				<div class="grid gap-4 border-b p-4 last:border-b-0 lg:grid-cols-[9rem_1fr_auto] lg:items-start" style="border-color: var(--color-border);">
 					<div class="flex min-h-11 items-center gap-2">
 						<span class="text-sm font-medium" style="color: rgb(var(--color-text));">{labels[day.day]}</span>
 						{#if day.enabled && ranges.length > 1}

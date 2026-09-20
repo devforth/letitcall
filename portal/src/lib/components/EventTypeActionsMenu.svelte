@@ -28,7 +28,7 @@
 	>
 		<Icon icon={dotsVerticalIcon} width="22" height="22" />
 	</summary>
-	<div class="absolute right-0 z-10 mt-2 w-48 rounded-lg border-2 p-2 shadow-[var(--shadow-small)]" style="background: rgb(var(--color-foreground)); border-color: rgb(var(--color-border));">
+	<div class="absolute right-0 z-10 mt-2 w-48 rounded-lg border-2 p-2 shadow-[var(--shadow-small)]" style="background: rgb(var(--color-background)); border-color: var(--color-border);">
 		<button
 			type="button"
 			class="delete-action min-h-11 w-full rounded-md px-3 py-2 text-left text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-40"

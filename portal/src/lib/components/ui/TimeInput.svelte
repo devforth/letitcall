@@ -53,8 +53,8 @@
 		border-radius: 10px;
 		padding: 9px 12px 9px 40px;
 		outline: none;
-		background: rgb(var(--color-foreground));
-		box-shadow: 0 0 0 1px rgb(var(--color-border));
+		background: rgb(var(--color-background));
+		box-shadow: 0 0 0 1px var(--color-border);
 		color: rgb(var(--color-text));
 		font: inherit;
 		font-size: 0.9rem;
@@ -71,7 +71,7 @@
 		top: 0;
 		transform: translateY(-50%);
 		padding: 0 4px;
-		background: rgb(var(--color-foreground));
+		background: rgb(var(--color-background));
 		color: rgb(var(--color-primary));
 		font-size: 0.72rem;
 		pointer-events: none;

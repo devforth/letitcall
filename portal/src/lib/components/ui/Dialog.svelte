@@ -56,31 +56,12 @@
 		box-shadow: none;
 	}
 
+	.dialog.wide.bare {
+		width: min(38rem, calc(100% - 2rem));
+	}
+
 	.dialog::backdrop {
 		background: rgb(0 0 0 / 0.65);
 	}
 
-	:global(.dialog-cancel),
-	:global(.dialog-confirm) {
-		border-color: #000 !important;
-		box-shadow: none !important;
-	}
-
-	:global(.dialog-cancel) {
-		background: #fff !important;
-		color: #000 !important;
-	}
-
-	:global(.dialog-cancel:hover:not(:disabled)) {
-		background: #eee !important;
-	}
-
-	:global(.dialog-confirm) {
-		background: #000 !important;
-		color: #fff !important;
-	}
-
-	:global(.dialog-confirm:hover:not(:disabled)) {
-		background: #333 !important;
-	}
 </style>

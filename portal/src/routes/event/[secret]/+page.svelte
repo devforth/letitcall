@@ -32,7 +32,7 @@
 	const secret = $derived(page.params.secret!);
 	// Same weight the booking flow gives its Confirm tick.
 	const boldCheckIcon = { ...checkIcon, body: checkIcon.body.replace('stroke-width="2"', 'stroke-width="3"') };
-	const blockStyle ='background: rgb(var(--color-foreground)); box-shadow: var(--shadow-small);';
+	const blockStyle ='background: rgb(var(--color-background)); box-shadow: var(--shadow-small);';
 	const reasonPresets = ['Schedule conflict', 'No longer needed', 'Booked by mistake', 'Rescheduling'];
 	// A preset owns the first line of the reason, so anything typed by hand survives
 	// switching between chips.
@@ -177,7 +177,7 @@
 	<main class="grid min-h-screen place-items-center p-6">
 		<section class="border border-black p-8 text-center">
 			<h1 class="text-2xl font-semibold">Event not found</h1>
-			<p class="mt-2 text-sm">This event link is not available.</p>
+			<p class="mt-2 text-sm">This event link is not available</p>
 		</section>
 	</main>
 {:else}
@@ -193,7 +193,7 @@
 				{#if booking.canceledAt}
 					<section class="event-status">
 						<p class="event-status-label">Event canceled</p>
-						<h2 class="event-page-title">This event has been canceled.</h2>
+						<h2 class="event-page-title">This event has been canceled</h2>
 						<p class="event-page-copy">Canceled by {booking.canceledBy?.name} ({booking.canceledBy?.email}) on {localDate(booking.canceledAt)}.</p>
 						{#if booking.cancellationReason}<p class="event-cancellation-reason">{booking.cancellationReason}</p>{/if}
 					</section>
@@ -222,7 +222,7 @@
 							<h2>Edit event</h2>
 						</div>
 					</header>
-					{#if authenticated}<p class="event-page-copy">You are signed in. Changes are recorded on your behalf.</p>{/if}
+					{#if authenticated}<p class="event-page-copy">You are signed in — changes are recorded on your behalf</p>{/if}
 
 					<form class="event-form" autocomplete="off" onsubmit={save}>
 						<div class="event-form-fields">
@@ -398,13 +398,13 @@
 	}
 
 	.event-manage-back :global(.tone-primary:not(:disabled)) {
-		background: rgb(var(--color-primary) / 0.14);
-		color: rgb(var(--color-primary));
+		background: rgb(var(--success) / 0.14);
+		color: rgb(var(--success));
 	}
 
 	/* The shared tone-primary hover matches its own resting tint, so lift it here. */
 	.event-manage-back :global(.icon-button:hover:not(:disabled)) {
-		background: rgb(var(--color-primary) / 0.22);
+		background: rgb(var(--success) / 0.22);
 	}
 
 	.event-back-chevron {

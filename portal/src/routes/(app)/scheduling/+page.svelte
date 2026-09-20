@@ -2,19 +2,19 @@
 	import { goto } from '$app/navigation';
 	import { onMount } from 'svelte';
 	import Icon from '@iconify/svelte';
-	import calendarEventIcon from '@iconify-icons/tabler/calendar-event';
 	import calendarCogIcon from '@iconify-icons/tabler/calendar-cog';
+	import calendarPlusIcon from '@iconify-icons/tabler/calendar-plus';
 	import dotsVerticalIcon from '@iconify-icons/tabler/dots-vertical';
 	import editIcon from '@iconify-icons/mdi/edit';
 	import externalLinkIcon from '@iconify-icons/charm/link-external';
 	import listDetailsIcon from '@iconify-icons/tabler/list-details';
-	import plusIcon from '@iconify-icons/tabler/plus';
 	import trashIcon from '@iconify-icons/tabler/trash';
 	import { appPath, callApi } from '$lib/api';
 	import EventTypeEditor from '$lib/components/EventTypeEditor.svelte';
 	import HostBadges from '$lib/components/HostBadges.svelte';
 	import ConfirmationDialog from '$lib/components/ui/ConfirmationDialog.svelte';
 	import IconButton from '$lib/components/ui/IconButton.svelte';
+	import PageHeader from '$lib/components/PageHeader.svelte';
 	import PageTitle from '$lib/components/PageTitle.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
 	import type { EventType, ManagedUser } from '$lib/types';
@@ -27,7 +27,11 @@
 	let eventTypeToDelete = $state<EventType | null>(null);
 
 	const blockStyle =
-		'background: rgb(var(--color-foreground)); box-shadow: 0 0 0 1px rgb(var(--color-border));';
+		'background: rgb(var(--color-background)); box-shadow: 0 0 0 1px var(--color-border);';
+	const boldCalendarPlusIcon = {
+		...calendarPlusIcon,
+		body: calendarPlusIcon.body.replace('stroke-width="2"', 'stroke-width="2.25"')
+	};
 
 	onMount(async () => {
 		try {
@@ -75,33 +79,21 @@
 
 <section aria-labelledby="scheduling-title" class="flex flex-col gap-6">
 	<div class="mb-2">
-		<div class="flex flex-wrap items-center justify-between gap-5">
-			<div class="flex min-w-0 items-center gap-4">
-				<div
-					class="grid size-12 shrink-0 place-items-center rounded-lg"
-					style="background: rgb(var(--color-primary) / 0.12); color: rgb(var(--color-primary));"
-				>
-					<Icon icon={calendarCogIcon} width="24" height="24" />
-				</div>
-				<div>
-					<div class="flex items-center gap-3">
-						<h1 id="scheduling-title" class="text-2xl font-semibold tracking-tight" style="color: rgb(var(--color-text));">Scheduling</h1>
-						<span class="inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-semibold" style="background: rgb(var(--color-primary) / 0.1); color: rgb(var(--color-primary));">
-							{loading ? 'Loading…' : `${eventTypes.length} ${eventTypes.length === 1 ? 'event type' : 'event types'}`}
-						</span>
-					</div>
-					<p class="text-sm" style="color: rgb(var(--color-text) / 0.65);">Manage shared event types and their booking availability.</p>
-				</div>
-			</div>
+		<PageHeader
+			id="scheduling-title"
+			title="Scheduling"
+			description="Manage shared event types and their booking availability."
+			icon={calendarCogIcon}
+		>
 			{#if !showForm}
-				<Button class="self-start" onclick={() => (showForm = true)}>
+				<Button rounded style="font-weight: 500 !important; padding-right: 1rem !important; padding-bottom: 0.5rem !important;" class="add-event-type-button self-start" onclick={() => (showForm = true)}>
 					<span class="flex items-center gap-2">
-						<Icon icon={plusIcon} width="18" height="18" class="add-event-type-plus shrink-0" />
+						<Icon icon={boldCalendarPlusIcon} width="18" height="18" class="shrink-0" />
 						Add event type
 					</span>
 				</Button>
 			{/if}
-		</div>
+		</PageHeader>
 	</div>
 
 	{#if showForm}
@@ -111,10 +103,15 @@
 	<div class="overflow-hidden rounded-lg" style={blockStyle}>
 		<div
 			class="flex items-center gap-2 border-b px-4 py-3"
-			style="border-color: rgb(var(--color-border)); background: rgb(var(--color-text) / 0.06); color: rgb(var(--color-text));"
+			style="border-color: var(--color-border); background: rgb(var(--color-text) / 0.06); color: rgb(var(--color-text));"
 		>
 			<Icon icon={listDetailsIcon} width="18" height="18" />
-			<h2 class="text-sm font-medium">Event types</h2>
+			<h2 class="text-sm font-medium">
+				Event types
+				{#if eventTypes.length > 0}
+					<span style="color: rgb(var(--color-text) / 0.65);">· {eventTypes.length}</span>
+				{/if}
+			</h2>
 		</div>
 
 		{#if loading}
@@ -162,13 +159,7 @@
 						</div>
 					</article>
 				{:else}
-					<div class="px-5 py-14 text-center">
-						<div class="mx-auto flex max-w-xs flex-col items-center">
-							<Icon icon={calendarEventIcon} width="30" height="30" style="color: rgb(var(--color-text) / 0.65);" />
-							<p class="mt-3 font-semibold" style="color: rgb(var(--color-text));">No event types yet</p>
-							<p class="mt-1 text-xs" style="color: rgb(var(--color-text) / 0.65);">Create an event type to start accepting bookings.</p>
-						</div>
-					</div>
+					<p class="empty-state">No event types yet</p>
 				{/each}
 			</div>
 		{/if}
@@ -189,8 +180,14 @@
 {/if}
 
 <style>
+	:global(.add-event-type-button) {
+		min-height: 4rem !important;
+		border-radius: 9999px !important;
+		font-size: 1.25rem !important;
+	}
+
 	.event-type-row {
-		border-bottom: 1px solid rgb(var(--color-border));
+		border-bottom: 1px solid var(--color-border);
 		transition: background 0.15s ease;
 	}
 
@@ -203,7 +200,7 @@
 	}
 
 	.duration-chip {
-		border: 1px solid rgb(var(--color-border));
+		border: 1px solid var(--color-border);
 		border-radius: 999px;
 		padding: 0.2rem 0.5rem;
 		background: rgb(var(--color-text) / 0.06);
@@ -223,11 +220,6 @@
 		background: rgb(var(--color-primary) / 0.14);
 		color: rgb(var(--color-primary));
 		transition: background 0.15s ease, color 0.15s ease;
-	}
-
-	.event-icon-link:hover {
-		background: rgb(var(--color-primary) / 0.22);
-		color: rgb(var(--color-primary));
 	}
 
 	.event-icon-link:focus-visible {
@@ -278,6 +270,13 @@
 	.event-type-row:hover .event-action-hint {
 		opacity: 0;
 		transform: translateX(-0.5rem) scale(0.85);
+	}
+
+	.empty-state {
+		padding: 2.5rem 1rem;
+		color: rgb(var(--color-text) / 0.65);
+		font-size: 0.875rem;
+		text-align: center;
 	}
 
 	:global(.add-event-type-plus path) {

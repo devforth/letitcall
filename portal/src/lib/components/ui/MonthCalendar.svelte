@@ -46,15 +46,15 @@
 		// raised "chips", the selection fills primary, unavailable days recede.
 		const base = 'relative isolate aspect-square w-full overflow-hidden rounded-[10px] text-sm font-bold transition duration-150';
 		if (selected === date)
-			return `${base} calendar-selected z-10 bg-[rgb(var(--color-foreground))] font-bold text-[rgb(var(--color-contrast-text))]`;
+			return `${base} calendar-selected z-10 bg-[rgb(var(--color-background))] font-bold text-[rgb(var(--color-contrast-text))]`;
 		if (date === today)
 			// Today stands out with a bold primary number (plus the dot marker).
 			// Only give it a chip background when it actually has bookable times.
 			return available.has(date)
-				? `${base} day-cell cursor-pointer bg-[rgb(var(--color-foreground))] font-bold text-[rgb(var(--color-primary))]`
+				? `${base} day-cell cursor-pointer bg-[rgb(var(--color-background))] font-bold text-[rgb(var(--color-primary))]`
 				: `${base} font-bold text-[rgb(var(--color-primary))] cursor-not-allowed`;
 		if (available.has(date))
-			return `${base} day-cell cursor-pointer bg-[rgb(var(--color-foreground))] text-[rgb(var(--color-text))]`;
+			return `${base} day-cell cursor-pointer bg-[rgb(var(--color-background))] text-[rgb(var(--color-text))]`;
 		return `${base} text-[rgb(var(--color-text)/0.35)]`;
 	}
 </script>
@@ -137,7 +137,7 @@
 	.calendar-dates {
 		border-radius: 0.75rem;
 		padding: 0.75rem;
-		background: color-mix(in srgb, rgb(var(--color-text)) 5%, rgb(var(--color-foreground)));
+		background: color-mix(in srgb, rgb(var(--color-text)) 5%, rgb(var(--color-background)));
 	}
 
 	@media (min-width: 640px) {

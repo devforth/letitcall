@@ -31,13 +31,13 @@ function hslToHex(hue: number, saturation: number, lightness: number): string {
 	const l = lightness / 100;
 	const chroma = (1 - Math.abs(2 * l - 1)) * s;
 	const section = hue / 60;
-	const secondary = chroma * (1 - Math.abs((section % 2) - 1));
+	const middle = chroma * (1 - Math.abs((section % 2) - 1));
 	const channels =
-		section < 1 ? [chroma, secondary, 0] :
-		section < 2 ? [secondary, chroma, 0] :
-		section < 3 ? [0, chroma, secondary] :
-		section < 4 ? [0, secondary, chroma] :
-		section < 5 ? [secondary, 0, chroma] : [chroma, 0, secondary];
+		section < 1 ? [chroma, middle, 0] :
+		section < 2 ? [middle, chroma, 0] :
+		section < 3 ? [0, chroma, middle] :
+		section < 4 ? [0, middle, chroma] :
+		section < 5 ? [middle, 0, chroma] : [chroma, 0, middle];
 	const match = l - chroma / 2;
 	return `#${channels.map((channel) => Math.round((channel + match) * 255).toString(16).padStart(2, '0')).join('')}`.toUpperCase();
 }
@@ -73,15 +73,11 @@ function entropy(range: number): number {
 export function generateThemeColors(primary: string, mode: 'light' | 'dark'): ThemeColors {
 	const { hue, saturation } = rgbToHSL(hexToRGB(primary));
 	const shiftedHue = (offset: number) => (hue + offset + 360) % 360;
-	const surfaceHue = (hue + 24 + entropy(5) + 360) % 360;
 	const neutralSaturation = Math.min(18, Math.max(4, saturation * 0.18)) * (1 + entropy(0.08));
 	const lightness = entropy(0.8);
-	const foreground = mode === 'light'
+	const background = mode === 'light'
 		? hslToHex(shiftedHue(entropy(2)), neutralSaturation * 0.35, 99 + lightness * 0.35)
 		: hslToHex(shiftedHue(entropy(2)), neutralSaturation, 17 + lightness);
-	const background = mode === 'light'
-		? hslToHex(surfaceHue, neutralSaturation, 96 + lightness)
-		: hslToHex(surfaceHue, neutralSaturation, 10 + lightness);
 	const preferredText = mode === 'light'
 		? hslToHex(shiftedHue(entropy(2)), Math.min(22, saturation * 0.22), 17 + entropy(0.8))
 		: hslToHex(shiftedHue(entropy(2)), Math.min(10, saturation * 0.1), 96 + entropy(0.8));
@@ -89,14 +85,7 @@ export function generateThemeColors(primary: string, mode: 'light' | 'dark'): Th
 	return {
 		primary: primary.toUpperCase(),
 		primaryContrast: accessibleText([primary]),
-		foreground,
-		text: accessibleText([foreground, background], preferredText),
-		background,
-		border: mode === 'light'
-			? hslToHex(surfaceHue, neutralSaturation, 55 + entropy(1.2))
-			: hslToHex(surfaceHue, neutralSaturation, 52 + entropy(1.2)),
-		shadow: mode === 'light'
-			? hslToHex((hue + 180 + entropy(5)) % 360, neutralSaturation, 8 + entropy(0.8))
-			: hslToHex((hue + 180 + entropy(5)) % 360, neutralSaturation, 2 + entropy(0.5))
+		text: accessibleText([background], preferredText),
+		background
 	};
 }

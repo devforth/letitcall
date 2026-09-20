@@ -37,9 +37,9 @@
 		position: relative !important;
 		width: 52px !important;
 		height: 28px !important;
-		border: 2px solid rgb(var(--color-border)) !important;
+		border: 2px solid var(--color-border) !important;
 		border-radius: 16px !important;
-		background: rgb(var(--color-foreground)) !important;
+		background: rgb(var(--color-background)) !important;
 		color: rgb(var(--color-text)) !important;
 		cursor: pointer !important;
 		padding: 0 !important;

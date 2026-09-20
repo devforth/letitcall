@@ -5,22 +5,16 @@ const cacheKey = 'branding';
 
 export const defaultBrandingTheme: BrandingTheme = {
 	light: {
-		primary: '#00C950',
+		primary: '#0284C7',
 		primaryContrast: '#FFFFFF',
-		foreground: '#FFFFFF',
 		text: '#646464',
-		background: '#F5F5F0',
-		border: '#D8D8D8',
-		shadow: '#000000'
+		background: '#FFFFFF'
 	},
 	dark: {
-		primary: '#00C950',
+		primary: '#0284C7',
 		primaryContrast: '#FFFFFF',
-		foreground: '#646464',
 		text: '#FFFFFF',
-		background: '#333333',
-		border: '#787878',
-		shadow: '#000000'
+		background: '#646464'
 	}
 };
 
@@ -33,11 +27,8 @@ export const branding = $state<Branding>({
 const cssColorNames: (keyof ThemeColors)[] = [
 	'primary',
 	'primaryContrast',
-	'foreground',
 	'text',
-	'background',
-	'border',
-	'shadow'
+	'background'
 ];
 
 function colorChannels(hex: string): string {
@@ -71,8 +62,10 @@ export function loadCachedBranding() {
 		if (!value.theme) {
 			value.theme = structuredClone(defaultBrandingTheme);
 		}
-		value.theme.light.border ||= defaultBrandingTheme.light.border;
-		value.theme.dark.border ||= defaultBrandingTheme.dark.border;
+		if (!value.theme.light.background || value.theme.light.background === '#F5F5F0') {
+			value.theme.light.background = defaultBrandingTheme.light.background;
+		}
+		value.theme.dark.background ||= defaultBrandingTheme.dark.background;
 		applyBranding(value);
 	}
 }

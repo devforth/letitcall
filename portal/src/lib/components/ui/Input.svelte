@@ -32,7 +32,7 @@
 		error?: string;
 		invalid?: boolean;
 		hint?: string;
-		icon?: 'text' | 'email' | 'password' | 'search' | 'user';
+		icon?: 'none' | 'text' | 'email' | 'password' | 'search' | 'user';
 		inputmode?: HTMLInputAttributes['inputmode'];
 		/** Keep browsers and password managers from offering saved values here. */
 		noAutofill?: boolean;
@@ -86,8 +86,9 @@
 			aria-describedby={error ? `${id}-error` : undefined}
 			class="input"
 			class:has-trailing={type === 'password'}
+			class:without-icon={activeIcon === 'none'}
 		/>
-		<label class="float-label" for={id}>{label}</label>
+		<label class="float-label" class:without-icon={activeIcon === 'none'} for={id}>{label}</label>
 		{#if activeIcon === 'email'}
 			<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2" /><path d="m3 7 9 6 9-6" /></svg>
 		{:else if activeIcon === 'password'}
@@ -96,7 +97,7 @@
 			<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="m21 21-4.3-4.3" /></svg>
 		{:else if activeIcon === 'user'}
 			<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4" /><path d="M4 21a8 8 0 0 1 16 0" /></svg>
-		{:else}
+		{:else if activeIcon !== 'none'}
 			<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="4" y1="8" x2="20" y2="8" /><line x1="4" y1="12" x2="14" y2="12" /><line x1="4" y1="16" x2="18" y2="16" /></svg>
 		{/if}
 		{#if type === 'password'}
@@ -165,6 +166,7 @@
 		transition: color 0.18s, background 0.18s;
 	}
 
+
 	.reveal:hover {
 		color: rgb(var(--color-primary));
 		background: rgb(var(--color-primary) / 0.1);
@@ -179,19 +181,24 @@
 		width: 100%;
 		font: inherit;
 		font-size: 0.9rem;
+		font-weight: 400;
 		color: rgb(var(--color-text));
-		background: rgb(var(--color-foreground));
+		background: rgb(var(--color-background));
 		border: 0;
 		border-radius: 10px;
 		padding: 10px 12px 10px 40px;
 		min-height: 44px;
 		outline: none;
-		box-shadow: 0 0 0 1px rgb(var(--color-border));
+		box-shadow: 0 0 0 1px var(--color-border);
 		transition: box-shadow 0.18s;
 	}
 
 	.input.has-trailing {
 		padding-right: 44px;
+	}
+
+	.input.without-icon {
+		padding-left: 12px;
 	}
 
 	/* label doubles as placeholder — hide the native placeholder until focused */
@@ -216,10 +223,15 @@
 		font-weight: 400;
 		color: rgb(var(--color-text));
 		opacity: 0.4;
-		background: rgb(var(--color-foreground));
+		background: rgb(var(--color-background));
 		padding: 0 4px;
 		pointer-events: none;
 		transition: top 0.16s, left 0.16s, font-size 0.16s, color 0.16s, opacity 0.16s;
+	}
+
+	.float-label.without-icon {
+		left: 12px;
+		max-width: calc(100% - 24px);
 	}
 
 	.input:focus ~ .float-label,
@@ -257,8 +269,8 @@
 	.input:-webkit-autofill,
 	.input:-webkit-autofill:hover {
 		-webkit-box-shadow:
-			0 0 0 1px rgb(var(--color-border)),
-			0 0 0 1000px rgb(var(--color-foreground)) inset !important;
+			0 0 0 1px var(--color-border),
+			0 0 0 1000px rgb(var(--color-background)) inset !important;
 		-webkit-text-fill-color: rgb(var(--color-text)) !important;
 		caret-color: rgb(var(--color-text));
 		transition: background-color 9999s ease-in-out 0s;
@@ -268,14 +280,14 @@
 		-webkit-box-shadow:
 			0 0 0 1px rgb(var(--color-primary)),
 			0 0 0 3px rgb(var(--color-primary) / 0.25),
-			0 0 0 1000px rgb(var(--color-foreground)) inset !important;
+			0 0 0 1000px rgb(var(--color-background)) inset !important;
 	}
 
 	.has-error .input:-webkit-autofill {
 		-webkit-box-shadow:
 			0 0 0 1px rgb(var(--error)),
 			0 0 0 3px rgb(var(--error) / 0.15),
-			0 0 0 1000px rgb(var(--color-foreground)) inset !important;
+			0 0 0 1000px rgb(var(--color-background)) inset !important;
 	}
 
 	.input:disabled {

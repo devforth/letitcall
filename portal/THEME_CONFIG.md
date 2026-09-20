@@ -65,7 +65,7 @@ Use the theme-aware CSS variables in your styles:
 
 ```css
 /* Colors automatically adapt to theme */
-color: rgb(var(--color-foreground));
+color: rgb(var(--color-text));
 background: rgb(var(--color-background));
 border-color: rgb(var(--color-border));
 ```
@@ -74,39 +74,34 @@ border-color: rgb(var(--color-border));
 
 | Variable | Purpose |
 |----------|---------|
-| `--color-foreground` | Text and foreground elements |
-| `--color-background` | Page and element backgrounds |
-| `--color-text` | Standard text, matching the foreground color |
+| `--color-background` | Page and surface backgrounds |
+| `--color-text` | Standard text |
 | `--color-contrast-text` | Text contrasting with the standard text color |
 | `--color-border` | Borders and dividers |
 | `--color-primary` | Primary actions and highlights |
-| `--color-secondary` | Secondary actions and highlights |
-| `--color-secondary-hover` | Hover state for secondary actions |
 
 ## Styling with Tailwind
 
 Use the custom color classes in Tailwind (these use CSS variables):
 
 ```html
-<div class="bg-background text-foreground border border-border">
-	<span class="text-text/65">Secondary text</span>
+<div class="bg-background text-text border border-border">
+	<span class="text-text/65">Muted text</span>
 </div>
 ```
 
 ## Color Values
 
 ### Light Theme
-- **Foreground**: #000000 (black)
 - **Background**: #FFFFFF (white)
+- **Text**: #646464 (gray)
 - **Border**: #DEDEDE (light gray)
-- **Muted Foreground**: #666666 (gray)
 - **Muted Background**: #F5F5F5 (very light gray)
 
 ### Dark Theme
-- **Foreground**: #FFFFFF (white)
-- **Background**: #141414 (very dark gray)
+- **Background**: #646464 (dark gray)
+- **Text**: #FFFFFF (white)
 - **Border**: #333333 (dark gray)
-- **Muted Foreground**: #999999 (light gray)
 - **Muted Background**: #262626 (dark gray)
 
 ## Customizing Theme Colors
@@ -115,13 +110,11 @@ Edit the CSS variables in `src/routes/layout.css`:
 
 ```css
 :root {
-	--color-foreground: 0 0% 0%;
 	--color-background: 0 0% 100%;
 	/* ... more variables */
 }
 
 html.dark {
-	--color-foreground: 0 0% 100%;
 	--color-background: 0 0% 8%;
 	/* ... more variables */
 }
@@ -145,7 +138,7 @@ Currently, the theme respects:
 
 1. **Always use CSS variables** for colors instead of hardcoded values
 2. **Test both themes** during development using `ThemeToggle`
-3. **Use semantic color names** (foreground, background, border) instead of color names (red, blue)
+3. **Use semantic color names** (background, text, border) instead of color names (red, blue)
 4. **Avoid overriding** `color-scheme` CSS property
 5. **Keep contrast ratios** above 4.5:1 for WCAG AA compliance
 

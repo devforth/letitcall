@@ -60,8 +60,10 @@
 		<Select id="replacement-host" label="New required host" {options} bind:value={newHostEmail} disabled={confirming} />
 	</div>
 	<div class="mt-6 flex flex-wrap justify-end gap-2">
-		<Button variant="secondary" class="dialog-cancel" disabled={confirming} onclick={cancel}>Cancel</Button>
-		<Button variant="danger" class="dialog-confirm" disabled={confirming || !newHostEmail} onclick={() => onconfirm(newHostEmail)}>
+		<Button rounded variant="primary-outline" class="modal-action-button" disabled={confirming} onclick={cancel}>
+			Cancel
+		</Button>
+		<Button rounded class="modal-action-button" disabled={confirming || !newHostEmail} onclick={() => onconfirm(newHostEmail)}>
 			{confirming ? 'Reassigning and deleting…' : 'Reassign and delete user'}
 		</Button>
 	</div>

@@ -28,7 +28,7 @@
 	import EventTypeAside from '$lib/components/EventTypeAside.svelte';
 
 	const blockStyle =
-		'background: rgb(var(--color-foreground)); box-shadow: var(--shadow-small);';
+		'background: rgb(var(--color-background)); box-shadow: var(--shadow-small);';
 	const boldStepUserIcon = {
 		...stepUserIcon,
 		body: stepUserIcon.body.replace('<path ', '<path stroke="currentColor" stroke-width="1" stroke-linejoin="round" ')
@@ -354,7 +354,7 @@
 	<main class="grid min-h-screen place-items-center p-6">
 		<section class="rounded-2xl p-8 text-center" style={blockStyle}>
 			<h1 class="text-2xl font-semibold">Event not found</h1>
-			<p class="mt-2 text-sm">This booking link is not available.</p>
+			<p class="mt-2 text-sm">This booking link is not available</p>
 		</section>
 	</main>
 {:else}
@@ -427,7 +427,7 @@
 										{#if selectedSlots.length === 0}
 											<div
 												class="mt-5 flex flex-col items-center gap-3 rounded-2xl border-2 border-dashed px-6 py-10 text-center"
-												style="border-color: rgb(var(--color-border));"
+												style="border-color: var(--color-border);"
 											>
 												<span
 													class="grid size-12 place-items-center rounded-full"
@@ -437,7 +437,7 @@
 												</span>
 												<div>
 													<p class="font-semibold">No times available</p>
-													<p class="mt-1 text-sm" style="color: rgb(var(--color-text) / 0.6);">Please select another date.</p>
+													<p class="mt-1 text-sm" style="color: rgb(var(--color-text) / 0.6);">Please select another date</p>
 												</div>
 											</div>
 										{:else}
@@ -565,7 +565,7 @@
 									<div class="booking-confirming" role="status" aria-live="polite">
 										<span class="booking-confirming-spinner" aria-hidden="true"></span>
 										<p class="booking-confirming-title">Confirming your booking…</p>
-										<p class="booking-confirming-copy">Please keep this page open.</p>
+										<p class="booking-confirming-copy">Please keep this page open</p>
 									</div>
 								{:else}
 									<form class="flex h-full min-h-0 flex-col" onsubmit={createBooking}>
@@ -777,7 +777,7 @@
 		width: 36px;
 		height: 36px;
 		border-radius: 999px;
-		background: rgb(var(--color-foreground));
+		background: rgb(var(--color-background));
 		box-shadow: inset 0 0 0 4px rgb(var(--color-text) / 0.18);
 		color: rgb(var(--color-text) / 0.5);
 		transition:
@@ -820,7 +820,7 @@
 			position: relative;
 			display: flex;
 			align-items: stretch;
-			border: 1px solid rgb(var(--color-border));
+			border: 1px solid var(--color-border);
 		}
 		.bk-step.is-upcoming {
 			background: rgb(var(--color-background));
@@ -831,7 +831,7 @@
 			color: rgb(var(--color-text) / 0.75);
 		}
 		.bk-step.is-active {
-			background: rgb(var(--color-primary));
+		background: rgb(var(--color-primary));
 			color: rgb(var(--color-contrast-text));
 		}
 		.bk-step:not(:last-child)::after {
@@ -841,7 +841,7 @@
 			top: -1px;
 			bottom: -1px;
 			width: 32px;
-			background: rgb(var(--color-border));
+			background: var(--color-border);
 			clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 50%, calc(100% - 12px) 100%, 0 100%);
 			z-index: 1;
 		}
@@ -860,10 +860,10 @@
 			cursor: pointer;
 		}
 		.bk-step.is-done:not(:disabled):hover {
-			background: color-mix(in srgb, rgb(var(--color-primary)) 12%, rgb(var(--color-background)));
+		background: color-mix(in srgb, rgb(var(--color-primary)) 12%, rgb(var(--color-background)));
 		}
 		.bk-step.is-active:not(:disabled):hover {
-			background: color-mix(in srgb, rgb(var(--color-primary)), white 12%);
+		background: color-mix(in srgb, rgb(var(--color-primary)), white 12%);
 		}
 		.bk-head {
 			display: flex;
@@ -900,13 +900,13 @@
 		}
 		.bk-step.is-done .bk-head-icon {
 			box-shadow: none;
-			background: rgb(var(--color-primary));
+		background: rgb(var(--color-primary));
 			color: rgb(var(--color-contrast-text));
 		}
 		.bk-step.is-active .bk-head-icon {
 			box-shadow: none;
 			background: rgb(var(--color-contrast-text));
-			color: rgb(var(--color-primary));
+		color: rgb(var(--color-primary));
 		}
 		.bk-head-text {
 			display: flex;
@@ -967,12 +967,12 @@
 
 	.booking-step-scroll-shell::before {
 		top: 0;
-		background: linear-gradient(to bottom, rgb(var(--color-foreground)), transparent);
+		background: linear-gradient(to bottom, rgb(var(--color-background)), transparent);
 	}
 
 	.booking-step-scroll-shell::after {
 		bottom: 0;
-		background: linear-gradient(to bottom, transparent, rgb(var(--color-foreground)));
+		background: linear-gradient(to bottom, transparent, rgb(var(--color-background)));
 	}
 
 	.booking-step-scroll-shell.show-fade-top::before,
@@ -998,7 +998,7 @@
 	}
 
 	.booking-step-scroll::-webkit-scrollbar-thumb {
-		border: 2px solid rgb(var(--color-foreground));
+		border: 2px solid rgb(var(--color-background));
 		border-radius: 999px;
 		background: rgb(var(--color-text) / 0.28);
 	}
@@ -1074,9 +1074,9 @@
 			border-radius: 999px;
 			font-size: 15px;
 			font-weight: 700;
-			background: rgb(var(--color-foreground));
-			box-shadow: inset 0 0 0 2px rgb(var(--color-primary));
-			color: rgb(var(--color-primary));
+			background: rgb(var(--color-background));
+		box-shadow: inset 0 0 0 2px rgb(var(--color-primary));
+		color: rgb(var(--color-primary));
 		}
 
 		.bk-head-text {
@@ -1098,7 +1098,7 @@
 			position: absolute;
 			top: 0;
 			right: 0;
-			color: rgb(var(--color-primary));
+		color: rgb(var(--color-primary));
 			font-size: 19px;
 			font-weight: 700;
 		}

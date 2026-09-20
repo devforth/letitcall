@@ -38,7 +38,7 @@
 	>
 		<Icon icon={copyIcon} width="22" height="22" />
 	</summary>
-	<div class="absolute right-0 z-10 mt-2 w-64 rounded-lg border-2 p-4 shadow-[var(--shadow-small)]" style="background: rgb(var(--color-foreground)); border-color: rgb(var(--color-border));">
+	<div class="absolute right-0 z-10 mt-2 w-64 rounded-lg border-2 p-4 shadow-[var(--shadow-small)]" style="background: rgb(var(--color-background)); border-color: var(--color-border);">
 		<p class="text-sm font-semibold" style="color: rgb(var(--color-text));">Copy ranges to</p>
 		<div class="mt-2 grid">
 			{#each days as target (target.day)}
@@ -57,13 +57,9 @@
 
 <style>
 	.copy-trigger {
-		background: rgb(var(--color-primary) / 0.14);
-		color: rgb(var(--color-primary));
-		--tw-ring-color: rgb(var(--color-primary));
+		background: rgb(var(--warning) / 0.28);
+		color: rgb(var(--warning));
+		--tw-ring-color: rgb(var(--warning));
 	}
 
-	.copy-trigger:hover {
-		background: rgb(var(--color-primary) / 0.22);
-		color: rgb(var(--color-primary));
-	}
 </style>

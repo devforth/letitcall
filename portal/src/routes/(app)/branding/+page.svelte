@@ -1,7 +1,9 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import Icon from '@iconify/svelte';
-	import paintIcon from '@iconify-icons/tabler/paint-filled';
+	import aiSparklesIcon from '@iconify-icons/hugeicons/ai-sparkles';
+	import checkIcon from '@iconify-icons/tabler/check';
+	import colorSwatchIcon from '@iconify-icons/tabler/color-swatch';
 	import { callApi, logoURL } from '$lib/api';
 	import { defaultBrandingTheme, loadBranding } from '$lib/stores/branding.svelte';
 	import { generateThemeColors } from '$lib/theme-colors';
@@ -11,45 +13,30 @@
 	import ColorPicker from '$lib/components/ui/ColorPicker.svelte';
 	import ImageSelector from '$lib/components/ImageSelector.svelte';
 	import Input from '$lib/components/ui/Input.svelte';
+	import PageHeader from '$lib/components/PageHeader.svelte';
 	import PageTitle from '$lib/components/PageTitle.svelte';
-	import Tooltip from '$lib/components/ui/Tooltip.svelte';
 
 	const colorFields: { key: keyof ThemeColors; label: string; description: string }[] = [
 		{
 			key: 'primary',
 			label: 'Primary color',
-			description: 'Color of buttons and active elements. This can be your brand color.'
+			description: 'Color of buttons and active elements; this can be your brand color. Click "Generate" to create an accessible palette from the primary color'
 		},
 		{
 			key: 'primaryContrast',
 			label: 'Primary color contrast',
-			description: 'Color of text shown on primary buttons and active elements.'
-		},
-		{
-			key: 'foreground',
-			label: 'Foreground',
-			description: 'Color of foreground surfaces such as panels, menus and cards.'
+			description: 'Color of text shown on primary buttons and active elements'
 		},
 		{
 			key: 'text',
-			label: 'Foreground text color',
-			description: 'Color of text on foreground surfaces and the page background.'
+			label: 'Text color',
+			description: 'Color of text across the theme'
 		},
 		{
 			key: 'background',
 			label: 'Background',
-			description: 'Background color of the page.'
+			description: 'Color of surfaces, panels, menus, cards, and the page'
 		},
-		{
-			key: 'border',
-			label: 'Border color',
-			description: 'Color of borders and dividers around surfaces and controls.'
-		},
-		{
-			key: 'shadow',
-			label: 'Shadow color',
-			description: 'Color used for shadows below surfaces and controls.'
-		}
 	];
 
 	let name = $state('');
@@ -102,18 +89,12 @@
 
 <section aria-labelledby="branding-title" class="flex flex-col gap-6">
 	<div class="mb-2">
-		<div class="flex min-w-0 items-center gap-4">
-			<div
-				class="grid size-12 shrink-0 place-items-center rounded-lg"
-				style="background: rgb(var(--color-primary) / 0.12); color: rgb(var(--color-primary));"
-			>
-				<Icon icon={paintIcon} width="24" height="24" />
-			</div>
-			<div>
-				<h1 id="branding-title" class="text-2xl font-semibold tracking-tight" style="color: rgb(var(--color-text));">Branding</h1>
-				<p class="text-sm" style="color: rgb(var(--color-text) / 0.65);">Set the identity and light and dark color themes shown across the portal and booking pages.</p>
-			</div>
-		</div>
+		<PageHeader
+			id="branding-title"
+			title="Branding"
+			description="Set the identity and light and dark color themes shown across the portal and booking pages."
+			icon={colorSwatchIcon}
+		/>
 	</div>
 
 	{#if loading}
@@ -123,20 +104,22 @@
 			<fieldset class="section">
 				<legend>Identity</legend>
 				<div class="identity-fields">
-					<Input id="brand-name" label="Brand name" bind:value={name} required />
-					{#if logoPath}
-						<div class="current-logo">
-							<span>Current logo</span>
-							<img src={logoURL(logoPath)} alt={`${name} logo`} />
-						</div>
-					{/if}
-					<ImageSelector id="brand-logo" legend="Logo" bind:this={imageSelector} />
+					<div class="brand-name-field">
+						<Input id="brand-name" label="Brand name" bind:value={name} required />
+					</div>
+					<ImageSelector
+						id="brand-logo"
+						legend="Logo"
+						current={logoPath ? logoURL(logoPath) : ''}
+						ondelete={() => (logoPath = '')}
+						bind:this={imageSelector}
+					/>
 				</div>
 			</fieldset>
 
 			<fieldset class="section">
 				<legend>Color theme</legend>
-				<p class="section-description">Choose a color swatch or enter a six-digit hex value. Generate creates an accessible palette from the primary color.</p>
+				<p class="section-description">Choose a color swatch or enter a six-digit hex value; Generate creates an accessible palette from the primary color</p>
 
 				<div class="theme-table-wrap">
 					<table class="theme-table">
@@ -151,8 +134,8 @@
 							{#each colorFields as field}
 								<tr>
 									<th scope="row">
-										<span>{field.label}</span>
-										<Tooltip text={field.description} />
+										<span class="theme-field-label">{field.label}</span>
+										<p class="theme-field-description">{field.description}</p>
 									</th>
 									<td>
 										<ColorPicker
@@ -161,7 +144,7 @@
 											bind:value={brandingTheme.light[field.key]}
 										/>
 										{#if field.key === 'primary'}
-											<div class="generate"><Button size="small" variant="secondary" onclick={() => generate('light')}>Generate</Button></div>
+											<div class="generate"><Button size="small" variant="primary-outline" onclick={() => generate('light')}><span class="flex items-center gap-2"><Icon icon={aiSparklesIcon} width="18" height="18" />Generate</span></Button></div>
 										{/if}
 									</td>
 									<td>
@@ -171,7 +154,7 @@
 											bind:value={brandingTheme.dark[field.key]}
 										/>
 										{#if field.key === 'primary'}
-											<div class="generate"><Button size="small" variant="secondary" onclick={() => generate('dark')}>Generate</Button></div>
+											<div class="generate"><Button size="small" variant="primary-outline" onclick={() => generate('dark')}><span class="flex items-center gap-2"><Icon icon={aiSparklesIcon} width="18" height="18" />Generate</span></Button></div>
 										{/if}
 									</td>
 								</tr>
@@ -181,7 +164,14 @@
 				</div>
 			</fieldset>
 
-			<div class="branding-actions"><Button type="submit" disabled={saving}>{saving ? 'Applying…' : 'Apply'}</Button></div>
+			<div class="branding-actions">
+				<Button type="submit" rounded class="primary-action-button" disabled={saving}>
+					<span class="flex items-center gap-2">
+						<Icon icon={checkIcon} width="20" height="20" />
+						{saving ? 'Applying…' : 'Apply'}
+					</span>
+				</Button>
+			</div>
 		</form>
 	{/if}
 </section>
@@ -190,8 +180,8 @@
 	.loading-panel {
 		border: 0;
 		border-radius: 8px;
-		background: rgb(var(--color-foreground));
-		box-shadow: 0 0 0 1px rgb(var(--color-border));
+		background: rgb(var(--color-background));
+		box-shadow: 0 0 0 1px var(--color-border);
 	}
 
 	.branding-form {
@@ -215,20 +205,10 @@
 		display: grid;
 		gap: 1rem;
 		margin-top: 1rem;
-		max-width: 36rem;
 	}
 
-	.current-logo {
-		display: grid;
-		gap: 0.5rem;
-		font-size: 0.875rem;
-		font-weight: 500;
-	}
-
-	.current-logo img {
-		width: 6rem;
-		height: 6rem;
-		object-fit: cover;
+	.brand-name-field {
+		width: 50%;
 	}
 
 	.section-description {
@@ -238,14 +218,16 @@
 	}
 
 	.theme-table-wrap {
+		width: fit-content;
+		max-width: 100%;
 		overflow: hidden;
 		border-radius: 8px;
-		box-shadow: 0 0 0 1px rgb(var(--color-border));
+		box-shadow: 0 0 0 1px var(--color-border);
 	}
 
 	.theme-table {
-		width: 100%;
-		min-width: 43rem;
+		width: max-content;
+		min-width: 47rem;
 		border-collapse: collapse;
 		text-align: left;
 	}
@@ -253,7 +235,7 @@
 	.theme-table th,
 	.theme-table td {
 		padding: 0.875rem;
-		border-bottom: 1px solid rgb(var(--color-border));
+		border-bottom: 1px solid var(--color-border);
 		vertical-align: top;
 	}
 
@@ -265,12 +247,20 @@
 	}
 
 	.theme-table tbody th {
-		width: 32%;
+		width: 22rem;
 		font-size: 0.875rem;
 	}
 
-	.theme-table tbody th > span:first-child {
-		margin-right: 0.375rem;
+	.theme-field-label {
+		display: block;
+	}
+
+	.theme-field-description {
+		margin: 0.25rem 0 0;
+		color: rgb(var(--color-text) / 0.65);
+		font-size: 0.875rem;
+		font-weight: 400;
+		line-height: 1.35;
 	}
 
 	.theme-table tbody tr:last-child th,
@@ -279,7 +269,15 @@
 	}
 
 	.generate {
+		width: 11rem;
 		margin-top: 0.5rem;
+	}
+
+	.generate :global(button) {
+		width: 100%;
+		min-height: 2.75rem;
+		border-radius: 0.75rem;
+		font-size: 0.875rem;
 	}
 
 	.branding-actions {

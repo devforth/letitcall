@@ -68,9 +68,9 @@
 	.notification {
 		position: relative;
 		--notification-color: rgb(var(--color-primary));
-		background: rgb(var(--color-foreground));
+		background: rgb(var(--color-background));
 		box-shadow: var(--shadow);
-		border: 1px solid rgb(var(--color-border));
+		border: 1px solid var(--color-border);
 	}
 
 	.notification-close {
@@ -84,7 +84,7 @@
 
 	.notification-badge {
 		color: var(--notification-color);
-		background: color-mix(in srgb, rgb(var(--color-foreground)), black 14%);
+		background: color-mix(in srgb, rgb(var(--color-background)), black 14%);
 	}
 
 	.notification-info {
@@ -113,7 +113,7 @@
 		position: absolute;
 		inset: 0;
 		border-radius: inherit;
-		background: rgb(var(--color-border));
+		background: var(--color-border);
 		transform-origin: right;
 		animation-name: expire;
 		animation-duration: var(--timer-duration);

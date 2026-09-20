@@ -133,7 +133,7 @@
 >
 	<header
 		class="sticky top-0 z-20 md:h-[66px]"
-		style="background: rgb(var(--color-foreground)); border-bottom: 1px solid rgb(var(--color-border));"
+		style="background: rgb(var(--color-background)); border-bottom: 1px solid var(--color-border);"
 	>
 		<div
 			class="mx-auto flex w-full max-w-[76rem] flex-wrap items-center justify-between gap-4 px-4 py-2 sm:px-6 lg:px-8"
@@ -173,7 +173,7 @@
 					<button
 						type="button"
 						class="flex items-center gap-2 rounded-full py-1 pl-1 pr-3"
-						style="background: rgb(var(--color-foreground)); border: 0; box-shadow: 0 0 0 1px rgb(var(--color-border)); outline: none;"
+						style="background: rgb(var(--color-background)); border: 0; box-shadow: 0 0 0 1px var(--color-border); outline: none;"
 						aria-haspopup="menu"
 						aria-expanded={menuOpen}
 						aria-label="Account menu"
@@ -201,7 +201,7 @@
 						<!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
 						<div
 							class="absolute right-0 z-40 mt-2 w-64 overflow-hidden rounded-xl p-2"
-							style="background: rgb(var(--color-foreground)); border: 0; box-shadow: 0 0 0 1px rgb(var(--color-border));"
+							style="background: rgb(var(--color-background)); border: 0; box-shadow: 0 0 0 1px var(--color-border);"
 							role="menu"
 							tabindex="-1"
 							onclick={(e) => e.stopPropagation()}
@@ -220,7 +220,7 @@
 								</span>
 							</div>
 
-							<div class="my-1 h-px" style="background: rgb(var(--color-border));"></div>
+							<div class="my-1 h-px" style="background: var(--color-border);"></div>
 
 							<a
 								class="flex w-full items-center gap-3 rounded-lg px-2 py-2 text-sm font-medium transition-colors"
@@ -235,7 +235,7 @@
 								Edit profile
 							</a>
 
-							<div class="my-1 h-px" style="background: rgb(var(--color-border));"></div>
+							<div class="my-1 h-px" style="background: var(--color-border);"></div>
 
 							<div class="flex items-center gap-3 rounded-lg px-2 py-2">
 								<svg class="size-4 shrink-0" style="color: rgb(var(--color-text) / 0.65);" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><path d="M3 12h18M12 3a15 15 0 0 1 0 18 15 15 0 0 1 0-18z" /></svg>
@@ -251,7 +251,7 @@
 								</div>
 							</div>
 
-							<div class="my-1 h-px" style="background: rgb(var(--color-border));"></div>
+							<div class="my-1 h-px" style="background: var(--color-border);"></div>
 
 							<button
 								type="button"
@@ -286,7 +286,7 @@
 		<nav
 			id="app-sidebar"
 			class={`fixed inset-y-0 left-0 z-40 flex w-72 flex-col overflow-y-auto p-4 transition-[transform,width] duration-300 ease-out motion-reduce:transition-none ${navOpen ? 'translate-x-0' : '-translate-x-full'} md:w-[var(--sidebar-w)] md:min-w-0 md:p-0 md:translate-x-0 md:overflow-hidden`}
-			style="background: rgb(var(--color-foreground)); border-right: 1px solid rgb(var(--color-border));"
+			style="background: rgb(var(--color-background)); border-right: 1px solid var(--color-border);"
 			aria-label="Primary navigation"
 			inert={isMobile && !navOpen}
 		>
@@ -295,7 +295,7 @@
 				<button
 					type="button"
 					class="flex size-10 items-center justify-center rounded-lg"
-					style="border: 2px solid rgb(var(--color-border)); color: rgb(var(--color-text));"
+					style="border: 2px solid var(--color-border); color: rgb(var(--color-text));"
 					aria-label="Close navigation"
 					onclick={collapseOnMobile}
 				>
@@ -358,7 +358,7 @@
 			{:else}
 				<div
 					class="mx-auto w-full min-w-0 max-w-6xl rounded-xl p-3 sm:p-4 lg:p-5"
-					style="background: rgb(var(--color-foreground)); box-shadow: var(--shadow-small);"
+					style="background: rgb(var(--color-background)); box-shadow: var(--shadow-small);"
 				>
 					{@render children()}
 				</div>
@@ -398,7 +398,6 @@
 	.nav-link[aria-current='page'] {
 		background: transparent;
 		color: rgb(var(--color-primary));
-		font-weight: 700;
 	}
 
 	.nav-link:focus-visible {

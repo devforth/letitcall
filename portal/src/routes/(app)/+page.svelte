@@ -7,6 +7,7 @@
 	import { callApi } from '$lib/api';
 	import type { Booking, EventType, ManagedUser } from '$lib/types';
 	import BookingList from '$lib/components/BookingList.svelte';
+	import PageHeader from '$lib/components/PageHeader.svelte';
 	import PageTitle from '$lib/components/PageTitle.svelte';
 
 	let bookings = $state<Booking[]>([]);
@@ -17,7 +18,7 @@
 	let clock: number | undefined;
 
 	const blockStyle =
-		'background: rgb(var(--color-foreground)); box-shadow: 0 0 0 1px rgb(var(--color-border));';
+		'background: rgb(var(--color-background)); box-shadow: 0 0 0 1px var(--color-border);';
 
 	const upcoming = $derived(
 		bookings
@@ -58,23 +59,12 @@
 
 <section aria-labelledby="bookings-title" class="flex flex-col gap-6">
 	<div class="mb-2">
-		<div class="flex min-w-0 items-center gap-4">
-			<div
-				class="grid size-12 shrink-0 place-items-center rounded-lg"
-				style="background: rgb(var(--color-primary) / 0.12); color: rgb(var(--color-primary));"
-			>
-				<Icon icon={calendarEventIcon} width="24" height="24" />
-			</div>
-			<div>
-				<div class="flex items-center gap-3">
-					<h1 id="bookings-title" class="text-2xl font-semibold tracking-tight" style="color: rgb(var(--color-text));">Bookings</h1>
-					<span class="inline-flex items-center rounded-md px-2 py-1 text-xs font-semibold" style="background: rgb(var(--color-primary) / 0.1); color: rgb(var(--color-primary));">
-						{loading ? 'Loading…' : `${bookings.length} ${bookings.length === 1 ? 'booking' : 'bookings'}`}
-					</span>
-				</div>
-				<p class="text-sm" style="color: rgb(var(--color-text) / 0.65);">Upcoming appointments and booking history.</p>
-			</div>
-		</div>
+		<PageHeader
+			id="bookings-title"
+			title="Bookings"
+			description="Upcoming appointments and booking history."
+			icon={calendarEventIcon}
+		/>
 	</div>
 
 	{#if loading}
@@ -83,13 +73,7 @@
 		</div>
 	{:else if bookings.length === 0}
 		<div class="rounded-lg" style={blockStyle}>
-			<div class="px-5 py-14 text-center">
-				<div class="mx-auto flex max-w-xs flex-col items-center">
-					<Icon icon={calendarEventIcon} width="30" height="30" style="color: rgb(var(--color-text) / 0.65);" />
-					<p class="mt-3 font-semibold" style="color: rgb(var(--color-text));">No bookings yet</p>
-					<p class="mt-1 text-xs" style="color: rgb(var(--color-text) / 0.65);">New appointments will appear here.</p>
-				</div>
-			</div>
+			<p class="empty-state">No bookings yet</p>
 		</div>
 	{:else}
 		<section class="booking-group overflow-hidden rounded-lg" style={blockStyle} aria-labelledby="upcoming-title">
@@ -97,13 +81,15 @@
 				<Icon icon={clockIcon} width="18" height="18" />
 				<div class="group-label">
 					<h2 id="upcoming-title">Upcoming</h2>
-					<span class="group-count">· {upcoming.length}</span>
+					{#if upcoming.length > 0}
+						<span class="group-count">· {upcoming.length}</span>
+					{/if}
 				</div>
 			</div>
 			{#if upcoming.length > 0}
 				<BookingList bookings={upcoming} {eventTypes} {users} {now} />
 			{:else}
-				<p class="p-5 text-sm" style="color: rgb(var(--color-text) / 0.65);">No upcoming bookings.</p>
+				<p class="empty-state">No upcoming bookings</p>
 			{/if}
 		</section>
 
@@ -127,7 +113,7 @@
 		display: flex;
 		align-items: center;
 		gap: 0.5rem;
-		border-bottom: 1px solid rgb(var(--color-border));
+		border-bottom: 1px solid var(--color-border);
 		padding: 0.75rem 1rem;
 		background: rgb(var(--color-text) / 0.06);
 		color: rgb(var(--color-text));
@@ -144,5 +130,12 @@
 	.group-count {
 		opacity: 0.45;
 		font-variant-numeric: tabular-nums;
+	}
+
+	.empty-state {
+		padding: 2.5rem 1rem;
+		color: rgb(var(--color-text) / 0.65);
+		font-size: 0.875rem;
+		text-align: center;
 	}
 </style>

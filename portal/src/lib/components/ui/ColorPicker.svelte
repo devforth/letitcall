@@ -1,6 +1,4 @@
 <script lang="ts">
-	const hexPattern = '#[0-9A-Fa-f]{6}';
-
 	let {
 		id,
 		label,
@@ -11,67 +9,41 @@
 		value: string;
 	} = $props();
 
-	let text = $state(value);
-
-	$effect(() => {
-		text = value;
-	});
+	const textColor = $derived(Number.parseInt(value.slice(1, 3), 16) * 299 + Number.parseInt(value.slice(3, 5), 16) * 587 + Number.parseInt(value.slice(5, 7), 16) * 114 > 160000 ? '#111111' : '#ffffff');
 
 	function pickColor(event: Event) {
 		value = (event.currentTarget as HTMLInputElement).value.toUpperCase();
 	}
-
-	function typeColor(event: Event) {
-		text = (event.currentTarget as HTMLInputElement).value;
-		if (/^#[0-9A-Fa-f]{6}$/.test(text)) value = text.toUpperCase();
-	}
 </script>
 
 <div class="picker">
-	<label class="swatch" for={id} style={`background: ${value}`}>
+	<label class="swatch" for={id} style={`background: ${value}; color: ${textColor};`}>
 		<span class="sr-only">Choose {label}</span>
+		<span class="hex" aria-hidden="true">{value}</span>
 		<input id={id} type="color" value={value} oninput={pickColor} />
 	</label>
-	<label class="sr-only" for={`${id}-hex`}>{label} hex value</label>
-	<input
-		id={`${id}-hex`}
-		class="hex"
-		type="text"
-		value={text}
-		oninput={typeColor}
-		pattern={hexPattern}
-		maxlength="7"
-		required
-		spellcheck="false"
-		aria-label={`${label} hex value`}
-	/>
 </div>
 
 <style>
 	.picker {
-		display: grid;
-		grid-template-columns: 2.75rem minmax(0, 8rem);
-		align-items: center;
-		gap: 0.625rem;
+		width: 11rem;
 	}
 
 	.swatch {
 		position: relative;
-		display: block;
-		width: 2.75rem;
-		height: 2.75rem;
+		display: flex;
+		width: 100%;
+		height: 4.5rem;
+		align-items: flex-end;
+		justify-content: space-between;
 		border: 0;
-		border-radius: 10px;
+		border-radius: 0.75rem;
+		padding: 0.75rem;
 		box-shadow:
-			0 0 0 1px rgb(var(--color-border)),
-			inset 0 0 0 2px rgb(var(--color-foreground));
+			inset 0 0 0 1px rgb(var(--color-primary)),
+			inset 0 0 0 3px rgb(var(--color-contrast-text));
 		cursor: pointer;
 		overflow: hidden;
-	}
-
-	.swatch:focus-within {
-		outline: 2px solid rgb(var(--color-primary));
-		outline-offset: 2px;
 	}
 
 	.swatch input {
@@ -84,23 +56,13 @@
 	}
 
 	.hex {
-		width: 100%;
-		min-height: 2.75rem;
-		padding: 0.625rem 0.75rem;
-		border: 0;
-		border-radius: 10px;
-		outline: none;
-		background: rgb(var(--color-foreground));
-		box-shadow: inset 0 0 0 1px rgb(var(--color-border));
-		color: rgb(var(--color-text));
+		position: relative;
+		z-index: 1;
+		pointer-events: none;
 		font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-		font-size: 0.875rem;
+		font-size: 1rem;
+		font-weight: 400;
 		text-transform: uppercase;
-		transition: box-shadow 0.18s;
-	}
-
-	.hex:focus {
-		box-shadow: inset 0 0 0 1px rgb(var(--color-primary));
 	}
 
 	.sr-only {

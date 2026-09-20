@@ -48,9 +48,18 @@
 	}
 
 	async function loadImage(file: File) {
+		await openImage(URL.createObjectURL(file), file.name);
+	}
+
+	async function editImage() {
+		editing = true;
+		await openImage(current, current);
+	}
+
+	async function openImage(imageSource: string, imageName: string) {
 		destroyCropper();
-		source = URL.createObjectURL(file);
-		filename = file.name;
+		source = imageSource;
+		filename = imageName;
 		await tick();
 		if (!container || !image) return;
 		cropper = new Cropper(image, { container, template: imageTemplate });
@@ -118,10 +127,10 @@
 			<img class:round-image={legend.toLowerCase().startsWith('avatar')} src={current} alt={`Current ${legend.toLowerCase()}`} />
 			<div class="current-copy">
 				<p class="current-title">Current {legend.toLowerCase()}</p>
-				<p class="current-hint">Edit the image or remove it.</p>
+				<p class="current-hint">Edit the image or remove it</p>
 			</div>
 			<div class="current-actions">
-				<IconButton filled tone="primary" label={`Edit ${legend.toLowerCase()}`} onclick={() => (editing = true)}>
+				<IconButton filled tone="primary" label={`Edit ${legend.toLowerCase()}`} onclick={editImage}>
 					<Icon icon={editIcon} width="20" height="20" />
 				</IconButton>
 				<IconButton filled tone="danger" label={`Delete ${legend.toLowerCase()}`} onclick={() => ondelete?.()}>
@@ -136,6 +145,7 @@
 		aria-label={`${legend} image upload`}
 		class:dragging={isDragOver}
 		class="upload-surface"
+		class:empty={!source}
 		ondragover={dragOver}
 		ondragleave={dragLeave}
 		ondrop={dropImage}
@@ -145,9 +155,9 @@
 		</div>
 		<div class="upload-copy min-w-0">
 			<p class="upload-title">{source ? 'Replace selected image' : `Upload ${legend.toLowerCase()}`}</p>
-			<p class="upload-hint">Drop a JPG, PNG, or WebP here, or choose one to crop before saving.</p>
+			<p class="upload-hint">Drop a JPG, PNG, or WebP here, or choose one to crop before saving</p>
 		</div>
-		<label class="file-trigger" for={id}>
+		<label class="file-trigger button-primary-outline" for={id}>
 			<Icon icon={uploadIcon} width="17" height="17" />
 			{source ? 'Replace' : 'Choose image'}
 		</label>
@@ -164,7 +174,7 @@
 			<div class="crop-editor-header">
 				<div>
 					<p class="crop-title">Crop image</p>
-					<p class="crop-hint">Drag to pan and resize the frame to crop.</p>
+					<p class="crop-hint">Drag to pan and resize the frame to crop</p>
 				</div>
 				<div class="flex gap-1">
 					<Button variant="ghost" class="size-9 !min-h-0 !p-0" onclick={() => zoom(-0.1)}>
@@ -203,12 +213,12 @@
 		border: 0;
 		border-radius: 8px;
 		padding: 1rem;
-		box-shadow: 0 0 0 1px rgb(var(--color-border));
+		box-shadow: 0 0 0 1px var(--color-border);
 	}
 
 	.selector-legend {
 		padding: 0 0.25rem;
-		background: rgb(var(--color-foreground));
+		background: rgb(var(--color-background));
 		font-size: 0.72rem;
 		font-weight: 400;
 		color: rgb(var(--color-primary));
@@ -219,11 +229,9 @@
 		grid-template-columns: auto minmax(0, 1fr) auto;
 		align-items: center;
 		gap: 0.875rem;
-		min-height: 5.25rem;
-		padding: 0.75rem;
-		border: 1px dashed rgb(var(--color-border));
-		border-radius: 8px;
-		background: rgb(var(--color-text) / 0.06);
+		min-height: 0;
+		padding: 0;
+		transform: translateY(-0.25rem);
 		font-size: 0.8125rem;
 		color: rgb(var(--color-text) / 0.75);
 	}
@@ -290,10 +298,19 @@
 		gap: 0.875rem;
 		min-height: 5.25rem;
 		padding: 0.75rem;
-		border: 1px dashed rgb(var(--color-border));
+		border: 1px dashed var(--color-border);
 		border-radius: 8px;
 		background: rgb(var(--color-text) / 0.06);
 		transition: background 0.18s, border-color 0.18s;
+	}
+
+	.upload-surface.empty {
+		align-content: center;
+		min-height: 0;
+		padding: 0;
+		border: 0;
+		background: transparent;
+		transform: translateY(-0.25rem);
 	}
 
 	.upload-surface.dragging {
@@ -307,8 +324,8 @@
 		height: 2.75rem;
 		place-items: center;
 		border-radius: 8px;
-		background: rgb(var(--color-primary) / 0.1);
-		color: rgb(var(--color-primary));
+		background: rgb(var(--color-text) / 0.06);
+		color: rgb(var(--color-text));
 	}
 
 	.upload-title,
@@ -331,20 +348,13 @@
 		justify-content: center;
 		gap: 0.375rem;
 		min-height: 2.25rem;
-		padding: 0.375rem 0.625rem;
-		border: 2px solid rgb(var(--color-primary));
-		border-radius: 8px;
-		background: rgb(var(--color-foreground));
-		color: rgb(var(--color-text));
-		font-size: 0.8125rem;
-		font-weight: 700;
+		padding: 0.375rem 0.75rem;
+		padding-right: 1rem;
+		padding-bottom: 0.5rem;
+		border-radius: 9999px;
+		font-size: 0.875rem;
+		font-weight: 500;
 		cursor: pointer;
-		transition: background 0.18s, color 0.18s;
-	}
-
-	.file-trigger:hover {
-		background: rgb(var(--color-primary) / 0.1);
-		color: rgb(var(--color-primary));
 	}
 
 	.crop-editor {
@@ -364,7 +374,7 @@
 	.cropper-host {
 		height: 19rem;
 		overflow: hidden;
-		border: 1px solid rgb(var(--color-border));
+		border: 1px solid var(--color-border);
 		border-radius: 8px;
 	}
 

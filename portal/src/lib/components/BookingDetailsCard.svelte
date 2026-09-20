@@ -78,14 +78,14 @@
 		grid-template-columns: minmax(13rem, 0.8fr) minmax(0, 1.2fr);
 		overflow: hidden;
 		margin-top: 1rem;
-		border: 1px solid rgb(var(--color-border));
+		border: 1px solid var(--color-border);
 		border-radius: 1rem;
 	}
 
 	.booking-schedule {
 		position: relative;
 		padding: 1.25rem 1.25rem 5rem;
-		border-right: 1px solid rgb(var(--color-border));
+		border-right: 1px solid var(--color-border);
 	}
 
 	.booking-details-static .booking-schedule,
@@ -204,7 +204,7 @@
 
 		.booking-schedule {
 			border-right: 0;
-			border-bottom: 1px solid rgb(var(--color-border));
+			border-bottom: 1px solid var(--color-border);
 		}
 	}
 </style>

@@ -5,6 +5,7 @@
 	import { callApi } from '$lib/api';
 	import type { AuditLog } from '$lib/types';
 	import AuditLogTable from '$lib/components/AuditLogTable.svelte';
+	import PageHeader from '$lib/components/PageHeader.svelte';
 	import PageTitle from '$lib/components/PageTitle.svelte';
 
 	let auditLogs = $state<AuditLog[]>([]);
@@ -26,18 +27,12 @@
 
 <section aria-labelledby="audit-log-title" class="flex flex-col gap-6">
 	<div class="mb-2">
-		<div class="flex min-w-0 items-center gap-4">
-			<div
-				class="grid size-12 shrink-0 place-items-center rounded-lg"
-				style="background: rgb(var(--color-primary) / 0.12); color: rgb(var(--color-primary));"
-			>
-				<Icon icon={historyIcon} width="24" height="24" />
-			</div>
-			<div>
-				<h1 id="audit-log-title" class="text-2xl font-semibold tracking-tight" style="color: rgb(var(--color-text));">Audit log</h1>
-				<p class="text-sm" style="color: rgb(var(--color-text) / 0.65);">Immutable history of backoffice changes. Dates and times use your local timezone.</p>
-			</div>
-		</div>
+		<PageHeader
+			id="audit-log-title"
+			title="Audit log"
+			description="Immutable history of backoffice changes. Dates and times use your local timezone."
+			icon={historyIcon}
+		/>
 	</div>
 
 	{#if error}
@@ -53,7 +48,7 @@
 	.outlined-block {
 		border: 0;
 		border-radius: 8px;
-		background: rgb(var(--color-foreground));
-		box-shadow: 0 0 0 1px rgb(var(--color-border));
+		background: rgb(var(--color-background));
+		box-shadow: 0 0 0 1px var(--color-border);
 	}
 </style>

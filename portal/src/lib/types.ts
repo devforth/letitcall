@@ -38,11 +38,8 @@ export type Branding = {
 export type ThemeColors = {
 	primary: string;
 	primaryContrast: string;
-	foreground: string;
 	text: string;
 	background: string;
-	border: string;
-	shadow: string;
 };
 
 export type BrandingTheme = {

@@ -53,8 +53,8 @@
 		flex: none;
 		place-items: center;
 		border-radius: 5px;
-		background: rgb(var(--color-foreground));
-		box-shadow: inset 0 0 0 2px rgb(var(--color-border));
+		background: rgb(var(--color-background));
+		box-shadow: inset 0 0 0 2px var(--color-border);
 		transition: background 0.18s, box-shadow 0.18s;
 	}
 

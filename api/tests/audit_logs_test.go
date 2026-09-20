@@ -92,6 +92,35 @@ func TestAuditLogAPICapturesBackofficeMutationsAndExcludesBookings(t *testing.T)
 	assertAuditPayloadContains(t, response.AuditLogs, "edited", "event_type", `"name":{"before":"Audit Call","after":"Renamed Audit Call"}`)
 }
 
+func TestAuditLogAPIUsesCurrentActorAvatar(t *testing.T) {
+	f := newFixture(t, false)
+	admin, err := f.store.GetUser(adminEmail)
+	if err != nil {
+		t.Fatal(err)
+	}
+	admin.AvatarPath = "previous-avatar.jpg"
+	if err := f.store.PutUser(admin); err != nil {
+		t.Fatal(err)
+	}
+	expectStatus(t, f.login(adminEmail, adminPassword), http.StatusOK)
+	expectStatus(t, f.request(http.MethodPut, "/api/branding", map[string]string{"name": "Avatar audit"}), http.StatusOK)
+
+	admin.AvatarPath = "current-avatar.jpg"
+	if err := f.store.PutUser(admin); err != nil {
+		t.Fatal(err)
+	}
+	body := expectStatus(t, f.request(http.MethodGet, "/api/audit-logs", nil), http.StatusOK)
+	var response struct {
+		AuditLogs []model.AuditLog `json:"auditLogs"`
+	}
+	if err := json.Unmarshal(body, &response); err != nil {
+		t.Fatal(err)
+	}
+	if len(response.AuditLogs) != 1 || response.AuditLogs[0].Actor.AvatarPath != "current-avatar.jpg" {
+		t.Fatalf("audit log actor avatar = %#v, want current avatar", response.AuditLogs)
+	}
+}
+
 func TestAuditLogRetentionAndTableRecreation(t *testing.T) {
 	dataPath := t.TempDir()
 	database, err := store.Open(dataPath)

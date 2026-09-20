@@ -27,7 +27,7 @@
 	]);
 	const hostHighlightEnabled = $derived(hosts.length > 1);
 	const asideStyle =
-		'background: rgb(var(--color-primary)); color: rgb(var(--color-contrast-text)); box-shadow: 0 0 0 1px rgb(var(--color-border)), var(--shadow-small);';
+		'background: rgb(var(--color-primary)); color: rgb(var(--color-contrast-text)); box-shadow: 0 0 0 1px var(--color-border), var(--shadow-small);';
 
 	function bookingDate(): string {
 		return new Intl.DateTimeFormat(undefined, {
@@ -80,7 +80,6 @@
 					avatarPath={host.avatarPath}
 					size={host.avatarSize}
 					rounded="full"
-					onBrand
 				/>
 			</span>
 		{/each}

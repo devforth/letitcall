@@ -95,18 +95,12 @@ func normalizeBrandingTheme(theme *model.BrandingTheme) error {
 	}{
 		{"light primary", &theme.Light.Primary},
 		{"light primary contrast", &theme.Light.PrimaryContrast},
-		{"light foreground", &theme.Light.Foreground},
 		{"light text", &theme.Light.Text},
 		{"light background", &theme.Light.Background},
-		{"light border", &theme.Light.Border},
-		{"light shadow", &theme.Light.Shadow},
 		{"dark primary", &theme.Dark.Primary},
 		{"dark primary contrast", &theme.Dark.PrimaryContrast},
-		{"dark foreground", &theme.Dark.Foreground},
 		{"dark text", &theme.Dark.Text},
 		{"dark background", &theme.Dark.Background},
-		{"dark border", &theme.Dark.Border},
-		{"dark shadow", &theme.Dark.Shadow},
 	}
 	for _, color := range colors {
 		value := strings.ToUpper(strings.TrimSpace(*color.value))

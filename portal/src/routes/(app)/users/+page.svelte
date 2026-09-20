@@ -3,19 +3,21 @@
 	import { goto } from '$app/navigation';
 	import Icon from '@iconify/svelte';
 	import checkIcon from '@iconify-icons/tabler/check';
-	import plusIcon from '@iconify-icons/tabler/plus';
+	import userPlusIcon from '@iconify-icons/tabler/user-plus';
+	import usersIcon from '@iconify-icons/tabler/users';
 	import worldIcon from '@iconify-icons/tabler/world';
 	import xIcon from '@iconify-icons/tabler/x';
 	import { callApi, appPath, getSession } from '$lib/api';
-	import addUserIcon from '$lib/icons/add-user';
 	import ImageSelector from '$lib/components/ImageSelector.svelte';
 	import UserDeletionDialog from '$lib/components/UserDeletionDialog.svelte';
 	import UserTable from '$lib/components/UserTable.svelte';
+	import PageHeader from '$lib/components/PageHeader.svelte';
 	import PageTitle from '$lib/components/PageTitle.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
 	import ConfirmationDialog from '$lib/components/ui/ConfirmationDialog.svelte';
 	import Input from '$lib/components/ui/Input.svelte';
 	import SearchableSelect from '$lib/components/ui/SearchableSelect.svelte';
+	import SegmentedControl from '$lib/components/ui/SegmentedControl.svelte';
 	import type { ManagedUser, UserDeletionImpact } from '$lib/types';
 	import { getLocalTimezones } from '$lib/timezones';
 
@@ -44,11 +46,14 @@
 		{ value: 'connected', label: 'Connected' },
 		{ value: 'notConnected', label: 'Not connected' }
 	];
-
 	const newUserContainerStyle =
-		'background: rgb(var(--color-primary)); box-shadow: 0 0 0 1px rgb(var(--color-border));';
+		'background: rgb(var(--color-primary)); box-shadow: 0 0 0 1px var(--color-border);';
 	const tableBlockStyle =
-		'background: rgb(var(--color-foreground)); box-shadow: 0 0 0 1px rgb(var(--color-border));';
+		'background: rgb(var(--color-background)); box-shadow: 0 0 0 1px var(--color-border);';
+	const boldUserPlusIcon = {
+		...userPlusIcon,
+		body: userPlusIcon.body.replace('stroke-width="2"', 'stroke-width="2.25"')
+	};
 
 	const searchMatches = $derived(
 		users.filter((candidate) => {
@@ -66,6 +71,9 @@
 		connected: searchMatches.filter((candidate) => candidate.googleConnected).length,
 		notConnected: searchMatches.filter((candidate) => !candidate.googleConnected).length
 	});
+	const connectionFilterOptions = $derived(
+		connFilters.map((filter) => ({ ...filter, suffix: `· ${connCounts[filter.value]}` }))
+	);
 
 	const filteredUsers = $derived(
 		searchMatches.filter(
@@ -169,59 +177,50 @@
 		userToDelete = null;
 		deletionImpact = null;
 	}
+
 </script>
 
 <PageTitle title="Users" />
 
 <section aria-labelledby="users-title" class="flex flex-col gap-6">
 	<div class="mb-2">
-		<div class="flex flex-wrap items-center justify-between gap-5">
-			<div class="flex min-w-0 items-center gap-4">
-				<div
-					class="grid size-12 shrink-0 place-items-center rounded-lg"
-					style="background: rgb(var(--color-primary) / 0.12); color: rgb(var(--color-primary));"
-				>
-					<Icon icon={addUserIcon} width="24" height="24" />
-				</div>
-				<div>
-					<div class="flex items-center gap-3">
-						<h1 id="users-title" class="text-2xl font-semibold tracking-tight" style="color: rgb(var(--color-text));">Users</h1>
-						<span class="inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-semibold" style="background: rgb(var(--color-primary) / 0.1); color: rgb(var(--color-primary));">
-							{loading ? 'Loading…' : `${users.length} ${users.length === 1 ? 'member' : 'members'}`}
-						</span>
-					</div>
-					<p class="text-sm" style="color: rgb(var(--color-text) / 0.65);">Manage who can sign in and host events.</p>
-				</div>
-			</div>
+		<PageHeader
+			id="users-title"
+			title="Users"
+			description="Manage who can sign in and host events."
+			icon={usersIcon}
+		>
 			{#if !showForm}
-				<Button class="self-start" onclick={() => (showForm = true)}>
+				<Button
+					rounded
+					style="font-weight: 500 !important; padding-right: 1rem !important; padding-bottom: 0.5rem !important;"
+					class="add-user-button self-start"
+					onclick={() => (showForm = true)}
+				>
 					<span class="flex items-center gap-2">
-						<Icon icon={plusIcon} width="18" height="18" class="add-user-plus shrink-0" />
+						<Icon icon={boldUserPlusIcon} width="18" height="18" class="shrink-0" />
 						Add user
 					</span>
 				</Button>
 			{/if}
-		</div>
+		</PageHeader>
 	</div>
 
 	{#if showForm}
 		<div class="mb-2 overflow-hidden rounded-[0.625rem]" style={newUserContainerStyle}>
 			<form
 				class="ml-1 flex flex-col rounded-md rounded-l-lg"
-				style="background: rgb(var(--color-foreground));"
+				style="background: rgb(var(--color-background));"
 				onsubmit={createUser}
 			>
 				<div
 					class="flex min-w-0 items-center gap-2 rounded-t-md p-3 sm:p-4"
-					style="background: linear-gradient(110deg, rgb(var(--color-primary) / 0.12), rgb(var(--color-foreground)) 42%); box-shadow: inset 0 -1px 0 rgb(var(--color-border));"
+					style="background: linear-gradient(110deg, rgb(var(--color-primary) / 0.12), rgb(var(--color-background)) 42%); box-shadow: inset 0 -1px 0 var(--color-border);"
 				>
-					<span
-						class="grid size-8 shrink-0 place-items-center rounded-md"
-						style="background: rgb(var(--color-primary) / 0.12); color: rgb(var(--color-primary));"
-					>
-						<Icon icon={addUserIcon} width="18" height="18" />
+					<span class="grid size-8 shrink-0 place-items-center" style="color: rgb(var(--color-primary));">
+						<Icon icon={userPlusIcon} width="26" height="26" />
 					</span>
-					<h2 class="text-xl font-semibold" style="color: rgb(var(--color-text));">New user</h2>
+					<h2 class="text-xl font-semibold" style="color: rgb(var(--color-primary));">New user</h2>
 				</div>
 				<div class="grid gap-5 p-4 sm:p-5 lg:grid-cols-2">
 					<Input id="new-email" label="Email" type="email" bind:value={email} required autocomplete="off" />
@@ -247,16 +246,16 @@
 						<ImageSelector id="new-avatar" legend="Avatar (optional)" bind:this={avatarSelector} />
 					</div>
 					<div class="flex items-end justify-end gap-3 lg:col-span-2">
-						<Button variant="secondary" onclick={() => (showForm = false)}>
+						<Button variant="primary-outline" class="outlined-action-button" onclick={() => (showForm = false)}>
 							<span class="flex items-center gap-2">
-								<Icon icon={xIcon} width="18" height="18" class="cancel-icon shrink-0" />
+								<Icon icon={xIcon} width="20" height="20" />
 								Cancel
 							</span>
 						</Button>
-						<Button type="submit" disabled={saving}>
+						<Button type="submit" rounded class="primary-action-button" disabled={saving}>
 							<span class="flex items-center gap-2">
-								<Icon icon={checkIcon} width="18" height="18" class="create-user-icon shrink-0" />
-								{saving ? 'Creating…' : 'Create user'}
+								<Icon icon={checkIcon} width="20" height="20" />
+								{saving ? 'Creating…' : 'Create'}
 							</span>
 						</Button>
 					</div>
@@ -266,30 +265,20 @@
 	{/if}
 
 	<div class="overflow-hidden rounded-lg" style={tableBlockStyle}>
-		<div class="flex flex-wrap items-end justify-between gap-4 border-b p-3 sm:p-4" style="border-color: rgb(var(--color-border));">
+		<div class="flex flex-wrap items-end justify-between gap-4 border-b p-3 sm:p-4" style="border-color: var(--color-border);">
 			<div>
 				<h2 class="font-semibold" style="color: rgb(var(--color-text));">People</h2>
 				<p class="mt-1 text-sm" style="color: rgb(var(--color-text) / 0.65);">
 					{loading ? 'Loading your team…' : `${filteredUsers.length} of ${users.length} shown`}
 				</p>
 			</div>
-			<div
-				class="connection-filter lg:self-center"
-				role="group"
-				aria-label="Filter by Google connection"
-			>
-				{#each connFilters as filter (filter.value)}
-					<button
-						type="button"
-						class="filter-seg"
-						class:on={connFilter === filter.value}
-						aria-pressed={connFilter === filter.value}
-						onclick={() => (connFilter = filter.value)}
-					>
-						{filter.label}
-						<span class="filter-count">· {connCounts[filter.value]}</span>
-					</button>
-				{/each}
+			<div class="lg:self-center">
+				<SegmentedControl
+					options={connectionFilterOptions}
+					value={connFilter}
+					label="Filter by Google connection"
+					onchange={(value) => (connFilter = value as typeof connFilter)}
+				/>
 			</div>
 			<div class="min-w-[220px] flex-1 lg:w-72 lg:flex-none">
 				<Input id="user-search" label="Search users" type="search" bind:value={search} />
@@ -331,53 +320,9 @@
 {/if}
 
 <style>
-	.connection-filter {
-		display: inline-flex;
-		flex-shrink: 0;
-		align-items: center;
-		gap: 0.25rem;
-		border: 1px solid rgb(var(--color-border));
-		border-radius: 999px;
-		padding: 0.25rem;
-		background: rgb(var(--color-text) / 0.06);
-	}
-
-	:global(.cancel-icon path) {
-		stroke-width: 3;
-	}
-
-	:global(.create-user-icon path) {
-		stroke-width: 3;
-	}
-
-	:global(.add-user-plus path) {
-		stroke-width: 3;
-	}
-
-	.filter-seg {
-		border: 0;
-		border-radius: 999px;
-		padding: 0.4rem 0.9rem;
-		background: transparent;
-		color: rgb(var(--color-text) / 0.65);
-		font-size: 0.8125rem;
-		font-weight: 600;
-		cursor: pointer;
-		transition: color 0.15s, background 0.15s;
-	}
-
-	.filter-count {
-		opacity: 0.45;
-		font-variant-numeric: tabular-nums;
-	}
-
-	.filter-seg:hover:not(.on) {
-		color: rgb(var(--color-text));
-	}
-
-	.filter-seg.on {
-		background: rgb(var(--color-primary));
-		color: rgb(var(--color-contrast-text));
-		box-shadow: 0 1px 3px rgb(0 0 0 / 0.12);
+	:global(.add-user-button) {
+		min-height: 4rem !important;
+		border-radius: 9999px !important;
+		font-size: 1.25rem !important;
 	}
 </style>

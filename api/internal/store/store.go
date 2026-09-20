@@ -157,10 +157,14 @@ func (s *Store) GetBranding() (model.Branding, error) {
 	}
 	if branding.Theme.Light.Primary == "" {
 		branding.Theme = model.DefaultBrandingTheme()
-	} else if branding.Theme.Light.Border == "" {
+	} else {
 		defaults := model.DefaultBrandingTheme()
-		branding.Theme.Light.Border = defaults.Light.Border
-		branding.Theme.Dark.Border = defaults.Dark.Border
+		if branding.Theme.Light.Background == "" || branding.Theme.Light.Background == "#F5F5F0" {
+			branding.Theme.Light.Background = defaults.Light.Background
+		}
+		if branding.Theme.Dark.Background == "" {
+			branding.Theme.Dark.Background = defaults.Dark.Background
+		}
 	}
 	return branding, nil
 }

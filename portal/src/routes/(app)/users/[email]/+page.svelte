@@ -4,11 +4,12 @@
 	import { onMount } from 'svelte';
 	import Icon from '@iconify/svelte';
 	import checkIcon from '@iconify-icons/tabler/check';
+	import userEditIcon from '@iconify-icons/tabler/user-edit';
 	import worldIcon from '@iconify-icons/tabler/world';
 	import xIcon from '@iconify-icons/tabler/x';
 	import { callApi, appPath, avatarURL } from '$lib/api';
-	import addUserIcon from '$lib/icons/add-user';
 	import ImageSelector from '$lib/components/ImageSelector.svelte';
+	import PageHeader from '$lib/components/PageHeader.svelte';
 	import PageTitle from '$lib/components/PageTitle.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
 	import Input from '$lib/components/ui/Input.svelte';
@@ -75,18 +76,12 @@
 
 <section aria-labelledby="edit-user-title">
 	<div class="mb-8">
-		<div class="flex min-w-0 items-center gap-4">
-			<div
-				class="grid size-12 shrink-0 place-items-center rounded-lg"
-				style="background: rgb(var(--color-primary) / 0.12); color: rgb(var(--color-primary));"
-			>
-				<Icon icon={addUserIcon} width="24" height="24" />
-			</div>
-			<div>
-				<h1 id="edit-user-title" class="text-2xl font-semibold tracking-tight" style="color: rgb(var(--color-text));">Edit user</h1>
-				<p class="text-sm" style="color: rgb(var(--color-text) / 0.65);">Update account settings without changing the sign-in email.</p>
-			</div>
-		</div>
+		<PageHeader
+			id="edit-user-title"
+			title="Edit user"
+			description="Update account settings without changing the sign-in email."
+			icon={userEditIcon}
+		/>
 	</div>
 
 	{#if error}
@@ -126,15 +121,15 @@
 				/>
 			</div>
 			<div class="mt-3 flex flex-wrap justify-end gap-3 lg:col-span-2">
-				<Button variant="secondary" onclick={() => goto(appPath('/users'))}>
+				<Button variant="primary-outline" class="outlined-action-button" onclick={() => goto(appPath('/users'))}>
 					<span class="flex items-center gap-2">
-						<Icon icon={xIcon} width="18" height="18" />
+						<Icon icon={xIcon} width="20" height="20" />
 						Cancel
 					</span>
 				</Button>
-				<Button type="submit" disabled={saving}>
+				<Button type="submit" rounded class="primary-action-button" disabled={saving}>
 					<span class="flex items-center gap-2">
-						<Icon icon={checkIcon} width="18" height="18" />
+						<Icon icon={checkIcon} width="20" height="20" />
 						{saving ? 'Saving…' : 'Save changes'}
 					</span>
 				</Button>

@@ -1,6 +1,7 @@
 <script lang="ts">
 	import Icon from '@iconify/svelte';
 	import externalLinkIcon from '@iconify-icons/charm/link-external';
+	import dotsVerticalIcon from '@iconify-icons/tabler/dots-vertical';
 	import HostBadges from '$lib/components/HostBadges.svelte';
 	import type { Booking, EventType, ManagedUser } from '$lib/types';
 
@@ -55,9 +56,9 @@
 
 <div class="booking-list">
 	{#each bookings as booking (booking.id)}
-		<article class="booking-row relative grid gap-4 px-4 pb-4 pt-3 sm:grid-cols-[auto_minmax(0,1fr)_auto] sm:items-start sm:gap-x-8 sm:px-5 sm:pb-5 sm:pt-4">
+		<article class="booking-row relative grid gap-4 px-4 pb-4 pt-3 sm:grid-cols-[13.5rem_minmax(0,1fr)_auto] sm:items-start sm:gap-x-8 sm:px-5 sm:pb-5 sm:pt-4">
 			<div class="hidden justify-items-end gap-1 sm:grid">
-				<span class="status-chip mb-2 mt-[3px] inline-flex" class:canceled={!!booking.canceledAt}>
+				<span class="status-chip mb-2 mt-[3px] inline-flex sm:justify-self-start" class:canceled={!!booking.canceledAt}>
 					{historical && booking.canceledAt ? 'Canceled' : relativeTime(booking.time)}
 				</span>
 				<p class="text-sm font-bold" style="color: rgb(var(--color-text) / 0.75);">{localDate(booking.time)}</p>
@@ -78,7 +79,7 @@
 				</p>
 				<div
 					class="sm:-ml-4 sm:border-l sm:pl-[15px]"
-					style="border-color: rgb(var(--color-border) / 0.65);"
+					style="border-color: color-mix(in srgb, var(--color-border) 65%, transparent);"
 				>
 					<p class="mt-0.5 truncate text-sm" style="color: rgb(var(--color-text) / 0.65);">
 						{booking.attendeeName} · {booking.attendeeEmail}
@@ -87,8 +88,11 @@
 				</div>
 			</div>
 
-			<div class="absolute right-4 top-3 flex items-center justify-end sm:static sm:self-start">
+			<div class="booking-action-slot absolute right-4 top-3 flex items-center justify-end sm:relative sm:right-auto sm:top-auto sm:self-start">
 				{#if booking.manageURL}
+					<span class="booking-action-hint" aria-hidden="true">
+						<Icon icon={dotsVerticalIcon} width="22" height="22" />
+					</span>
 					<a
 						class="booking-action"
 						href={booking.manageURL}
@@ -105,7 +109,7 @@
 
 <style>
 	.booking-row {
-		border-bottom: 1px solid rgb(var(--color-border));
+		border-bottom: 1px solid var(--color-border);
 		transition: background 0.15s ease;
 	}
 
@@ -118,7 +122,7 @@
 	}
 
 	.status-chip {
-		border: 1px solid rgb(var(--color-border));
+		border: 1px solid var(--color-border);
 		border-radius: 999px;
 		padding: 0.25rem 0.5rem;
 		color: rgb(var(--color-text) / 0.65);
@@ -143,13 +147,66 @@
 		transition: background 0.15s ease;
 	}
 
-	.booking-action:hover {
-		background: rgb(var(--color-primary) / 0.2);
+	.booking-action-hint {
+		display: none;
+	}
+
+	@media (min-width: 40rem) {
+		.booking-action-slot {
+			display: flex;
+			min-width: 2.5rem;
+			min-height: 2.5rem;
+			align-items: center;
+			justify-content: flex-end;
+		}
+
+		.booking-action-hint {
+			position: absolute;
+			right: 0;
+			display: grid;
+			width: 2.5rem;
+			height: 2.5rem;
+			place-items: center;
+			color: rgb(var(--color-text) / 0.6);
+			pointer-events: none;
+			transition:
+				opacity 0.18s ease,
+				transform 0.18s ease;
+		}
+
+		.booking-action {
+			opacity: 0;
+			pointer-events: none;
+			transform: translateX(0.5rem);
+			transition:
+				opacity 0.18s ease,
+				transform 0.18s ease;
+		}
+
+		.booking-row:hover .booking-action,
+		.booking-row:focus-within .booking-action {
+			opacity: 1;
+			pointer-events: auto;
+			transform: translateX(0);
+		}
+
+		.booking-row:hover .booking-action-hint,
+		.booking-row:focus-within .booking-action-hint {
+			opacity: 0;
+			transform: translateX(-0.5rem) scale(0.85);
+		}
 	}
 
 	.booking-action:focus-visible {
 		outline: 2px solid rgb(var(--color-text) / 0.65);
 		outline-offset: 2px;
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.booking-action,
+		.booking-action-hint {
+			transition: none;
+		}
 	}
 
 </style>

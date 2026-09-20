@@ -26,7 +26,7 @@
 
 <div
 	class="audit-payload overflow-x-auto rounded-md"
-	style="background: rgb(var(--color-foreground)); box-shadow: 0 0 0 1px rgb(var(--color-border));"
+	style="background: rgb(var(--color-background)); box-shadow: 0 0 0 1px var(--color-border);"
 >
 	<table class="w-full min-w-[38rem] text-left text-sm">
 		<thead>
@@ -52,7 +52,7 @@
 					{/if}
 				</tr>
 			{:else}
-				<tr><td class="px-4 py-5 text-center" colspan={showsDiff ? 3 : 2}>No fields changed.</td></tr>
+				<tr><td class="empty-table-cell" colspan={showsDiff ? 3 : 2}>No fields changed</td></tr>
 			{/each}
 		</tbody>
 	</table>
@@ -68,14 +68,14 @@
 	}
 
 	.audit-payload thead th {
-		border-bottom: 1px solid rgb(var(--color-border));
+		border-bottom: 1px solid var(--color-border);
 		color: rgb(var(--color-text));
 		font-size: 0.75rem;
 		letter-spacing: 0.025em;
 	}
 
 	.audit-payload tbody tr {
-		border-bottom: 1px solid rgb(var(--color-border));
+		border-bottom: 1px solid var(--color-border);
 	}
 
 	.audit-payload tbody tr:last-child {
@@ -85,5 +85,12 @@
 	.audit-payload td,
 	.audit-payload tbody th {
 		color: rgb(var(--color-text));
+	}
+
+	.empty-table-cell {
+		padding: 2.5rem 1rem;
+		color: rgb(var(--color-text) / 0.65) !important;
+		font-size: 0.875rem;
+		text-align: center;
 	}
 </style>

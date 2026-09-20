@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Button from '$lib/components/ui/Button.svelte';
 	import Dialog from '$lib/components/ui/Dialog.svelte';
 
 	let {
@@ -49,23 +50,20 @@
 		<h2 class="confirm-title">{title}</h2>
 		<p class="confirm-desc">{description}</p>
 		<div class="confirm-actions">
-			<button
-				type="button"
-				class="btn-delete"
-				disabled={confirming}
-				onclick={onconfirm}
-			>
+			<Button rounded variant="primary-outline" class="modal-action-button" disabled={confirming} onclick={cancel}>
+				{cancelLabel}
+			</Button>
+			<Button rounded class="modal-action-button" disabled={confirming} onclick={onconfirm}>
 				{confirming ? confirmingLabel : confirmLabel}
-			</button>
-			<button type="button" class="btn-cancel" disabled={confirming} onclick={cancel}>{cancelLabel}</button>
+			</Button>
 		</div>
 	</div>
 </Dialog>
 
 <style>
 	.confirm-card {
-		background: rgb(var(--color-foreground));
-		border: 1px solid rgb(var(--color-border) / 0.6);
+		background: rgb(var(--color-background));
+		border: 1px solid color-mix(in srgb, var(--color-border) 60%, transparent);
 		border-radius: 16px;
 		box-shadow: var(--shadow);
 		padding: 1.75rem 1.5rem;
@@ -101,44 +99,12 @@
 	.confirm-actions {
 		margin-top: 1.5rem;
 		display: flex;
-		flex-direction: column;
-		gap: 0.6rem;
+		gap: 1rem;
 	}
 
-	.confirm-actions button {
-		width: 100%;
-		padding: 0.7rem 1rem;
-		border-radius: 10px;
-		font: inherit;
-		font-weight: 700;
-		font-size: 0.95rem;
-		cursor: pointer;
-		transition: all 0.2s;
-	}
-
-	.confirm-actions button:disabled {
-		opacity: 0.5;
-		cursor: not-allowed;
-	}
-
-	.btn-delete {
-		background: rgb(var(--error));
-		color: #fff;
-		border: 2px solid rgb(var(--error));
-	}
-
-	.btn-delete:hover:not(:disabled) {
-		background: color-mix(in srgb, rgb(var(--error)), black 8%);
-		border-color: color-mix(in srgb, rgb(var(--error)), black 8%);
-	}
-
-	.btn-cancel {
-		background: transparent;
-		color: rgb(var(--color-text));
-		border: 2px solid rgb(var(--color-border));
-	}
-
-	.btn-cancel:hover:not(:disabled) {
-		background: rgb(var(--color-text) / 0.06);
+	:global(.confirm-actions .modal-action-button) {
+		min-width: 0;
+		flex: 1;
+		padding-inline: 0.75rem !important;
 	}
 </style>

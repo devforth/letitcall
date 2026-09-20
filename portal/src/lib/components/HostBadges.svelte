@@ -42,8 +42,8 @@
 
 <style>
 	.host-badge {
-		background: rgb(var(--color-foreground));
-		box-shadow: 0 0 0 1px rgb(var(--color-border));
+		background: rgb(var(--color-background));
+		box-shadow: 0 0 0 1px var(--color-border);
 		color: rgb(var(--color-text) / 0.75);
 	}
 

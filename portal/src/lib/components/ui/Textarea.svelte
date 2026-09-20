@@ -73,13 +73,13 @@
 		font: inherit;
 		font-size: 0.9rem;
 		color: rgb(var(--color-text));
-		background: rgb(var(--color-foreground));
+		background: rgb(var(--color-background));
 		border: 0;
 		border-radius: 10px;
 		padding: 10px 12px 10px 40px;
 		resize: vertical;
 		outline: none;
-		box-shadow: 0 0 0 1px rgb(var(--color-border));
+		box-shadow: 0 0 0 1px var(--color-border);
 		transition: box-shadow 0.18s;
 	}
 
@@ -105,7 +105,7 @@
 		font-weight: 400;
 		color: rgb(var(--color-text));
 		opacity: 0.4;
-		background: rgb(var(--color-foreground));
+		background: rgb(var(--color-background));
 		padding: 0 4px;
 		pointer-events: none;
 		transition: top 0.16s, left 0.16s, font-size 0.16s, color 0.16s, opacity 0.16s;

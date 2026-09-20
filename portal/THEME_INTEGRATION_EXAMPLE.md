@@ -36,14 +36,14 @@ Update your AppShell header to include the theme toggle button:
 	}
 </script>
 
-<div class="min-h-screen bg-background text-foreground">
+<div class="min-h-screen bg-background text-text">
 	<header class="border-b border-border">
 		<div class="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-4 px-4 py-4 sm:px-6 lg:px-8">
 			<a class="text-lg font-bold tracking-tight" href={appPath('/')}>Let It Call</a>
 			<div class="flex items-center gap-4">
 				<span class="hidden text-sm sm:inline">{user.email}</span>
 				<ThemeToggle />
-				<Button variant="secondary" disabled={loggingOut} onclick={logout}>
+				<Button variant="outline" disabled={loggingOut} onclick={logout}>
 					{loggingOut ? 'Signing out…' : 'Sign out'}
 				</Button>
 			</div>
@@ -57,8 +57,8 @@ Update your AppShell header to include the theme toggle button:
 					<a
 						class={`block border border-border px-4 py-3 text-sm font-medium ${
 							page.url.pathname === appPath('/') 
-								? 'bg-foreground text-background' 
-								: 'bg-background text-foreground'
+								? 'bg-primary text-contrast-text'
+								: 'bg-background text-text'
 						}`}
 						href={appPath('/')}>Dashboard</a
 					>
@@ -67,8 +67,8 @@ Update your AppShell header to include the theme toggle button:
 					<a
 						class={`block border border-border px-4 py-3 text-sm font-medium ${
 							page.url.pathname.startsWith(appPath('/users'))
-								? 'bg-foreground text-background'
-								: 'bg-background text-foreground'
+								? 'bg-primary text-contrast-text'
+								: 'bg-background text-text'
 						}`}
 						href={appPath('/users')}>Users</a
 					>
@@ -122,7 +122,7 @@ Or using CSS classes with Tailwind dark mode:
 		padding: 1rem;
 		border: 1px solid rgb(var(--color-border));
 		background: rgb(var(--color-background));
-		color: rgb(var(--color-foreground));
+		color: rgb(var(--color-text));
 	}
 </style>
 ```
@@ -136,16 +136,14 @@ Create helper functions for theme-aware colors:
 import { get } from 'svelte/store';
 import { theme } from '$lib/stores/theme';
 
-export function getThemeColor(semanticColor: 'foreground' | 'background' | 'border') {
+export function getThemeColor(semanticColor: 'background' | 'border') {
 	const currentTheme = get(theme);
 	const colorMap = {
 		light: {
-			foreground: '#000000',
 			background: '#FFFFFF',
 			border: '#DEDEDE'
 		},
 		dark: {
-			foreground: '#FFFFFF',
 			background: '#141414',
 			border: '#333333'
 		}
@@ -173,14 +171,12 @@ Edit `src/routes/layout.css` to match your brand colors:
 ```css
 :root {
 	/* Your light theme colors */
-	--color-foreground: 10 20% 5%;      /* Dark blue-ish black */
 	--color-background: 240 100% 98%;   /* Light blue tint */
 	--color-border: 220 10% 85%;        /* Blue-gray border */
 }
 
 html.dark {
 	/* Your dark theme colors */
-	--color-foreground: 240 100% 98%;
 	--color-background: 220 15% 12%;
 	--color-border: 220 15% 25%;
 }

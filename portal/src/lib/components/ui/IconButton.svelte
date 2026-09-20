@@ -7,6 +7,7 @@
 		disabled = false,
 		filled = false,
 		tone = 'neutral',
+		class: className = '',
 		onclick
 	}: {
 		label: string;
@@ -14,6 +15,7 @@
 		disabled?: boolean;
 		filled?: boolean;
 		tone?: 'neutral' | 'primary' | 'danger';
+		class?: string;
 		onclick?: (event: MouseEvent) => void;
 	} = $props();
 </script>
@@ -24,7 +26,7 @@
 	title={label}
 	{disabled}
 	{onclick}
-	class="icon-button tone-{tone} grid size-10 shrink-0 cursor-pointer place-items-center rounded-[10px] transition focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent {filled ? 'filled' : ''}"
+	class="icon-button tone-{tone} grid size-10 shrink-0 cursor-pointer place-items-center rounded-[10px] transition focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent {filled ? 'filled' : ''} {className}"
 >
 	{@render children()}
 </button>
@@ -45,10 +47,14 @@
 		color: rgb(var(--color-text));
 	}
 
+	.tone-primary {
+		--ring-color: rgb(var(--success));
+	}
+
 	.tone-primary:hover:not(:disabled),
 	.tone-primary.filled:not(:disabled) {
-		background: rgb(var(--color-primary) / 0.14);
-		color: rgb(var(--color-primary));
+		background: rgb(var(--success) / 0.14);
+		color: rgb(var(--success));
 	}
 
 	.tone-danger {

@@ -82,7 +82,7 @@
 
 <style>
 	:global(.login-bg) {
-		background-color: rgb(var(--color-foreground));
+		background-color: rgb(var(--color-background));
 		background-image: radial-gradient(circle, rgb(var(--color-text) / 0.08) 1.5px, transparent 1.5px);
 		background-size: 18px 18px;
 	}
@@ -134,12 +134,12 @@
 	}
 
 	.login-form-panel {
-		background: rgb(var(--color-foreground));
-		box-shadow: 0 0 0 1px rgb(var(--color-border));
+		background: rgb(var(--color-background));
+		box-shadow: 0 0 0 1px var(--color-border);
 	}
 
 	.login-theme-toggle {
-		background: rgb(var(--color-foreground));
+		background: rgb(var(--color-background));
 	}
 
 	@keyframes initial-flashlight {
@@ -229,7 +229,7 @@
 						<span class="text-sm font-medium opacity-50">or</span>
 						<div class="h-px flex-1 bg-border"></div>
 					</div>
-					<Button variant="secondary" fullWidth class="lg-pd" onclick={googleLogin}>
+					<Button variant="outline" fullWidth class="lg-pd" onclick={googleLogin}>
 						<span class="flex items-center gap-2">
 							<Icon class="self-center" icon={googleIcon} width="28" height="28" />
 							<span class="flex flex-col items-start leading-tight">
