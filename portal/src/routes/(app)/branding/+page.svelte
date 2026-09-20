@@ -4,6 +4,7 @@
 	import aiSparklesIcon from '@iconify-icons/hugeicons/ai-sparkles';
 	import checkIcon from '@iconify-icons/tabler/check';
 	import colorSwatchIcon from '@iconify-icons/tabler/color-swatch';
+	import refreshIcon from '@iconify-icons/tabler/refresh';
 	import { callApi, logoURL } from '$lib/api';
 	import { defaultBrandingTheme, loadBranding } from '$lib/stores/branding.svelte';
 	import { generateThemeColors } from '$lib/theme-colors';
@@ -66,6 +67,10 @@
 		brandingTheme[mode] = generateThemeColors(brandingTheme[mode].primary, mode);
 	}
 
+	function resetPalette(mode: 'light' | 'dark') {
+		brandingTheme[mode] = structuredClone(defaultBrandingTheme[mode]);
+	}
+
 	async function saveBranding(event: SubmitEvent) {
 		event.preventDefault();
 		saving = true;
@@ -84,6 +89,17 @@
 		}
 	}
 </script>
+
+{#snippet paletteActions(mode: 'light' | 'dark')}
+	<div class="palette-actions">
+		<Button size="small" variant="primary-outline" onclick={() => generate(mode)}>
+			<span class="flex items-center gap-2"><Icon icon={aiSparklesIcon} width="18" height="18" />Generate</span>
+		</Button>
+		<Button size="small" variant="outline" onclick={() => resetPalette(mode)}>
+			<span class="flex items-center gap-2"><Icon icon={refreshIcon} width="18" height="18" />Reset</span>
+		</Button>
+	</div>
+{/snippet}
 
 <PageTitle title="Branding" />
 
@@ -144,7 +160,7 @@
 											bind:value={brandingTheme.light[field.key]}
 										/>
 										{#if field.key === 'primary'}
-											<div class="generate"><Button size="small" variant="primary-outline" onclick={() => generate('light')}><span class="flex items-center gap-2"><Icon icon={aiSparklesIcon} width="18" height="18" />Generate</span></Button></div>
+											{@render paletteActions('light')}
 										{/if}
 									</td>
 									<td>
@@ -154,7 +170,7 @@
 											bind:value={brandingTheme.dark[field.key]}
 										/>
 										{#if field.key === 'primary'}
-											<div class="generate"><Button size="small" variant="primary-outline" onclick={() => generate('dark')}><span class="flex items-center gap-2"><Icon icon={aiSparklesIcon} width="18" height="18" />Generate</span></Button></div>
+											{@render paletteActions('dark')}
 										{/if}
 									</td>
 								</tr>
@@ -268,12 +284,14 @@
 		border-bottom: 0;
 	}
 
-	.generate {
+	.palette-actions {
+		display: grid;
+		gap: 0.5rem;
 		width: 11rem;
 		margin-top: 0.5rem;
 	}
 
-	.generate :global(button) {
+	.palette-actions :global(button) {
 		width: 100%;
 		min-height: 2.75rem;
 		border-radius: 0.75rem;
