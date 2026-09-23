@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { onDestroy, tick } from 'svelte';
+	import { fade } from 'svelte/transition';
 	import Cropper from 'cropperjs';
 	import Icon from '@iconify/svelte';
 	import photoIcon from '@iconify-icons/tabler/photo';
@@ -120,10 +121,10 @@
 	onDestroy(destroyCropper);
 </script>
 
-<fieldset class="image-selector">
+<fieldset class="image-selector" class:current-state={Boolean(current) && !source && !editing}>
 	<legend class="selector-legend">{legend}</legend>
 	{#if current && !source && !editing}
-		<div class="current-avatar">
+		<div class="current-avatar" in:fade={{ duration: 180 }}>
 			<img class:round-image={legend.toLowerCase().startsWith('avatar')} src={current} alt={`Current ${legend.toLowerCase()}`} />
 			<div class="current-copy">
 				<p class="current-title">Current {legend.toLowerCase()}</p>
@@ -139,7 +140,7 @@
 			</div>
 		</div>
 	{:else}
-	<div class="selector-body" class:has-image={source}>
+	<div class="selector-body" class:has-image={source} in:fade={{ duration: 180 }}>
 	<div
 		role="group"
 		aria-label={`${legend} image upload`}
@@ -210,10 +211,17 @@
 
 <style>
 	.image-selector {
+		box-sizing: border-box;
+		width: 100%;
 		border: 0;
 		border-radius: 8px;
 		padding: 1rem;
 		box-shadow: 0 0 0 1px var(--color-border);
+		transition: width 0.2s ease;
+	}
+
+	.image-selector.current-state {
+		width: 50%;
 	}
 
 	.selector-legend {
@@ -250,6 +258,7 @@
 
 	.current-actions {
 		display: flex;
+		flex-direction: column;
 		gap: 0.5rem;
 	}
 
@@ -389,6 +398,12 @@
 
 	.cropper-host :global(cropper-shade.round-shade) {
 		border-radius: 50%;
+	}
+
+	@media (max-width: 640px) {
+		.image-selector.current-state {
+			width: 100%;
+		}
 	}
 
 	@media (max-width: 480px) {

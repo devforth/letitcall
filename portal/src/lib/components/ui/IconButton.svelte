@@ -33,7 +33,8 @@
 
 <style>
 	.icon-button {
-		color: rgb(var(--color-text));
+		background: rgb(var(--color-primary) / 0.12);
+		color: rgb(var(--color-primary));
 		--ring-color: rgb(var(--color-primary));
 	}
 
@@ -41,29 +42,13 @@
 		--tw-ring-color: var(--ring-color);
 	}
 
-	.tone-neutral:hover:not(:disabled),
-	.tone-neutral.filled:not(:disabled) {
-		background: rgb(var(--color-text) / 0.1);
-		color: rgb(var(--color-text));
+	.icon-button:hover:not(:disabled) {
+		background: rgb(var(--color-primary));
+		color: rgb(var(--color-background));
 	}
 
-	.tone-primary {
-		--ring-color: rgb(var(--success));
-	}
-
-	.tone-primary:hover:not(:disabled),
-	.tone-primary.filled:not(:disabled) {
-		background: rgb(var(--success) / 0.14);
-		color: rgb(var(--success));
-	}
-
-	.tone-danger {
-		--ring-color: rgb(var(--error));
-	}
-
-	.tone-danger:hover:not(:disabled),
-	.tone-danger.filled:not(:disabled) {
-		background: rgb(var(--error) / 0.14);
-		color: rgb(var(--error));
+	.icon-button:active:not(:disabled) {
+		background: color-mix(in srgb, rgb(var(--color-primary)), black 8%);
+		color: rgb(var(--color-background));
 	}
 </style>

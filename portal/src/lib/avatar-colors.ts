@@ -52,15 +52,15 @@ function contrast(first: RGB, second: RGB): number {
 	return (light + 0.05) / (dark + 0.05);
 }
 
-export function avatarColorsFromInitials(initials: string, text: string, contrastText: string) {
+export function avatarColorsFromInitials(initials: string, text: string, background: string) {
 	const hash = initialsHash(initials);
-	const background = hslToRGB(hash % 360, 0.55 + ((hash >>> 9) % 16) / 100, 0.42 + ((hash >>> 17) % 12) / 100);
-	const textColor = contrast(background, hexToRGB(text)) >= contrast(background, hexToRGB(contrastText))
+	const avatarBackground = hslToRGB(hash % 360, 0.55 + ((hash >>> 9) % 16) / 100, 0.42 + ((hash >>> 17) % 12) / 100);
+	const textColor = contrast(avatarBackground, hexToRGB(text)) >= contrast(avatarBackground, hexToRGB(background))
 		? 'rgb(var(--color-text))'
-		: 'rgb(var(--color-contrast-text))';
+		: 'rgb(var(--color-background))';
 
 	return {
-		background: `rgb(${background.red} ${background.green} ${background.blue})`,
+		background: `rgb(${avatarBackground.red} ${avatarBackground.green} ${avatarBackground.blue})`,
 		textColor
 	};
 }

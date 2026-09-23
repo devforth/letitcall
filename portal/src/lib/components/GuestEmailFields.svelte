@@ -82,8 +82,4 @@
 		border-radius: 10px;
 	}
 
-	.guest-email-row :global(.tone-danger:not(:disabled)) {
-		background: rgb(var(--error) / 0.14);
-		color: rgb(var(--error));
-	}
 </style>

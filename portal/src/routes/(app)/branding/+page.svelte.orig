@@ -20,8 +20,11 @@
 	import Input from '$lib/components/ui/Input.svelte';
 	import PageHeader from '$lib/components/PageHeader.svelte';
 	import PageTitle from '$lib/components/PageTitle.svelte';
+	import SearchableSelect from '$lib/components/ui/SearchableSelect.svelte';
 
 	const themeModes = ['light', 'dark'] as const;
+	const themeColorKeys = ['primary', 'text', 'background'] as const;
+	const themeColorNames = { primary: 'Brand', text: 'Text', background: 'Background' } as const;
 	const themePresets: Record<string, BrandingTheme> = {
 		ocean: {
 			light: { primary: '#1075A8', text: '#242F34', background: '#FFFFFF' },
@@ -71,10 +74,15 @@
 		{ value: 'coral', label: 'Coral' },
 		{ value: 'lime', label: 'Lime' }
 	];
+	const themePresetOptions = [
+		{ value: 'preset', label: 'Preset' },
+		{ value: 'custom', label: 'Custom' }
+	];
 
 	let name = $state('');
 	let logoPath = $state('');
 	let brandingTheme = $state<BrandingTheme>(structuredClone(defaultBrandingTheme));
+	let paletteMode = $state('custom');
 	let selectedThemePreset = $state('custom');
 	let imageSelector = $state<ImageSelector | null>(null);
 	let loading = $state(true);
@@ -96,6 +104,7 @@
 		logoPath = loaded.logoPath ?? '';
 		brandingTheme = structuredClone(loaded.theme);
 		selectedThemePreset = loaded.preset && themePresets[loaded.preset] ? loaded.preset : 'custom';
+		paletteMode = selectedThemePreset === 'custom' ? 'custom' : 'preset';
 	}
 
 	onMount(async () => {
@@ -118,6 +127,12 @@
 		useCustomPalette();
 	}
 
+	function choosePaletteMode(mode: string) {
+		paletteMode = mode;
+		if (mode === 'custom') selectedThemePreset = 'custom';
+		if (mode === 'preset' && selectedThemePreset === 'custom') chooseThemePreset('ocean');
+	}
+
 	function chooseThemePreset(preset: string) {
 		if (preset === 'custom') {
 			useCustomPalette();
@@ -125,10 +140,12 @@
 		}
 		brandingTheme = structuredClone(themePresets[preset]);
 		selectedThemePreset = preset;
+		paletteMode = 'preset';
 	}
 
 	function useCustomPalette() {
 		selectedThemePreset = 'custom';
+		paletteMode = 'custom';
 	}
 
 	async function saveBranding(event: SubmitEvent) {
@@ -160,9 +177,16 @@
 	>
 		<span class="preset-swatches" aria-hidden="true">
 			{#each themeModes as mode}
-				<span class="preset-swatch" style={`background: ${theme[mode].primary};`}></span>
-				<span class="preset-swatch" style={`background: ${theme[mode].text};`}></span>
-				<span class="preset-swatch" style={`background: ${theme[mode].background};`}></span>
+				<span class="preset-theme">
+					<span class="preset-theme-label">{mode === 'light' ? 'Light theme' : 'Dark theme'}</span>
+					<span class="preset-theme-swatches">
+						{#each themeColorKeys as color}
+							<span class="preset-color-swatch" style={`background: ${theme[mode][color]};`}>
+								<span class="preset-color-name">{themeColorNames[color]}</span>
+							</span>
+						{/each}
+					</span>
+				</span>
 			{/each}
 		</span>
 		<span class="preset-tile-label">
@@ -267,20 +291,33 @@
 
 			<fieldset class="section">
 				<legend>Color theme</legend>
-				<p class="section-description">Pick a palette, or edit the colors below to build your own; Generate creates an accessible palette from the brand color</p>
-				<div class="preset-grid" aria-label="Theme presets">
-					{@render presetTile('custom', 'Custom', brandingTheme)}
-					{#each themePresetTiles as preset (preset.value)}
-						{@render presetTile(preset.value, preset.label, themePresets[preset.value])}
-					{/each}
-					<p class="preset-hint">Editing colors below switches to Custom</p>
+				<p class="section-description">Choose a color swatch or enter a six-digit hex value; Generate creates an accessible palette from the brand color</p>
+				<div class="theme-preset">
+					<SearchableSelect
+						id="theme-preset"
+						label="Palette"
+						options={themePresetOptions}
+						bind:value={paletteMode}
+						clearable={false}
+						onchange={choosePaletteMode}
+						required
+					/>
 				</div>
+				{#if paletteMode === 'preset'}
+					<div class="preset-grid" aria-label="Theme presets">
+						{#each themePresetTiles as preset (preset.value)}
+							{@render presetTile(preset.value, preset.label, themePresets[preset.value])}
+						{/each}
+					</div>
+				{/if}
 
-				<div class="theme-cards">
-					{#each themeModes as mode}
-						{@render themeCard(mode)}
-					{/each}
-				</div>
+				{#if paletteMode === 'custom'}
+					<div class="theme-cards">
+						{#each themeModes as mode}
+							{@render themeCard(mode)}
+						{/each}
+					</div>
+				{/if}
 			</fieldset>
 
 			<div class="branding-submit">
@@ -349,10 +386,15 @@
 		color: rgb(var(--color-text) / 0.75);
 	}
 
+	.theme-preset {
+		width: 14rem;
+		margin-bottom: 1.625rem;
+	}
+
 	.preset-grid {
 		display: grid;
-		grid-template-columns: repeat(5, minmax(0, 1fr));
-		gap: 1rem;
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+		gap: 1.5rem;
 		margin-bottom: 1.625rem;
 	}
 
@@ -373,7 +415,6 @@
 		text-align: left;
 		cursor: pointer;
 		transition: box-shadow 0.18s;
-		overflow: hidden;
 	}
 
 	.preset-tile:hover,
@@ -388,27 +429,25 @@
 
 	.preset-swatches {
 		display: grid;
-		grid-template-columns: 2fr 1fr 1fr;
-		gap: 0.375rem;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		gap: 0.625rem;
 	}
 
-	.preset-swatch {
-		height: 1.5rem;
-		border-radius: 0.375rem;
-		box-shadow: inset 0 0 0 1px var(--color-border);
+	.preset-theme-swatches {
+		display: grid;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		gap: 0;
+		box-shadow: 0 0 0 1px var(--color-border);
+		border-radius: 0.675rem;
+		overflow: hidden;
 	}
 
-	.preset-hint {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		margin: 0;
-		padding: 0.625rem;
-		border: 1px dashed var(--color-border);
-		border-radius: 0.875rem;
-		color: rgb(var(--color-text) / 0.55);
-		font-size: 0.8125rem;
-		text-align: center;
+	.preset-theme-swatches > span {
+		height: 3rem;
+	}
+
+	.preset-theme-swatches > span:first-child {
+		grid-column: 1 / -1;
 	}
 
 	.preset-tile-label {
@@ -533,14 +572,11 @@
 		.theme-cards {
 			grid-template-columns: 1fr;
 		}
-
-		.preset-grid {
-			grid-template-columns: repeat(3, minmax(0, 1fr));
-		}
 	}
 
 	@media (max-width: 520px) {
-		.brand-name-field {
+		.brand-name-field,
+		.theme-preset {
 			width: 100%;
 		}
 

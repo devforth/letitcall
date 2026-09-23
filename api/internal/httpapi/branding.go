@@ -21,9 +21,10 @@ func (s *Server) getBranding(w http.ResponseWriter, _ *http.Request) {
 }
 
 type updateBrandingRequest struct {
-	Name  string               `json:"name"`
-	Logo  *string              `json:"logo"`
-	Theme *model.BrandingTheme `json:"theme"`
+	Name   string               `json:"name"`
+	Logo   *string              `json:"logo"`
+	Theme  *model.BrandingTheme `json:"theme"`
+	Preset *string              `json:"preset"`
 }
 
 func (s *Server) updateBranding(w http.ResponseWriter, r *http.Request) {
@@ -50,6 +51,9 @@ func (s *Server) updateBranding(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		branding.Theme = *request.Theme
+	}
+	if request.Preset != nil {
+		branding.Preset = *request.Preset
 	}
 	var logo content.Logo
 	if request.Logo != nil {
@@ -94,11 +98,9 @@ func normalizeBrandingTheme(theme *model.BrandingTheme) error {
 		value *string
 	}{
 		{"light primary", &theme.Light.Primary},
-		{"light primary contrast", &theme.Light.PrimaryContrast},
 		{"light text", &theme.Light.Text},
 		{"light background", &theme.Light.Background},
 		{"dark primary", &theme.Dark.Primary},
-		{"dark primary contrast", &theme.Dark.PrimaryContrast},
 		{"dark text", &theme.Dark.Text},
 		{"dark background", &theme.Dark.Background},
 	}

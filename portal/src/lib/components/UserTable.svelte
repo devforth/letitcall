@@ -223,14 +223,6 @@
 		border-bottom: 0;
 	}
 
-	.user-table tbody tr {
-		transition: background 0.15s ease;
-	}
-
-	.user-table tbody tr:hover {
-		background: rgb(var(--color-primary) / 0.045);
-	}
-
 	.empty-table-cell {
 		padding: 2.5rem 1rem;
 		color: rgb(var(--color-text) / 0.65);

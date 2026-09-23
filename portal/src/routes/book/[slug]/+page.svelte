@@ -720,7 +720,7 @@
 		color: rgb(var(--color-primary)) !important;
 	}
 	.slot-cell.is-selected {
-		color: rgb(var(--color-contrast-text)) !important;
+		color: rgb(var(--color-background)) !important;
 	}
 	/* Click/press feedback — same as the calendar day cells. */
 	.slot-cell:not(.is-busy):active {
@@ -789,7 +789,7 @@
 	.bk-dot.is-done {
 		background: rgb(var(--color-primary));
 		box-shadow: none;
-		color: rgb(var(--color-contrast-text));
+		color: rgb(var(--color-background));
 	}
 	.bk-dot.is-active {
 		box-shadow: inset 0 0 0 2px rgb(var(--color-primary));
@@ -832,7 +832,7 @@
 		}
 		.bk-step.is-active {
 		background: rgb(var(--color-primary));
-			color: rgb(var(--color-contrast-text));
+			color: rgb(var(--color-background));
 		}
 		.bk-step:not(:last-child)::after {
 			content: '';
@@ -901,11 +901,11 @@
 		.bk-step.is-done .bk-head-icon {
 			box-shadow: none;
 		background: rgb(var(--color-primary));
-			color: rgb(var(--color-contrast-text));
+			color: rgb(var(--color-background));
 		}
 		.bk-step.is-active .bk-head-icon {
 			box-shadow: none;
-			background: rgb(var(--color-contrast-text));
+			background: rgb(var(--color-background));
 		color: rgb(var(--color-primary));
 		}
 		.bk-head-text {

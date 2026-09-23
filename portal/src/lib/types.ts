@@ -33,11 +33,11 @@ export type Branding = {
 	name: string;
 	logoPath?: string;
 	theme: BrandingTheme;
+	preset?: string;
 };
 
 export type ThemeColors = {
 	primary: string;
-	primaryContrast: string;
 	text: string;
 	background: string;
 };

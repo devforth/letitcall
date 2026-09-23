@@ -41,7 +41,7 @@
 		return email.slice(0, 2).toUpperCase();
 	});
 	const initialsColors = $derived(
-		avatarColorsFromInitials(initials, branding.theme[$theme].text, branding.theme[$theme].primaryContrast)
+		avatarColorsFromInitials(initials, branding.theme[$theme].text, branding.theme[$theme].background)
 	);
 	const initialsStyle = $derived(
 		`background-color: ${initialsColors.background}; color: ${initialsColors.textColor};`

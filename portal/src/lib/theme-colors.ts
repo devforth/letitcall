@@ -1,4 +1,5 @@
 import type { ThemeColors } from '$lib/types';
+import { accessibleTextColor, contrastRatio, wcagAAContrast } from '$lib/color-contrast';
 
 type RGB = { red: number; green: number; blue: number };
 
@@ -42,28 +43,41 @@ function hslToHex(hue: number, saturation: number, lightness: number): string {
 	return `#${channels.map((channel) => Math.round((channel + match) * 255).toString(16).padStart(2, '0')).join('')}`.toUpperCase();
 }
 
-function luminance(hex: string): number {
-	const channels = Object.values(hexToRGB(hex)).map((channel) => {
-		const value = channel / 255;
-		return value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4;
-	});
-	return channels[0] * 0.2126 + channels[1] * 0.7152 + channels[2] * 0.0722;
+function grayHex(channel: number): string {
+	const hex = channel.toString(16).padStart(2, '0');
+	return `#${hex}${hex}${hex}`.toUpperCase();
 }
 
-function contrast(first: string, second: string): number {
-	const values = [luminance(first), luminance(second)].sort((a, b) => b - a);
-	return (values[0] + 0.05) / (values[1] + 0.05);
-}
+function lightBackground(primary: string): string {
+	if (contrastRatio(primary, '#FFFFFF') >= wcagAAContrast) return '#FFFFFF';
 
-function accessibleText(backgrounds: string[], preferred?: string): string {
-	if (preferred && backgrounds.every((background) => contrast(preferred, background) >= 4.5)) {
-		return preferred;
+	let passing = 0;
+	let failing = 255;
+	while (failing - passing > 1) {
+		const channel = Math.floor((passing + failing) / 2);
+		if (contrastRatio(primary, grayHex(channel)) >= wcagAAContrast) {
+			passing = channel;
+		} else {
+			failing = channel;
+		}
 	}
-	const choices = ['#000000', '#FFFFFF'];
-	return choices.sort((first, second) =>
-		Math.min(...backgrounds.map((background) => contrast(second, background))) -
-		Math.min(...backgrounds.map((background) => contrast(first, background)))
-	)[0];
+	return grayHex(passing);
+}
+
+function darkBackground(primary: string): string {
+	if (contrastRatio(primary, '#000000') >= wcagAAContrast) return '#000000';
+
+	let failing = 0;
+	let passing = 255;
+	while (passing - failing > 1) {
+		const channel = Math.floor((passing + failing) / 2);
+		if (contrastRatio(primary, grayHex(channel)) >= wcagAAContrast) {
+			passing = channel;
+		} else {
+			failing = channel;
+		}
+	}
+	return grayHex(passing);
 }
 
 function entropy(range: number): number {
@@ -73,19 +87,14 @@ function entropy(range: number): number {
 export function generateThemeColors(primary: string, mode: 'light' | 'dark'): ThemeColors {
 	const { hue, saturation } = rgbToHSL(hexToRGB(primary));
 	const shiftedHue = (offset: number) => (hue + offset + 360) % 360;
-	const neutralSaturation = Math.min(18, Math.max(4, saturation * 0.18)) * (1 + entropy(0.08));
-	const lightness = entropy(0.8);
-	const background = mode === 'light'
-		? hslToHex(shiftedHue(entropy(2)), neutralSaturation * 0.35, 99 + lightness * 0.35)
-		: hslToHex(shiftedHue(entropy(2)), neutralSaturation, 17 + lightness);
+	const background = mode === 'light' ? lightBackground(primary) : darkBackground(primary);
 	const preferredText = mode === 'light'
 		? hslToHex(shiftedHue(entropy(2)), Math.min(22, saturation * 0.22), 17 + entropy(0.8))
 		: hslToHex(shiftedHue(entropy(2)), Math.min(10, saturation * 0.1), 96 + entropy(0.8));
 
 	return {
 		primary: primary.toUpperCase(),
-		primaryContrast: accessibleText([primary]),
-		text: accessibleText([background], preferredText),
+		text: accessibleTextColor([background], preferredText),
 		background
 	};
 }

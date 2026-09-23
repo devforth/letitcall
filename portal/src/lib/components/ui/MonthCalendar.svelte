@@ -46,7 +46,7 @@
 		// raised "chips", the selection fills primary, unavailable days recede.
 		const base = 'relative isolate aspect-square w-full overflow-hidden rounded-[10px] text-sm font-bold transition duration-150';
 		if (selected === date)
-			return `${base} calendar-selected z-10 bg-[rgb(var(--color-background))] font-bold text-[rgb(var(--color-contrast-text))]`;
+			return `${base} calendar-selected z-10 bg-[rgb(var(--color-background))] font-bold text-[rgb(var(--color-background))]`;
 		if (date === today)
 			// Today stands out with a bold primary number (plus the dot marker).
 			// Only give it a chip background when it actually has bookable times.
@@ -63,7 +63,7 @@
 	<div class="flex items-center justify-between gap-3 rounded-t-xl bg-[rgb(var(--color-primary))] px-4 pt-2 pb-0">
 		{#key month}
 			<h2
-				class="calendar-label text-lg font-semibold text-[rgb(var(--color-contrast-text))]"
+				class="calendar-label text-lg font-semibold text-[rgb(var(--color-background))]"
 				class:calendar-label-next={monthDirection > 0}
 				class:calendar-label-previous={monthDirection < 0}
 			>
@@ -73,7 +73,7 @@
 		<div class="flex items-center gap-2">
 			<button
 				type="button"
-				class="group grid size-11 cursor-pointer place-items-center rounded-xl bg-transparent text-[rgb(var(--color-contrast-text))] transition-colors hover:bg-[rgb(var(--color-contrast-text)/0.15)] disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:bg-transparent"
+				class="group grid size-11 cursor-pointer place-items-center rounded-xl bg-transparent text-[rgb(var(--color-background))] transition-colors hover:bg-[rgb(var(--color-background)/0.15)] disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:bg-transparent"
 				disabled={month <= minimumMonth}
 				onclick={() => moveMonth(-1)}
 				aria-label="Previous month"
@@ -84,7 +84,7 @@
 			</button>
 			<button
 				type="button"
-				class="group grid size-11 cursor-pointer place-items-center rounded-xl bg-transparent text-[rgb(var(--color-contrast-text))] transition-colors hover:bg-[rgb(var(--color-contrast-text)/0.15)]"
+				class="group grid size-11 cursor-pointer place-items-center rounded-xl bg-transparent text-[rgb(var(--color-background))] transition-colors hover:bg-[rgb(var(--color-background)/0.15)]"
 				onclick={() => moveMonth(1)}
 				aria-label="Next month"
 			>
@@ -95,7 +95,7 @@
 		</div>
 	</div>
 
-	<div class="-mb-3 grid grid-cols-7 bg-[rgb(var(--color-primary))] px-1.5 pb-3 text-center text-sm font-medium text-[rgb(var(--color-contrast-text))]" aria-hidden="true">
+	<div class="-mb-3 grid grid-cols-7 bg-[rgb(var(--color-primary))] px-1.5 pb-3 text-center text-sm font-medium text-[rgb(var(--color-background))]" aria-hidden="true">
 		{#each ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] as weekday}
 			<span class="py-2">{weekday}</span>
 		{/each}

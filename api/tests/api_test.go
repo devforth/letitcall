@@ -193,13 +193,14 @@ func TestBrandingAPIsStoreAndServeLogo(t *testing.T) {
 	f := newFixture(t, false)
 	initial := expectStatus(t, f.request(http.MethodGet, "/api/branding", nil), http.StatusOK)
 	if !strings.Contains(string(initial), `"name":"Let It Call"`) ||
-		!strings.Contains(string(initial), `"light":{"primary":"#0284C7","primaryContrast":"#FFFFFF"`) ||
+		!strings.Contains(string(initial), `"light":{"primary":"#0284C7","text":"#646464"`) ||
 		!strings.Contains(string(initial), `"background":"#FFFFFF"`) ||
-		!strings.Contains(string(initial), `"dark":{"primary":"#0284C7","primaryContrast":"#FFFFFF"`) ||
+		!strings.Contains(string(initial), `"dark":{"primary":"#0284C7","text":"#FFFFFF"`) ||
 		!strings.Contains(string(initial), `"background":"#646464"`) ||
 		strings.Contains(string(initial), `"secondary"`) ||
 		strings.Contains(string(initial), `"shadow"`) ||
-		strings.Contains(string(initial), `"border"`) {
+		strings.Contains(string(initial), `"border"`) ||
+		strings.Contains(string(initial), `"primaryContrast"`) {
 		t.Fatalf("unexpected initial branding: %s", initial)
 	}
 	expectStatus(t, f.request(http.MethodPut, "/api/branding", map[string]string{"name": "DevForth"}), http.StatusUnauthorized)
@@ -208,11 +209,11 @@ func TestBrandingAPIsStoreAndServeLogo(t *testing.T) {
 	theme := model.DefaultBrandingTheme()
 	theme.Light.Primary = "#123abc"
 	updated := expectStatus(t, f.request(http.MethodPut, "/api/branding", map[string]any{
-		"name": "DevForth", "logo": jpegDataURL(t, 512, 512), "theme": theme,
+		"name": "DevForth", "logo": jpegDataURL(t, 512, 512), "preset": "ocean", "theme": theme,
 	}), http.StatusOK)
 	logoFilename := logoFilenameFromResponse(t, updated)
 	branding, err := f.store.GetBranding()
-	if err != nil || branding.Name != "DevForth" || branding.LogoPath != logoFilename || branding.Theme.Light.Primary != "#123ABC" {
+	if err != nil || branding.Name != "DevForth" || branding.LogoPath != logoFilename || branding.Preset != "ocean" || branding.Theme.Light.Primary != "#123ABC" {
 		t.Fatalf("branding was not stored: branding=%#v err=%v", branding, err)
 	}
 	if _, err := os.Stat(filepath.Join(f.dataPath, "branding.leveldb")); err != nil {
@@ -232,7 +233,7 @@ func TestBrandingAPIsStoreAndServeLogo(t *testing.T) {
 		t.Fatalf("public config did not include stored branding: %s", publicConfig)
 	}
 	publicBranding := expectStatus(t, f.request(http.MethodGet, "/api/branding", nil), http.StatusOK)
-	if !strings.Contains(string(publicBranding), `"primary":"#123ABC"`) {
+	if !strings.Contains(string(publicBranding), `"primary":"#123ABC"`) || !strings.Contains(string(publicBranding), `"preset":"ocean"`) {
 		t.Fatalf("public branding did not include stored theme: %s", publicBranding)
 	}
 

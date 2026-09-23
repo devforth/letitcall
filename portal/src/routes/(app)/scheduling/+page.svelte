@@ -196,7 +196,7 @@
 	}
 
 	.event-type-row:hover {
-		background: rgb(var(--color-primary) / 0.045);
+		background: color-mix(in srgb, var(--color-border) 10%, transparent);
 	}
 
 	.duration-chip {
@@ -217,9 +217,14 @@
 		flex-shrink: 0;
 		place-items: center;
 		border-radius: 10px;
-		background: rgb(var(--color-primary) / 0.14);
+		background: rgb(var(--color-primary) / 0.12);
 		color: rgb(var(--color-primary));
 		transition: background 0.15s ease, color 0.15s ease;
+	}
+
+	.event-icon-link:hover {
+		background: rgb(var(--color-primary));
+		color: rgb(var(--color-background));
 	}
 
 	.event-icon-link:focus-visible {

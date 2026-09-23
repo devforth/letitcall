@@ -531,12 +531,6 @@
 		right: 1.25rem;
 		width: 2.75rem !important;
 		height: 2.75rem !important;
-		background: rgb(var(--color-primary) / 0.12) !important;
-		color: rgb(var(--color-primary)) !important;
-	}
-
-	:global(.documentation-open-button:hover:not(:disabled)) {
-		background: rgb(var(--color-primary) / 0.2) !important;
 	}
 
 	.connection-card-title,
@@ -641,12 +635,6 @@
 	:global(.revoke-token-button) {
 		width: 2.75rem !important;
 		height: 2.75rem !important;
-		background: rgb(var(--error) / 0.14) !important;
-		color: rgb(var(--error)) !important;
-	}
-
-	:global(.revoke-token-button:hover:not(:disabled)) {
-		background: rgb(var(--error) / 0.2) !important;
 	}
 
 </style>

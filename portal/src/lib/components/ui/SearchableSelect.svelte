@@ -13,6 +13,7 @@
 		placeholder = 'Search…',
 		required = false,
 		disabled = false,
+		clearable = true,
 		icon,
 		emptyText = 'No matches',
 		placement = 'bottom',
@@ -26,6 +27,7 @@
 		placeholder?: string;
 		required?: boolean;
 		disabled?: boolean;
+		clearable?: boolean;
 		icon?: IconifyIcon;
 		/** Shown in place of the list when the query matches nothing. */
 		emptyText?: string;
@@ -121,7 +123,7 @@
 			<span class="lead-icon"><Icon {icon} width="18" height="18" /></span>
 		{/if}
 		<div class="actions">
-			{#if value}
+			{#if clearable && value}
 				<button
 					type="button"
 					class="clear-button"

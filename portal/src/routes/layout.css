@@ -34,7 +34,7 @@
 	.button-primary {
 		background: rgb(var(--color-primary)) !important;
 		border: 2px solid color-mix(in srgb, rgb(var(--color-primary)), black 3%) !important;
-		color: rgb(var(--color-contrast-text)) !important;
+		color: rgb(var(--color-background)) !important;
 		padding: 0.375rem 0.75rem !important;
 		min-height: auto !important;
 		font-size: 1rem !important;
@@ -190,7 +190,6 @@
 		--color-background: var(--branding-light-background, 255 255 255);
 		--color-text: var(--branding-light-text, 100 100 100);
 		--color-border: color-mix(in srgb, rgb(var(--color-text)) 36%, rgb(var(--color-background)));
-		--color-contrast-text: var(--branding-light-contrast-text, 255 255 255);
 		--color-primary: var(--branding-light-primary, 2 132 199);
 		--shadow: 0 0px 4vw rgb(0 0 0 / 0.15);
 		--shadow-small: 0 0px 1vw rgb(0 0 0 / 0.15);
@@ -208,14 +207,12 @@
 	--color-primary - brand color
 	--color-background - background color of the page and surfaces
 	--color-text - color of the text
-	--color-primary-contrast - color of the text on primary color
 	*/
 
 	html.dark {
 		/* Dark theme */
 		--color-background: var(--branding-dark-background, 100 100 100);
 		--color-text: var(--branding-dark-text, 255 255 255);
-		--color-contrast-text: var(--branding-dark-contrast-text, 255 255 255);
 		--color-border: color-mix(in srgb, rgb(var(--color-text)) 13%, rgb(var(--color-background)));
 		--color-primary: var(--branding-dark-primary, 2 132 199);
 		--shadow: 0 0px 4vw rgb(0 0 0 / 0.5);

@@ -121,7 +121,6 @@
 
 	.audit-log-table tbody tr {
 		border-bottom: 1px solid var(--color-border);
-		transition: background 0.15s ease;
 	}
 
 	.audit-log-table tbody tr:last-child {
@@ -130,14 +129,6 @@
 
 	.audit-log-table tbody tr.details-open {
 		border-bottom: 0;
-	}
-
-	.audit-log-table tbody tr:not(.details-open):hover,
-	.audit-log-table tbody tr.details-open:hover,
-	.audit-log-table tbody tr.details-open:hover + tr,
-	.audit-log-table tbody tr.details-open:has(+ tr:hover),
-	.audit-log-table tbody tr.details-open + tr:hover {
-		background: rgb(var(--color-primary) / 0.045);
 	}
 
 	.audit-log-table td {

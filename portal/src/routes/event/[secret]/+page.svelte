@@ -397,16 +397,6 @@
 		border-radius: 10px;
 	}
 
-	.event-manage-back :global(.tone-primary:not(:disabled)) {
-		background: rgb(var(--success) / 0.14);
-		color: rgb(var(--success));
-	}
-
-	/* The shared tone-primary hover matches its own resting tint, so lift it here. */
-	.event-manage-back :global(.icon-button:hover:not(:disabled)) {
-		background: rgb(var(--success) / 0.22);
-	}
-
 	.event-back-chevron {
 		display: block;
 		height: 1rem;
@@ -472,7 +462,7 @@
 	.event-cancel :global(.event-cancel-button) {
 		border-color: rgb(var(--error)) !important;
 		background: rgb(var(--error)) !important;
-		color: rgb(var(--color-contrast-text)) !important;
+		color: rgb(var(--color-background)) !important;
 	}
 
 	.event-cancel :global(.event-cancel-button svg) {

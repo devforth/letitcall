@@ -27,7 +27,7 @@
 	]);
 	const hostHighlightEnabled = $derived(hosts.length > 1);
 	const asideStyle =
-		'background: rgb(var(--color-primary)); color: rgb(var(--color-contrast-text)); box-shadow: 0 0 0 1px var(--color-border), var(--shadow-small);';
+		'background: rgb(var(--color-primary)); color: rgb(var(--color-background)); box-shadow: 0 0 0 1px var(--color-border), var(--shadow-small);';
 
 	function bookingDate(): string {
 		return new Intl.DateTimeFormat(undefined, {
@@ -138,9 +138,9 @@
 	{#if branding.name !== productName}
 		<p
 			class="absolute bottom-3 right-5 whitespace-nowrap text-xs font-normal sm:left-1/2 sm:right-auto sm:-translate-x-1/2"
-			style="color: rgb(var(--color-contrast-text) / 0.72);"
+			style="color: rgb(var(--color-background) / 0.72);"
 		>
-			Powered by <span class="font-medium" style="color: rgb(var(--color-contrast-text));">{productName}</span>
+			Powered by <span class="font-medium" style="color: rgb(var(--color-background));">{productName}</span>
 		</p>
 	{/if}
 </aside>
@@ -178,7 +178,7 @@
 		display: grid;
 		gap: 1.25rem;
 		margin-top: 2rem;
-		border-top: 1px solid rgb(var(--color-contrast-text) / 0.3);
+		border-top: 1px solid rgb(var(--color-background) / 0.3);
 		padding-top: 2rem;
 	}
 
@@ -191,7 +191,7 @@
 	}
 
 	.booking-detail-muted {
-		color: rgb(var(--color-contrast-text) / 0.75);
+		color: rgb(var(--color-background) / 0.75);
 	}
 
 	.booking-detail-list {
@@ -209,8 +209,8 @@
 
 	.theme-toggle-contrast :global(.toggle-switch) {
 		background: transparent !important;
-		border-color: rgb(var(--color-contrast-text)) !important;
-		color: rgb(var(--color-contrast-text)) !important;
+		border-color: rgb(var(--color-background)) !important;
+		color: rgb(var(--color-background)) !important;
 		box-shadow: none !important;
 	}
 
@@ -223,7 +223,7 @@
 
 		.theme-toggle-contrast :global(.toggle-switch) {
 			border: 0 !important;
-			box-shadow: inset 0 0 0 1px rgb(var(--color-contrast-text)) !important;
+			box-shadow: inset 0 0 0 1px rgb(var(--color-background)) !important;
 		}
 	}
 </style>

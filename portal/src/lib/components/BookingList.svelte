@@ -110,15 +110,16 @@
 <style>
 	.booking-row {
 		border-bottom: 1px solid var(--color-border);
-		transition: background 0.15s ease;
+		transition: color 0.15s ease;
+	}
+
+	.booking-action:hover {
+		background: rgb(var(--color-primary));
+		color: rgb(var(--color-background));
 	}
 
 	.booking-row:last-child {
 		border-bottom: 0;
-	}
-
-	.booking-row:hover {
-		background: rgb(var(--color-primary) / 0.045);
 	}
 
 	.status-chip {

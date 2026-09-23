@@ -46,15 +46,3 @@
 		<Icon icon={copyIcon} width="22" height="22" />
 	{/if}
 </IconButton>
-
-<style>
-	:global(.copy-button) {
-		background: rgb(var(--color-primary) / 0.12) !important;
-		color: rgb(var(--color-primary)) !important;
-	}
-
-	:global(.copy-button:hover:not(:disabled)) {
-		background: rgb(var(--color-primary) / 0.2) !important;
-	}
-
-</style>

@@ -6,13 +6,11 @@ const cacheKey = 'branding';
 export const defaultBrandingTheme: BrandingTheme = {
 	light: {
 		primary: '#0284C7',
-		primaryContrast: '#FFFFFF',
 		text: '#646464',
 		background: '#FFFFFF'
 	},
 	dark: {
 		primary: '#0284C7',
-		primaryContrast: '#FFFFFF',
 		text: '#FFFFFF',
 		background: '#646464'
 	}
@@ -21,12 +19,12 @@ export const defaultBrandingTheme: BrandingTheme = {
 export const branding = $state<Branding>({
 	name: 'Let It Call',
 	logoPath: '',
-	theme: structuredClone(defaultBrandingTheme)
+	theme: structuredClone(defaultBrandingTheme),
+	preset: 'custom'
 });
 
 const cssColorNames: (keyof ThemeColors)[] = [
 	'primary',
-	'primaryContrast',
 	'text',
 	'background'
 ];
@@ -38,9 +36,8 @@ function colorChannels(hex: string): string {
 function applyTheme(theme: BrandingTheme) {
 	for (const mode of ['light', 'dark'] as const) {
 		for (const name of cssColorNames) {
-			const cssName = name === 'primaryContrast' ? 'contrast-text' : name;
 			document.documentElement.style.setProperty(
-				`--branding-${mode}-${cssName}`,
+				`--branding-${mode}-${name}`,
 				colorChannels(theme[mode][name])
 			);
 		}
@@ -51,6 +48,7 @@ export function applyBranding(value: Branding) {
 	branding.name = value.name;
 	branding.logoPath = value.logoPath ?? '';
 	branding.theme = value.theme;
+	branding.preset = value.preset ?? 'custom';
 	localStorage.setItem(cacheKey, JSON.stringify(value));
 	applyTheme(value.theme);
 }
