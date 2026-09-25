@@ -229,7 +229,7 @@
 		background: rgb(var(--color-background));
 		font-size: 0.72rem;
 		font-weight: 400;
-		color: rgb(var(--color-primary));
+		color: rgb(var(--color-text));
 	}
 
 	.current-avatar {

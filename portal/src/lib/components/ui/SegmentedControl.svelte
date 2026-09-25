@@ -1,11 +1,12 @@
 <script lang="ts">
+	import Icon, { type IconifyIcon } from '@iconify/svelte';
 	let {
 		options,
 		value,
 		label,
 		onchange
 	}: {
-		options: { value: string; label: string; suffix?: string }[];
+		options: { value: string; label: string; icon?: IconifyIcon; suffix?: string }[];
 		value: string;
 		label: string;
 		onchange: (value: string) => void;
@@ -21,7 +22,8 @@
 			aria-pressed={value === option.value}
 			onclick={() => onchange(option.value)}
 		>
-			{option.label}
+			{#if option.icon}<Icon icon={option.icon} width="16" height="16" />{/if}
+			<span>{option.label}</span>
 			{#if option.suffix}<span class="segmented-control-suffix">{option.suffix}</span>{/if}
 		</button>
 	{/each}
@@ -36,15 +38,18 @@
 		border: 1px solid var(--color-border);
 		border-radius: 999px;
 		padding: 0.25rem;
-		background: rgb(var(--color-text) / 0.06);
+		background: rgb(var(--color-primary));
 	}
 
 	.segmented-control-option {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.35rem;
 		border: 0;
 		border-radius: 999px;
 		padding: 0.4rem 0.9rem;
 		background: transparent;
-		color: rgb(var(--color-primary));
+		color: rgb(var(--color-background));
 		font-size: 0.8125rem;
 		font-weight: 400;
 		cursor: pointer;
@@ -58,6 +63,7 @@
 
 	.segmented-control-option:hover:not(.on) {
 		background: rgb(var(--color-background));
+		color: rgb(var(--color-primary));
 		box-shadow: 0 1px 3px rgb(0 0 0 / 0.12);
 	}
 

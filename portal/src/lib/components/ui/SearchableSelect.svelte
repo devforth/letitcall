@@ -96,7 +96,7 @@
 </script>
 
 <div class="field" onfocusout={closeOptions}>
-	<div class="input-group" class:filled={!!text} class:has-icon={!!icon}>
+	<div class="input-group" class:filled={!!text} class:has-icon={!!icon} class:has-clear={clearable && !!value}>
 		<input
 			{id}
 			type="search"
@@ -197,15 +197,19 @@
 		background: rgb(var(--color-background));
 		border: 0;
 		border-radius: 10px;
-		padding: 10px 5rem 10px 12px;
+		padding: 10px 3rem 10px 12px;
 		min-height: 44px;
 		outline: none;
-		box-shadow: 0 0 0 1px var(--color-border);
+		box-shadow: 0 0 0 1px rgb(var(--color-primary));
 		transition: box-shadow 0.18s;
 	}
 
 	.has-icon .input {
 		padding-left: 40px;
+	}
+
+	.has-clear .input {
+		padding-right: 5rem;
 	}
 
 	.lead-icon {
@@ -263,7 +267,7 @@
 		top: 0;
 		left: 10px;
 		font-size: 0.72rem;
-		color: rgb(var(--color-primary));
+		color: rgb(var(--color-text));
 		opacity: 1;
 	}
 

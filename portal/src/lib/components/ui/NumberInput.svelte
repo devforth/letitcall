@@ -64,7 +64,7 @@
 		padding: 10px 12px;
 		outline: none;
 		background: rgb(var(--color-background));
-		box-shadow: 0 0 0 1px var(--color-border);
+		box-shadow: 0 0 0 1px rgb(var(--color-primary));
 		color: rgb(var(--color-text));
 		font: inherit;
 		font-size: 0.9rem;
@@ -110,7 +110,7 @@
 	.filled .float-label {
 		top: 0;
 		left: 10px;
-		color: rgb(var(--color-primary));
+		color: rgb(var(--color-text));
 		font-size: 0.72rem;
 		opacity: 1;
 	}

@@ -79,7 +79,7 @@
 		padding: 10px 12px 10px 40px;
 		resize: vertical;
 		outline: none;
-		box-shadow: 0 0 0 1px var(--color-border);
+		box-shadow: 0 0 0 1px rgb(var(--color-primary));
 		transition: box-shadow 0.18s;
 	}
 
@@ -116,7 +116,7 @@
 		top: 0;
 		left: 10px;
 		font-size: 0.72rem;
-		color: rgb(var(--color-primary));
+		color: rgb(var(--color-text));
 		opacity: 1;
 	}
 

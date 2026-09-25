@@ -14,12 +14,14 @@
 	import { generateThemeColors } from '$lib/theme-colors';
 	import type { Branding, BrandingTheme } from '$lib/types';
 	import { showSuccess } from '$lib/notifications';
+	import BookingPagePreview from '$lib/components/BookingPagePreview.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
 	import ColorPicker from '$lib/components/ui/ColorPicker.svelte';
 	import ImageSelector from '$lib/components/ImageSelector.svelte';
 	import Input from '$lib/components/ui/Input.svelte';
 	import PageHeader from '$lib/components/PageHeader.svelte';
 	import PageTitle from '$lib/components/PageTitle.svelte';
+	import SegmentedControl from '$lib/components/ui/SegmentedControl.svelte';
 
 	const themeModes = ['light', 'dark'] as const;
 	const themePresets: Record<string, BrandingTheme> = {
@@ -58,6 +60,10 @@
 		lime: {
 			light: { primary: '#4D6B00', text: '#253000', background: '#FFFFFF' },
 			dark: { primary: '#B7D957', text: '#F7FBEF', background: '#0D1204' }
+		},
+		graphite: {
+			light: { primary: '#374151', text: '#1F2937', background: '#FFFFFF' },
+			dark: { primary: '#D1D5DB', text: '#F9FAFB', background: '#111827' }
 		}
 	};
 	const themePresetTiles = [
@@ -69,13 +75,19 @@
 		{ value: 'indigo', label: 'Indigo' },
 		{ value: 'rose', label: 'Rose' },
 		{ value: 'coral', label: 'Coral' },
-		{ value: 'lime', label: 'Lime' }
+		{ value: 'lime', label: 'Lime' },
+		{ value: 'graphite', label: 'Graphite' }
+	];
+	const themeSourceOptions = [
+		{ value: 'custom', label: 'Custom' },
+		{ value: 'preset', label: 'Preset' }
 	];
 
 	let name = $state('');
 	let logoPath = $state('');
 	let brandingTheme = $state<BrandingTheme>(structuredClone(defaultBrandingTheme));
 	let selectedThemePreset = $state('custom');
+	let themeSource = $state('custom');
 	let imageSelector = $state<ImageSelector | null>(null);
 	let loading = $state(true);
 	let saving = $state(false);
@@ -96,6 +108,7 @@
 		logoPath = loaded.logoPath ?? '';
 		brandingTheme = structuredClone(loaded.theme);
 		selectedThemePreset = loaded.preset && themePresets[loaded.preset] ? loaded.preset : 'custom';
+		themeSource = selectedThemePreset === 'custom' ? 'custom' : 'preset';
 	}
 
 	onMount(async () => {
@@ -119,16 +132,19 @@
 	}
 
 	function chooseThemePreset(preset: string) {
-		if (preset === 'custom') {
-			useCustomPalette();
-			return;
-		}
 		brandingTheme = structuredClone(themePresets[preset]);
 		selectedThemePreset = preset;
+		themeSource = 'preset';
 	}
 
 	function useCustomPalette() {
 		selectedThemePreset = 'custom';
+		themeSource = 'custom';
+	}
+
+	function showThemeSource(source: string) {
+		themeSource = source;
+		if (source === 'custom') useCustomPalette();
 	}
 
 	async function saveBranding(event: SubmitEvent) {
@@ -268,18 +284,31 @@
 			<fieldset class="section">
 				<legend>Color theme</legend>
 				<p class="section-description">Pick a palette, or edit the colors below to build your own; Generate creates an accessible palette from the brand color</p>
-				<div class="preset-grid" aria-label="Theme presets">
-					{@render presetTile('custom', 'Custom', brandingTheme)}
-					{#each themePresetTiles as preset (preset.value)}
-						{@render presetTile(preset.value, preset.label, themePresets[preset.value])}
-					{/each}
-					<p class="preset-hint">Editing colors below switches to Custom</p>
+				<div class="theme-source-control">
+					<SegmentedControl
+						options={themeSourceOptions}
+						value={themeSource}
+						label="Color theme source"
+						onchange={showThemeSource}
+					/>
 				</div>
 
-				<div class="theme-cards">
-					{#each themeModes as mode}
-						{@render themeCard(mode)}
-					{/each}
+				{#if themeSource === 'preset'}
+					<div class="preset-grid" aria-label="Theme presets">
+						{#each themePresetTiles as preset (preset.value)}
+							{@render presetTile(preset.value, preset.label, themePresets[preset.value])}
+						{/each}
+					</div>
+				{:else}
+					<div class="theme-cards">
+						{#each themeModes as mode}
+							{@render themeCard(mode)}
+						{/each}
+					</div>
+				{/if}
+
+				<div class="booking-preview-wrap">
+					<BookingPagePreview brandName={name} theme={brandingTheme} />
 				</div>
 			</fieldset>
 
@@ -349,11 +378,19 @@
 		color: rgb(var(--color-text) / 0.75);
 	}
 
+	.theme-source-control {
+		display: flex;
+		margin-bottom: 1rem;
+	}
+
 	.preset-grid {
 		display: grid;
 		grid-template-columns: repeat(5, minmax(0, 1fr));
 		gap: 1rem;
-		margin-bottom: 1.625rem;
+	}
+
+	.booking-preview-wrap {
+		margin-top: 1.625rem;
 	}
 
 	.preset-tile {
@@ -396,19 +433,6 @@
 		height: 1.5rem;
 		border-radius: 0.375rem;
 		box-shadow: inset 0 0 0 1px var(--color-border);
-	}
-
-	.preset-hint {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		margin: 0;
-		padding: 0.625rem;
-		border: 1px dashed var(--color-border);
-		border-radius: 0.875rem;
-		color: rgb(var(--color-text) / 0.55);
-		font-size: 0.8125rem;
-		text-align: center;
 	}
 
 	.preset-tile-label {

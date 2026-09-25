@@ -1,5 +1,6 @@
 <script lang="ts">
 	import Icon from '@iconify/svelte';
+	import IconButton from '$lib/components/ui/IconButton.svelte';
 	import chevronLeftIcon from '@iconify-icons/tabler/chevron-left';
 	import chevronRightIcon from '@iconify-icons/tabler/chevron-right';
 
@@ -60,47 +61,38 @@
 </script>
 
 <div class="calendar-shell w-full overflow-hidden rounded-xl" aria-label={monthLabel}>
-	<div class="flex items-center justify-between gap-3 rounded-t-xl bg-[rgb(var(--color-primary))] px-4 pt-2 pb-0">
-		{#key month}
-			<h2
-				class="calendar-label text-lg font-semibold text-[rgb(var(--color-background))]"
-				class:calendar-label-next={monthDirection > 0}
-				class:calendar-label-previous={monthDirection < 0}
-			>
-				{monthLabel}
-			</h2>
-		{/key}
-		<div class="flex items-center gap-2">
-			<button
-				type="button"
-				class="group grid size-11 cursor-pointer place-items-center rounded-xl bg-transparent text-[rgb(var(--color-background))] transition-colors hover:bg-[rgb(var(--color-background)/0.15)] disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:bg-transparent"
-				disabled={month <= minimumMonth}
-				onclick={() => moveMonth(-1)}
-				aria-label="Previous month"
-			>
-				<span class="grid transition-transform duration-200 group-hover:-translate-x-0.5 group-active:-translate-x-1">
-					<Icon icon={chevronLeftIcon} width="20" height="20" />
-				</span>
-			</button>
-			<button
-				type="button"
-				class="group grid size-11 cursor-pointer place-items-center rounded-xl bg-transparent text-[rgb(var(--color-background))] transition-colors hover:bg-[rgb(var(--color-background)/0.15)]"
-				onclick={() => moveMonth(1)}
-				aria-label="Next month"
-			>
-				<span class="grid transition-transform duration-200 group-hover:translate-x-0.5 group-active:translate-x-1">
-					<Icon icon={chevronRightIcon} width="20" height="20" />
-				</span>
-			</button>
+	<div class="calendar-header rounded-t-xl border border-[var(--color-border)] bg-[rgb(var(--color-background))]">
+		<div class="flex items-center justify-between gap-3 px-4 pt-2 pb-0">
+			{#key month}
+				<h2
+					class="calendar-label text-lg font-semibold text-[rgb(var(--color-text))]"
+					class:calendar-label-next={monthDirection > 0}
+					class:calendar-label-previous={monthDirection < 0}
+				>
+					{monthLabel}
+				</h2>
+			{/key}
+			<div class="flex items-center gap-2">
+				<IconButton class="group" label="Previous month" disabled={month <= minimumMonth} onclick={() => moveMonth(-1)}>
+					<span class="grid transition-transform duration-200 group-hover:-translate-x-0.5 group-active:-translate-x-1">
+						<Icon icon={chevronLeftIcon} width="20" height="20" />
+					</span>
+				</IconButton>
+				<IconButton class="group" label="Next month" onclick={() => moveMonth(1)}>
+					<span class="grid transition-transform duration-200 group-hover:translate-x-0.5 group-active:translate-x-1">
+						<Icon icon={chevronRightIcon} width="20" height="20" />
+					</span>
+				</IconButton>
+			</div>
+		</div>
+
+		<div class="-mb-3 grid grid-cols-7 px-1.5 pb-5 text-center text-sm font-medium text-[rgb(var(--color-text))]" aria-hidden="true">
+			{#each ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] as weekday}
+				<span class="py-2">{weekday}</span>
+			{/each}
 		</div>
 	</div>
-
-	<div class="-mb-3 grid grid-cols-7 bg-[rgb(var(--color-primary))] px-1.5 pb-3 text-center text-sm font-medium text-[rgb(var(--color-background))]" aria-hidden="true">
-		{#each ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] as weekday}
-			<span class="py-2">{weekday}</span>
-		{/each}
-	</div>
-	<div class="calendar-dates overflow-hidden">
+	<div class="calendar-dates -mt-2 overflow-hidden">
 		{#key month}
 			<div
 				class:calendar-month-next={monthDirection > 0}
@@ -137,6 +129,7 @@
 	.calendar-dates {
 		border-radius: 0.75rem;
 		padding: 0.75rem;
+		border: 1px solid var(--color-border);
 		background: color-mix(in srgb, rgb(var(--color-text)) 5%, rgb(var(--color-background)));
 	}
 

@@ -28,6 +28,6 @@
 		{max}
 		{required}
 		{disabled}
-		class="min-h-11 w-full border-0 bg-white px-3 py-2 text-black shadow-[inset_0_0_0_1px_#000] outline-none transition focus:shadow-[inset_0_0_0_1px_#000] disabled:opacity-40"
+		class="min-h-11 w-full border-0 bg-white px-3 py-2 text-black shadow-[inset_0_0_0_1px_rgb(var(--color-primary))] outline-none transition focus:shadow-[inset_0_0_0_1px_rgb(var(--color-primary))] disabled:opacity-40"
 	/>
 </label>

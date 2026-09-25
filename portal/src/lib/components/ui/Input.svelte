@@ -189,7 +189,7 @@
 		padding: 10px 12px 10px 40px;
 		min-height: 44px;
 		outline: none;
-		box-shadow: 0 0 0 1px var(--color-border);
+		box-shadow: 0 0 0 1px rgb(var(--color-primary));
 		transition: box-shadow 0.18s;
 	}
 
@@ -240,7 +240,7 @@
 		top: 0;
 		left: 10px;
 		font-size: 0.72rem;
-		color: rgb(var(--color-primary));
+		color: rgb(var(--color-text));
 		opacity: 1;
 	}
 
@@ -269,7 +269,7 @@
 	.input:-webkit-autofill,
 	.input:-webkit-autofill:hover {
 		-webkit-box-shadow:
-			0 0 0 1px var(--color-border),
+			0 0 0 1px rgb(var(--color-primary)),
 			0 0 0 1000px rgb(var(--color-background)) inset !important;
 		-webkit-text-fill-color: rgb(var(--color-text)) !important;
 		caret-color: rgb(var(--color-text));

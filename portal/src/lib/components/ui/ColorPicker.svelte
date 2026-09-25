@@ -110,7 +110,7 @@
 		width: 3.25rem;
 		height: 3.25rem;
 		border-radius: 0.75rem;
-		box-shadow: inset 0 0 0 1px var(--color-border);
+		box-shadow: inset 0 0 0 1px rgb(var(--color-primary));
 		overflow: hidden;
 	}
 
@@ -132,7 +132,7 @@
 
 	.swatch:focus-within {
 		box-shadow:
-			inset 0 0 0 1px var(--color-border),
+			inset 0 0 0 1px rgb(var(--color-primary)),
 			0 0 0 3px rgb(var(--color-primary) / 0.25);
 	}
 
@@ -141,7 +141,7 @@
 		width: 100%;
 		height: 2.75rem;
 		padding: 0.5rem 0.75rem;
-		border: 1px solid var(--color-border);
+		border: 1px solid rgb(var(--color-primary));
 		border-radius: 0.75rem;
 		outline: none;
 		background: rgb(var(--color-background));

@@ -54,7 +54,7 @@
 		padding: 9px 12px 9px 40px;
 		outline: none;
 		background: rgb(var(--color-background));
-		box-shadow: 0 0 0 1px var(--color-border);
+		box-shadow: 0 0 0 1px rgb(var(--color-primary));
 		color: rgb(var(--color-text));
 		font: inherit;
 		font-size: 0.9rem;
@@ -72,7 +72,7 @@
 		transform: translateY(-50%);
 		padding: 0 4px;
 		background: rgb(var(--color-background));
-		color: rgb(var(--color-primary));
+		color: rgb(var(--color-text));
 		font-size: 0.72rem;
 		pointer-events: none;
 		transition: top 0.16s, left 0.16s, font-size 0.16s, color 0.16s, opacity 0.16s;

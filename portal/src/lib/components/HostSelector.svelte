@@ -70,7 +70,7 @@
 								value={option[0]}
 								checked={role(user.email) === option[0]}
 								onchange={() => setRole(user.email, option[0])}
-								class="size-4 appearance-none rounded-full border-2 border-[var(--color-border)] bg-[rgb(var(--color-background))] checked:border-[rgb(var(--color-primary))] checked:bg-[rgb(var(--color-primary))] checked:ring-2 checked:ring-[rgb(var(--color-background))] checked:ring-inset focus:outline-none focus:ring-2 focus:ring-[rgb(var(--color-primary))]/25 focus:ring-offset-2"
+								class="size-4 appearance-none rounded-full border-2 border-[rgb(var(--color-primary))] bg-[rgb(var(--color-background))] checked:border-[rgb(var(--color-primary))] checked:bg-[rgb(var(--color-primary))] checked:ring-2 checked:ring-[rgb(var(--color-background))] checked:ring-inset focus:outline-none focus:ring-2 focus:ring-[rgb(var(--color-primary))]/25 focus:ring-offset-2"
 							/>
 							{option[1]}
 						</label>

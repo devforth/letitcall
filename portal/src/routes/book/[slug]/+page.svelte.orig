@@ -881,8 +881,8 @@
 
 	.bk-progress-heading {
 		display: flex;
-		align-items: baseline;
-		gap: 0.375rem;
+		flex-direction: column;
+		gap: 0.25rem;
 		min-width: 0;
 	}
 
@@ -891,11 +891,6 @@
 		color: rgb(var(--color-text) / 0.6);
 		font-size: 1rem;
 		line-height: 1.25;
-	}
-
-	.bk-progress-heading p::before {
-		content: '·';
-		margin-right: 0.375rem;
 	}
 
 	.bk-title-short {
