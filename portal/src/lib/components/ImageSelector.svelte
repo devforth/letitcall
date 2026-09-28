@@ -34,18 +34,19 @@
 	} = $props();
 
 	let editing = $state(false);
+	let roundCrop = $derived(legend.toLowerCase().startsWith('avatar'));
 
-	const imageTemplate = `
+	let imageTemplate = $derived(`
 		<cropper-canvas background scale-step="0.1">
 			<cropper-image initial-center-size="cover" rotatable scalable translatable></cropper-image>
-			<cropper-shade class="round-shade" theme-color="rgba(0, 0, 0, 0.35)"></cropper-shade>
+			<cropper-shade class="${roundCrop ? 'round-shade' : ''}" theme-color="rgba(0, 0, 0, 0.35)"></cropper-shade>
 			<cropper-handle action="move" plain></cropper-handle>
-			<cropper-selection class="round-selection" initial-aspect-ratio="1" aspect-ratio="1" initial-coverage="0.8" theme-color="#000" outlined>
+			<cropper-selection class="${roundCrop ? 'round-selection' : ''}" initial-aspect-ratio="1" aspect-ratio="1" initial-coverage="0.8" theme-color="#000" outlined>
 				<cropper-crosshair centered theme-color="#000"></cropper-crosshair>
 				<cropper-handle action="move" plain></cropper-handle>
 			</cropper-selection>
 		</cropper-canvas>
-	`;
+	`);
 
 	let container = $state<HTMLDivElement>();
 	let image = $state<HTMLImageElement>();
@@ -140,6 +141,14 @@
 		cropper = null;
 	}
 
+	export function showCurrent() {
+		destroyCropper();
+		source = '';
+		originalData = '';
+		filename = '';
+		editing = false;
+	}
+
 	export async function exportImage(): Promise<ImageUpload | undefined> {
 		const selection = cropper?.getCropperSelection();
 		const cropperImage = cropper?.getCropperImage();
@@ -175,7 +184,7 @@
 	<legend class="selector-legend">{legend}</legend>
 	{#if current && !source && !editing}
 		<div class="current-avatar" in:fade={{ duration: 180 }}>
-			<img class:round-image={legend.toLowerCase().startsWith('avatar')} src={current} alt={`Current ${legend.toLowerCase()}`} />
+			<img class:round-image={roundCrop} src={current} alt={`Current ${legend.toLowerCase()}`} />
 			<div class="current-copy">
 				<p class="current-title">Current {legend.toLowerCase()}</p>
 				<p class="current-hint">Edit the image or remove it</p>

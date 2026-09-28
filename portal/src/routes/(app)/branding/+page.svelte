@@ -165,6 +165,7 @@
 				body: JSON.stringify({ name, theme: brandingTheme, preset: selectedThemePreset, ...(logo ? { logo } : {}) })
 			});
 			setForm(await loadBranding());
+			imageSelector?.showCurrent();
 			showSuccess('Branding applied');
 		} catch {
 			// callApi reports the error globally.
@@ -294,7 +295,7 @@
 
 			<fieldset class="section">
 				<legend>Color theme</legend>
-				<p class="section-description">Pick a palette, or edit the colors below to build your own; Generate creates an accessible palette from the brand color</p>
+				<p class="section-description">Choose a preset, customize your colors, or generate an accessible palette from your brand color</p>
 				<div class="theme-source-control">
 					<SegmentedControl
 						options={themeSourceOptions}
@@ -318,12 +319,6 @@
 					</div>
 				{/if}
 
-				<div class="booking-preview-wrap">
-					<BookingPagePreview brandName={name} theme={brandingTheme} />
-				</div>
-			</fieldset>
-
-			<div class="branding-submit">
 				{#if contrastFailures.length}
 					<div class="contrast-warning" role="alert">
 						<Icon icon={alertTriangleIcon} width="22" height="22" />
@@ -335,6 +330,13 @@
 						</div>
 					</div>
 				{/if}
+
+				<div class="booking-preview-wrap">
+					<BookingPagePreview brandName={name} theme={brandingTheme} />
+				</div>
+			</fieldset>
+
+			<div class="branding-submit">
 				{#if hasUnsavedChanges}
 					<div class="unsaved-panel-position">
 						<div class="unsaved-panel-boundary">
@@ -398,7 +400,7 @@
 	}
 
 	.section-description {
-		margin: 0.5rem 0 1rem;
+		margin: -0.25rem 0 1rem;
 		font-size: 1rem;
 		color: rgb(var(--color-text) / 0.75);
 	}
@@ -553,6 +555,7 @@
 		display: flex;
 		align-items: flex-start;
 		gap: 0.75rem;
+		margin-top: 1.625rem;
 		padding: 0.875rem 1rem;
 		border-radius: 8px;
 		background: rgb(var(--color-text) / 0.06);
@@ -584,7 +587,7 @@
 	.unsaved-panel-position {
 		position: fixed;
 		z-index: 30;
-		bottom: 1.5rem;
+		bottom: 0;
 		right: 0;
 		left: var(--sidebar-w, 0);
 		padding: 0 2rem;
@@ -601,31 +604,61 @@
 	}
 
 	.unsaved-panel {
+		position: relative;
+		isolation: isolate;
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
 		gap: 2rem;
-		width: min(30rem, 100%);
-		padding: 0.875rem 1rem;
-		border-radius: 8px;
-		background: color-mix(in srgb, rgb(var(--color-background)) 92%, rgb(var(--warning)) 8%);
-		box-shadow: 0 0 0 1px var(--color-border), 0 8px 24px rgb(var(--color-text) / 0.16);
+		width: min(34rem, 100%);
+		padding: 0.875rem 3rem;
+		transform: translateX(2rem);
 		pointer-events: auto;
+	}
+
+	.unsaved-panel::before,
+	.unsaved-panel::after {
+		position: absolute;
+		z-index: -2;
+		inset: 0;
+		clip-path: polygon(6% 0, 94% 0, 100% 100%, 0 100%);
+		clip-path: shape(
+			from 5% 12px,
+			curve to calc(6% + 12px) 0 with 6% 0,
+			line to calc(94% - 12px) 0,
+			curve to 95% 12px with 94% 0,
+			line to 100% 100%,
+			line to 0 100%,
+			close
+		);
+		content: '';
+	}
+
+	.unsaved-panel::before {
+		background: var(--color-border);
+		filter: drop-shadow(0 8px 24px rgb(var(--color-text) / 0.16));
+	}
+
+	.unsaved-panel::after {
+		z-index: -1;
+		inset: 2px;
+		background: rgb(var(--color-background));
 	}
 
 	.unsaved-title,
 	.unsaved-description {
 		margin: 0;
+		line-height: 1.2;
 	}
 
 	.unsaved-title {
-		font-size: 0.9375rem;
+		font-size: 1.125rem;
 		font-weight: 600;
 	}
 
 	.unsaved-description {
 		margin-top: 0.125rem;
-		font-size: 0.8125rem;
+		font-size: 1rem;
 		color: rgb(var(--color-text) / 0.72);
 	}
 
@@ -654,13 +687,22 @@
 
 	@media (max-width: 520px) {
 		.unsaved-panel-position {
-			bottom: 1rem;
+			bottom: 0;
 			left: 0;
 			padding: 0 1rem;
 		}
 
 		.unsaved-panel {
 			gap: 1rem;
+			width: 100%;
+			padding: 0.875rem 1rem;
+			transform: none;
+		}
+
+		.unsaved-panel::before,
+		.unsaved-panel::after {
+			clip-path: none;
+			border-radius: 12px 12px 0 0;
 		}
 
 		.unsaved-description {
