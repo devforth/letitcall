@@ -9,8 +9,8 @@ import (
 	"fmt"
 	"image"
 	"image/draw"
-	"image/jpeg"
-	_ "image/png"
+	_ "image/jpeg"
+	"image/png"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -44,25 +44,25 @@ func newSquareImages(dataPath, folder, noun string) (*squareImages, error) {
 }
 
 func (i *squareImages) Prepare(subject, dataURL string) (Image, error) {
-	prefix := "data:image/jpeg;base64,"
+	prefix := "data:image/png;base64,"
 	if !strings.HasPrefix(dataURL, prefix) {
-		return Image{}, fmt.Errorf("%s must be a JPEG image", i.noun)
+		return Image{}, fmt.Errorf("%s must be a PNG image", i.noun)
 	}
 	contents, err := base64.StdEncoding.Strict().DecodeString(strings.TrimPrefix(dataURL, prefix))
 	if err != nil {
-		return Image{}, fmt.Errorf("%s must be a valid JPEG image", i.noun)
+		return Image{}, fmt.Errorf("%s must be a valid PNG image", i.noun)
 	}
-	config, err := jpeg.DecodeConfig(bytes.NewReader(contents))
+	config, err := png.DecodeConfig(bytes.NewReader(contents))
 	if err != nil {
-		return Image{}, fmt.Errorf("%s must be a valid JPEG image", i.noun)
+		return Image{}, fmt.Errorf("%s must be a valid PNG image", i.noun)
 	}
 	if config.Width != squareImageSize || config.Height != squareImageSize {
 		return Image{}, fmt.Errorf("%s must be %d by %d pixels", i.noun, squareImageSize, squareImageSize)
 	}
-	if _, err := jpeg.Decode(bytes.NewReader(contents)); err != nil {
-		return Image{}, fmt.Errorf("%s must be a valid JPEG image", i.noun)
+	if _, err := png.Decode(bytes.NewReader(contents)); err != nil {
+		return Image{}, fmt.Errorf("%s must be a valid PNG image", i.noun)
 	}
-	return prepareImage(subject, contents, ".jpg")
+	return prepareImage(subject, contents, ".png")
 }
 
 func (i *squareImages) PrepareOriginal(subject, dataURL string) (Image, error) {
@@ -103,10 +103,10 @@ func (i *squareImages) PrepareImage(subject string, source image.Image) (Image, 
 	draw.Draw(resized, resized.Bounds(), image.White, image.Point{}, draw.Src)
 	xdraw.CatmullRom.Scale(resized, resized.Bounds(), source, crop, draw.Over, nil)
 	var contents bytes.Buffer
-	if err := jpeg.Encode(&contents, resized, &jpeg.Options{Quality: 90}); err != nil {
+	if err := png.Encode(&contents, resized); err != nil {
 		return Image{}, fmt.Errorf("encode %s: %w", i.noun, err)
 	}
-	return prepareImage(subject, contents.Bytes(), ".jpg")
+	return prepareImage(subject, contents.Bytes(), ".png")
 }
 
 func (i *squareImages) Write(image Image) error {

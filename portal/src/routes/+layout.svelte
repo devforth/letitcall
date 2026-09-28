@@ -1,12 +1,15 @@
 <script lang="ts">
 	import './layout.css';
+	import defaultFavicon from '$lib/assets/favicon.svg';
 	import NotificationStack from '$lib/components/NotificationStack.svelte';
 	import { theme } from '$lib/stores/theme';
-	import { loadBranding } from '$lib/stores/branding.svelte';
+	import { branding, loadBranding } from '$lib/stores/branding.svelte';
+	import { logoURL } from '$lib/api';
 	import PageTitle from '$lib/components/PageTitle.svelte';
 	import { onMount } from 'svelte';
 
 	let { children } = $props();
+	let favicon = $derived(branding.logoPath ? logoURL(branding.logoPath) : defaultFavicon);
 
 	onMount(() => {
 		// Apply theme to DOM on mount
@@ -24,6 +27,7 @@
 </script>
 
 <svelte:head>
+	<link rel="icon" href={favicon} />
 	<meta
 		name="description"
 		content="A focused scheduling application for teams and their calendars."

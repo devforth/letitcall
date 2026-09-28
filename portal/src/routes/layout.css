@@ -57,7 +57,7 @@
 		background: rgb(var(--color-background)) !important;
 		color: rgb(var(--color-primary)) !important;
 		font-weight: 500 !important;
-		box-shadow: 0 0 0 2px rgb(var(--color-primary)) !important;
+		box-shadow: inset 0 0 0 2px rgb(var(--color-primary)) !important;
 	}
 
 	.button-primary-outline.outlined-action-button {
@@ -79,10 +79,6 @@
 		padding: 0.5rem 1rem !important;
 		font-size: 1rem !important;
 		font-weight: 400 !important;
-	}
-
-	.button-primary-outline.modal-action-button {
-		box-shadow: inset 0 0 0 2px rgb(var(--color-primary)) !important;
 	}
 
 	.button-primary:hover:not(:disabled) {

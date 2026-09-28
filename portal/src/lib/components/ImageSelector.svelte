@@ -13,6 +13,7 @@
 	import trashIcon from '@iconify-icons/tabler/trash';
 	import Button from '$lib/components/ui/Button.svelte';
 	import IconButton from '$lib/components/ui/IconButton.svelte';
+	import { showError } from '$lib/notifications';
 	import type { ImageEditor, ImageUpload } from '$lib/types';
 
 	let {
@@ -57,15 +58,39 @@
 	let isDragOver = $state(false);
 
 	async function selectImage(event: Event) {
-		const file = (event.currentTarget as HTMLInputElement).files?.[0];
+		const input = event.currentTarget as HTMLInputElement;
+		const file = input.files?.[0];
 		if (!file) return;
 		await loadImage(file);
+		input.value = '';
 	}
 
 	async function loadImage(file: File) {
-		originalData = await readImage(file);
-		await openImage(originalData, file.name);
+		let png: string;
+		try {
+			png = await convertToPNG(await readImage(file));
+		} catch {
+			showError('Unsupported image format');
+			return;
+		}
+		originalData = png;
+		await openImage(png, file.name);
 		onchange?.();
+	}
+
+	function convertToPNG(source: string): Promise<string> {
+		return new Promise((resolve, reject) => {
+			const sourceImage = new Image();
+			sourceImage.onload = () => {
+				const canvas = document.createElement('canvas');
+				canvas.width = sourceImage.naturalWidth;
+				canvas.height = sourceImage.naturalHeight;
+				canvas.getContext('2d')!.drawImage(sourceImage, 0, 0);
+				resolve(canvas.toDataURL('image/png'));
+			};
+			sourceImage.onerror = reject;
+			sourceImage.src = source;
+		});
 	}
 
 	async function editImage() {
@@ -76,7 +101,7 @@
 			return;
 		}
 		const response = await fetch(current);
-		originalData = await readImage(await response.blob());
+		originalData = await convertToPNG(await readImage(await response.blob()));
 		await openImage(originalData, current);
 	}
 
@@ -153,17 +178,18 @@
 		const selection = cropper?.getCropperSelection();
 		const cropperImage = cropper?.getCropperImage();
 		if (!selection || !cropperImage) return;
-		// Backend requires a 512×512 JPEG; the round look is applied cosmetically in the UI.
+		// Backend requires a 512×512 PNG; the round look is applied cosmetically in the UI.
 		const canvas = await selection.$toCanvas({
 			width: 512,
 			height: 512,
 			beforeDraw: (context, output) => {
+				if (!roundCrop) return;
 				context.fillStyle = '#fff';
 				context.fillRect(0, 0, output.width, output.height);
 			}
 		});
 		return {
-			rendered: canvas.toDataURL('image/jpeg', 0.9),
+			rendered: canvas.toDataURL('image/png'),
 			...(originalData ? { original: originalData } : {}),
 			editor: {
 				transform: cropperImage.$getTransform() as ImageEditor['transform'],
@@ -215,7 +241,7 @@
 		</div>
 		<div class="upload-copy min-w-0">
 			<p class="upload-title">{source ? 'Replace selected image' : `Upload ${legend.toLowerCase()}`}</p>
-			<p class="upload-hint">Drop a JPG, PNG, or WebP here, or choose one to crop before saving</p>
+			<p class="upload-hint">Drop an image here, or choose one to crop before saving</p>
 		</div>
 		<label class="file-trigger button-primary-outline" for={id}>
 			<Icon icon={uploadIcon} width="17" height="17" />
@@ -224,7 +250,7 @@
 		<input
 			{id}
 			type="file"
-			accept="image/jpeg,image/png,image/webp"
+			accept="image/*"
 			onchange={selectImage}
 			class="sr-only"
 		/>

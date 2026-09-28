@@ -32,6 +32,9 @@ importers:
       '@iconify-icons/logos':
         specifier: ^1.2.36
         version: 1.2.36
+      '@iconify-icons/lucide':
+        specifier: ^2.0.13
+        version: 2.0.13
       '@iconify-icons/material-symbols':
         specifier: ^1.2.58
         version: 1.2.58
@@ -149,6 +152,9 @@ packages:
 
   '@iconify-icons/logos@1.2.36':
     resolution: {integrity: sha512-VzF299ubR4SKCZzLJoAawxeSjszJV1Q6y+4chCIPQuAafqfjtDjZxagZxL3ILKCsRLNN/z3zmCOOAL83tC8kLw==}
+
+  '@iconify-icons/lucide@2.0.13':
+    resolution: {integrity: sha512-FYWky/xMxSJZzvtPAW9pIQpk93R5QBvolL4DZh7VAtPlt+m21hQcDhhmGAxhXWgFE55kLVhZ9NIZ6R76rKTUxw==}
 
   '@iconify-icons/material-symbols@1.2.58':
     resolution: {integrity: sha512-v0ZfPXlmDcDPCejxhg5h2eHCEHClrpn+i44Ev766vkzPIEFRdgT+YK942KzyqBpH0RhKJfel4OZdL1DY1oa5Qg==}
@@ -861,6 +867,10 @@ snapshots:
       '@iconify/types': 2.0.0
 
   '@iconify-icons/logos@1.2.36':
+    dependencies:
+      '@iconify/types': 2.0.0
+
+  '@iconify-icons/lucide@2.0.13':
     dependencies:
       '@iconify/types': 2.0.0
 

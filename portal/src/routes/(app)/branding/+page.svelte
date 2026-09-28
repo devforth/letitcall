@@ -1,12 +1,13 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import Icon from '@iconify/svelte';
-	import aiSparklesIcon from '@iconify-icons/hugeicons/ai-sparkles';
 	import alertTriangleIcon from '@iconify-icons/tabler/alert-triangle';
 	import checkIcon from '@iconify-icons/tabler/check';
 	import colorSwatchIcon from '@iconify-icons/tabler/color-swatch';
 	import moonIcon from '@iconify-icons/tabler/moon';
 	import refreshIcon from '@iconify-icons/tabler/refresh';
+	import sparklesIcon from '@iconify-icons/tabler/sparkles';
+	import archiveRestoreIcon from '@iconify-icons/lucide/archive-restore';
 	import sunIcon from '@iconify-icons/tabler/sun';
 	import { callApi, logoURL } from '$lib/api';
 	import { contrastRatio, wcagAAContrast } from '$lib/color-contrast';
@@ -17,6 +18,7 @@
 	import BookingPagePreview from '$lib/components/BookingPagePreview.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
 	import ColorPicker from '$lib/components/ui/ColorPicker.svelte';
+	import IconButton from '$lib/components/ui/IconButton.svelte';
 	import ImageSelector from '$lib/components/ImageSelector.svelte';
 	import Input from '$lib/components/ui/Input.svelte';
 	import PageHeader from '$lib/components/PageHeader.svelte';
@@ -92,6 +94,7 @@
 	let imageSelector = $state<ImageSelector | null>(null);
 	let loading = $state(true);
 	let saving = $state(false);
+	let savedBranding: Branding;
 	let savedForm = $state('');
 	let logoChanged = $state(false);
 	let formState = $derived(JSON.stringify({ name, logoPath, theme: brandingTheme, preset: selectedThemePreset }));
@@ -109,6 +112,7 @@
 	});
 
 	function setForm(loaded: Branding) {
+		savedBranding = structuredClone(loaded);
 		name = loaded.name;
 		logoPath = loaded.logoPath ?? '';
 		logoSource = loaded.logoSource;
@@ -117,6 +121,11 @@
 		themeSource = 'custom';
 		logoChanged = false;
 		savedForm = JSON.stringify({ name, logoPath, theme: brandingTheme, preset: selectedThemePreset });
+	}
+
+	function revertChanges() {
+		setForm(savedBranding);
+		imageSelector?.showCurrent();
 	}
 
 	onMount(async () => {
@@ -204,16 +213,19 @@
 				<Icon icon={mode === 'light' ? sunIcon : moonIcon} width="20" height="20" />
 				<h3>{mode === 'light' ? 'Light theme' : 'Dark theme'}</h3>
 			</div>
-			<Button
-				size="small"
-				variant="primary-outline"
-				class="reset-default-button"
-				onclick={() => resetPalette(mode)}
-			>
-				<span class="flex items-center gap-2">
-					<Icon icon={refreshIcon} width="17" height="17" />Reset to default
-				</span>
-			</Button>
+			<div class="theme-card-actions">
+				<IconButton
+					filled
+					tone="primary"
+					label="Match text and background to the brand color"
+					onclick={() => generate(mode)}
+				>
+					<Icon icon={sparklesIcon} width="20" height="20" />
+				</IconButton>
+				<IconButton filled tone="primary" label={`Reset ${mode} theme to default`} onclick={() => resetPalette(mode)}>
+					<Icon icon={archiveRestoreIcon} width="20" height="20" />
+				</IconButton>
+			</div>
 		</header>
 
 		<div class="theme-card-body">
@@ -242,18 +254,6 @@
 					onchange={useCustomPalette}
 				/>
 			</div>
-
-			<Button
-				size="small"
-				variant="primary-outline"
-				fullWidth
-				class="generate-palette-button"
-				onclick={() => generate(mode)}
-			>
-				<span class="flex items-center gap-2">
-					<Icon icon={aiSparklesIcon} width="17" height="17" />Build matching palette
-				</span>
-			</Button>
 		</div>
 	</article>
 {/snippet}
@@ -341,16 +341,21 @@
 					<div class="unsaved-panel-position">
 						<div class="unsaved-panel-boundary">
 							<div class="unsaved-panel" aria-live="polite">
-								<div>
-									<p class="unsaved-title">You have unsaved changes</p>
-									<p class="unsaved-description">Apply them to update your branding.</p>
+								<p class="unsaved-title">You have unsaved changes</p>
+								<div class="unsaved-actions">
+									<Button variant="primary-outline" class="outlined-action-button" onclick={revertChanges} disabled={saving}>
+										<span class="flex items-center gap-2">
+											<Icon icon={refreshIcon} width="20" height="20" />
+											Revert
+										</span>
+									</Button>
+									<Button type="submit" rounded class="primary-action-button" disabled={saving}>
+										<span class="flex items-center gap-2">
+											<Icon icon={checkIcon} width="20" height="20" />
+											{saving ? 'Applying…' : 'Apply'}
+										</span>
+									</Button>
 								</div>
-								<Button type="submit" rounded class="primary-action-button" disabled={saving}>
-									<span class="flex items-center gap-2">
-										<Icon icon={checkIcon} width="20" height="20" />
-										{saving ? 'Applying…' : 'Apply'}
-									</span>
-								</Button>
 							</div>
 						</div>
 					</div>
@@ -484,7 +489,7 @@
 	.theme-card {
 		min-width: 0;
 		border: 1px solid var(--color-border);
-		border-radius: 1rem;
+		border-radius: 0.75rem;
 		background: rgb(var(--color-background));
 		overflow: hidden;
 	}
@@ -496,16 +501,21 @@
 	}
 
 	.theme-card-header {
-		min-height: 4.5rem;
+		min-height: 3.5rem;
 		justify-content: space-between;
 		gap: 1rem;
-		padding: 0.875rem 1.125rem;
+		padding: 0.5rem 1.125rem;
 		border-bottom: 1px solid var(--color-border);
 	}
 
 	.theme-card-title {
 		min-width: 0;
 		gap: 0.75rem;
+	}
+
+	.theme-card-actions {
+		display: flex;
+		gap: 0.5rem;
 	}
 
 	.theme-card-title :global(svg) {
@@ -517,18 +527,6 @@
 		margin: 0;
 		font-size: 1rem;
 		font-weight: 600;
-	}
-
-	.theme-card-header :global(.reset-default-button),
-	.theme-card-body :global(.generate-palette-button) {
-		min-height: 2.5rem !important;
-		padding: 0.375rem 1rem !important;
-		font-size: 0.875rem !important;
-		box-shadow: 0 0 0 1px var(--color-border) !important;
-	}
-
-	.theme-card-body :global(.generate-palette-button) {
-		margin-top: 0.5rem;
 	}
 
 	.theme-card-body {
@@ -608,9 +606,9 @@
 		isolation: isolate;
 		display: flex;
 		align-items: center;
-		justify-content: space-between;
-		gap: 2rem;
-		width: min(34rem, 100%);
+		gap: 1rem;
+		width: max-content;
+		max-width: 100%;
 		padding: 0.875rem 3rem;
 		transform: translateX(2rem);
 		pointer-events: auto;
@@ -645,24 +643,30 @@
 		background: rgb(var(--color-background));
 	}
 
-	.unsaved-title,
-	.unsaved-description {
+	.unsaved-title {
 		margin: 0;
 		line-height: 1.2;
-	}
-
-	.unsaved-title {
 		font-size: 1.125rem;
 		font-weight: 600;
 	}
 
-	.unsaved-description {
-		margin-top: 0.125rem;
-		font-size: 1rem;
-		color: rgb(var(--color-text) / 0.72);
+	.unsaved-actions {
+		display: flex;
+		flex: none;
+		gap: 0.5rem;
 	}
 
 	@media (max-width: 900px) {
+		.unsaved-panel {
+			align-items: stretch;
+			flex-direction: column;
+			gap: 0.75rem;
+		}
+
+		.unsaved-actions {
+			justify-content: flex-end;
+		}
+
 		.theme-cards {
 			grid-template-columns: 1fr;
 		}
@@ -705,20 +709,7 @@
 			border-radius: 12px 12px 0 0;
 		}
 
-		.unsaved-description {
-			display: none;
-		}
-
 		.brand-name-field {
-			width: 100%;
-		}
-
-		.theme-card-header {
-			align-items: flex-start;
-			flex-direction: column;
-		}
-
-		.theme-card-header :global(.reset-default-button) {
 			width: 100%;
 		}
 

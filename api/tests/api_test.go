@@ -223,17 +223,17 @@ func TestBrandingAPIsStoreAndServeLogo(t *testing.T) {
 		t.Fatalf("branding LevelDB was not created: %v", err)
 	}
 	stored, err := os.ReadFile(filepath.Join(f.dataPath, "content", "logos", logoFilename))
-	if err != nil || !bytes.Equal(stored, jpegBytes(t, 512, 512)) {
-		t.Fatalf("logo JPEG was not stored: %v", err)
+	if err != nil || !bytes.Equal(stored, pngBytes(t, 512, 512)) {
+		t.Fatalf("logo PNG was not stored: %v", err)
 	}
 	original, err := os.ReadFile(filepath.Join(f.dataPath, "content", "logos", logoSourceFilename))
-	if err != nil || !bytes.Equal(original, jpegBytes(t, 900, 600)) {
+	if err != nil || !bytes.Equal(original, pngBytes(t, 900, 600)) {
 		t.Fatalf("original logo was not stored: %v", err)
 	}
 	served := f.request(http.MethodGet, "/content/logos/"+logoFilename, nil)
 	servedBody := expectStatus(t, served, http.StatusOK)
-	if served.Header.Get("Content-Type") != "image/jpeg" || !bytes.Equal(servedBody, stored) {
-		t.Fatal("stored logo was not served as a JPEG")
+	if served.Header.Get("Content-Type") != "image/png" || !bytes.Equal(servedBody, stored) {
+		t.Fatal("stored logo was not served as a PNG")
 	}
 	publicConfig := expectStatus(t, f.request(http.MethodGet, "/api/config/public", nil), http.StatusOK)
 	if !strings.Contains(string(publicConfig), `"brandName":"DevForth"`) || !strings.Contains(string(publicConfig), `"logoPath":"`+logoFilename+`"`) {
@@ -441,13 +441,13 @@ func TestUserAvatarStorageAndServing(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := jpeg.Decode(bytes.NewReader(stored)); err != nil {
-		t.Fatalf("stored avatar is not a JPEG: %v", err)
+	if _, err := png.Decode(bytes.NewReader(stored)); err != nil {
+		t.Fatalf("stored avatar is not a PNG: %v", err)
 	}
 	served := f.request(http.MethodGet, "/content/avatars/"+avatarFilename, nil)
 	servedBody := expectStatus(t, served, http.StatusOK)
-	if served.Header.Get("Content-Type") != "image/jpeg" || !bytes.Equal(servedBody, stored) {
-		t.Fatal("avatar response did not serve the stored JPEG")
+	if served.Header.Get("Content-Type") != "image/png" || !bytes.Equal(servedBody, stored) {
+		t.Fatal("avatar response did not serve the stored PNG")
 	}
 	original, err := os.ReadFile(filepath.Join(f.dataPath, "content", "avatars", avatarSourceFilename))
 	if err != nil || !bytes.Equal(original, pngBytes(t, 960, 640)) {
@@ -1057,7 +1057,7 @@ func TestGoogleOAuthImportsMissingAvatar(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer stored.Close()
-	config, err := jpeg.DecodeConfig(stored)
+	config, err := png.DecodeConfig(stored)
 	if err != nil || config.Width != 512 || config.Height != 512 {
 		t.Fatalf("Google avatar was not normalized to 512 by 512: config=%#v err=%v", config, err)
 	}
@@ -1152,9 +1152,9 @@ func requireAvatarFilename(t *testing.T, filename, emailSlug string) string {
 	if !found {
 		t.Fatalf("avatar filename %q does not start with %q", filename, prefix)
 	}
-	token, found = strings.CutSuffix(token, ".jpg")
+	token, found = strings.CutSuffix(token, ".png")
 	if !found || len(token) != 8 {
-		t.Fatalf("avatar filename %q does not end with an eight-character token and .jpg", filename)
+		t.Fatalf("avatar filename %q does not end with an eight-character token and .png", filename)
 	}
 	if _, err := hex.DecodeString(token); err != nil {
 		t.Fatalf("avatar filename %q does not contain a hexadecimal token", filename)
@@ -1162,16 +1162,11 @@ func requireAvatarFilename(t *testing.T, filename, emailSlug string) string {
 	return filename
 }
 
-func jpegDataURL(t *testing.T, width, height int) string {
-	t.Helper()
-	return "data:image/jpeg;base64," + base64.StdEncoding.EncodeToString(jpegBytes(t, width, height))
-}
-
 func imageUpload(t *testing.T, width, height, originalWidth, originalHeight int, editor model.ImageEditor) map[string]any {
 	t.Helper()
 	return map[string]any{
-		"rendered": jpegDataURL(t, width, height),
-		"original": jpegDataURL(t, originalWidth, originalHeight),
+		"rendered": pngDataURL(t, width, height),
+		"original": pngDataURL(t, originalWidth, originalHeight),
 		"editor":   editor,
 	}
 }
@@ -1179,7 +1174,7 @@ func imageUpload(t *testing.T, width, height, originalWidth, originalHeight int,
 func imageEdit(t *testing.T, width, height int, editor model.ImageEditor) map[string]any {
 	t.Helper()
 	return map[string]any{
-		"rendered": jpegDataURL(t, width, height),
+		"rendered": pngDataURL(t, width, height),
 		"editor":   editor,
 	}
 }

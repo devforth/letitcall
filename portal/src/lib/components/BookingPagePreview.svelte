@@ -30,7 +30,7 @@
 	let month = $state('2026-10');
 	let selectedDate = $state('2026-10-15');
 	let selectedTime = $state('10:30 AM');
-	let previewVisible = $state(true);
+	let previewVisible = $state(false);
 	const colors = $derived(theme[mode]);
 	const displayName = $derived(brandName.trim() || 'Let It Call');
 	const selectedDateLabel = $derived(
@@ -64,7 +64,7 @@
 </script>
 
 <section aria-labelledby="booking-preview-title">
-	<div class="preview-shell overflow-hidden rounded-2xl">
+	<div class="preview-shell overflow-hidden rounded-xl">
 		<div class="preview-toolbar flex min-h-15 items-center justify-between gap-4 px-4 py-2.5" class:preview-hidden={!previewVisible}>
 			<div class="min-w-0">
 				<h3 id="booking-preview-title" class="m-0 text-base font-semibold">Booking page preview</h3>
@@ -93,7 +93,7 @@
 				<div>
 					<h4 class="m-0 text-3xl font-semibold tracking-tight">Discovery Call</h4>
 					<div class="mt-8 flex items-end">
-						<span class="avatar grid size-12 shrink-0 place-items-center rounded-full text-xs font-bold" aria-hidden="true">AM</span>
+						<span class="avatar grid size-10 shrink-0 place-items-center rounded-full text-xs font-bold" aria-hidden="true">AM</span>
 					</div>
 					<p class="mt-3 text-sm font-medium">Alex Morgan</p>
 					<p class="mt-7 flex items-center gap-2 text-sm font-medium">
