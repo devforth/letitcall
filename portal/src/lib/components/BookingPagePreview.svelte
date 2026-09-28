@@ -1,6 +1,7 @@
 <script lang="ts">
 	import Icon from '@iconify/svelte';
 	import arrowRightIcon from '@iconify-icons/tabler/arrow-right';
+	import calendarTimeIcon from '@iconify-icons/tabler/calendar-time';
 	import clockIcon from '@iconify-icons/tabler/clock';
 	import moonIcon from '@iconify-icons/tabler/moon';
 	import sunIcon from '@iconify-icons/tabler/sun';
@@ -109,14 +110,25 @@
 			</aside>
 
 			<div class="preview-main flex min-w-0 flex-col p-8">
-				<div class="flex items-start justify-between gap-4">
-					<div>
-						<h4 class="m-0 text-base font-bold">Date and Time</h4>
-						<p class="m-0 mt-0.5 text-xs opacity-60">Find a time that works</p>
+				<div class="preview-step-summary">
+					<span class="preview-step-icon preview-step-icon-desktop" aria-hidden="true">
+						<Icon icon={calendarTimeIcon} width="28" height="28" />
+					</span>
+					<div class="preview-step-heading">
+						<h4>
+							<span class="preview-step-icon preview-step-icon-mobile" aria-hidden="true">
+								<Icon icon={calendarTimeIcon} width="22" height="22" />
+							</span>
+							Date and Time
+						</h4>
+						<p>
+							<span class="preview-step-count-mobile">Step 1 of 3 · </span>
+							Choose a date and time that works best for you
+						</p>
 					</div>
-					<span class="text-xs opacity-60">Step 1 of 3</span>
+					<span class="preview-step-count">Step 1 of 3</span>
 				</div>
-				<div class="progress-bars mt-3 grid grid-cols-3 gap-1.5" aria-hidden="true">
+				<div class="progress-bars grid grid-cols-3 gap-1.5" aria-hidden="true">
 					<i class="current"></i><i></i><i></i>
 				</div>
 
@@ -217,8 +229,60 @@
 		color: rgb(var(--color-primary));
 	}
 
+	.preview-step-summary {
+		display: flex;
+		align-items: center;
+		gap: 0.75rem;
+	}
+
+	.preview-step-heading {
+		min-width: 0;
+	}
+
+	.preview-step-icon {
+		display: inline-flex;
+		flex: none;
+	}
+
+	.preview-step-icon-mobile,
+	.preview-step-count-mobile {
+		display: none;
+	}
+
+	.preview-step-heading h4 {
+		margin: 0;
+		font-size: 1.125rem;
+		font-weight: 600;
+		letter-spacing: -0.025em;
+		line-height: 1.25;
+	}
+
+	.preview-step-heading p {
+		margin: 0;
+		color: rgb(var(--color-text) / 0.65);
+		font-size: 0.75rem;
+		line-height: 1.25;
+	}
+
+	.preview-step-count {
+		align-self: flex-end;
+		margin-left: auto;
+		color: rgb(var(--color-text) / 0.65);
+		font-size: 0.75rem;
+		line-height: 1.25;
+		white-space: nowrap;
+	}
+
+	.preview-step-icon :global([stroke]) {
+		stroke-width: 1.5;
+	}
+
+	.progress-bars {
+		margin-top: 0.3rem;
+	}
+
 	.progress-bars i {
-		height: 0.3rem;
+		height: 0.125rem;
 		border-radius: 999px;
 		background: rgb(var(--color-text) / 0.12);
 	}
@@ -284,6 +348,29 @@
 			flex-direction: row;
 			align-items: end;
 			padding: 1.5rem;
+		}
+
+		.preview-step-icon-desktop,
+		.preview-step-count {
+			display: none;
+		}
+
+		.preview-step-heading h4 {
+			display: flex;
+			align-items: center;
+			gap: 0.4rem;
+		}
+
+		.preview-step-icon-mobile {
+			display: inline-flex;
+		}
+
+		.preview-step-icon-mobile :global([stroke]) {
+			stroke-width: 1.75;
+		}
+
+		.preview-step-count-mobile {
+			display: inline;
 		}
 	}
 

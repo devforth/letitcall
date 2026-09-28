@@ -108,7 +108,7 @@
 		logoPath = loaded.logoPath ?? '';
 		brandingTheme = structuredClone(loaded.theme);
 		selectedThemePreset = loaded.preset && themePresets[loaded.preset] ? loaded.preset : 'custom';
-		themeSource = selectedThemePreset === 'custom' ? 'custom' : 'preset';
+		themeSource = 'custom';
 	}
 
 	onMount(async () => {
@@ -242,7 +242,7 @@
 				onclick={() => generate(mode)}
 			>
 				<span class="flex items-center gap-2">
-					<Icon icon={aiSparklesIcon} width="17" height="17" />Generate palette
+					<Icon icon={aiSparklesIcon} width="17" height="17" />Build matching palette
 				</span>
 			</Button>
 		</div>
@@ -497,6 +497,11 @@
 		min-height: 2.5rem !important;
 		padding: 0.375rem 1rem !important;
 		font-size: 0.875rem !important;
+		box-shadow: 0 0 0 1px var(--color-border) !important;
+	}
+
+	.theme-card-body :global(.generate-palette-button) {
+		margin-top: 0.5rem;
 	}
 
 	.theme-card-body {
@@ -508,6 +513,10 @@
 	.supporting-colors {
 		display: grid;
 		gap: 0.875rem;
+		margin-top: 0.5rem;
+		margin-inline: -1.125rem;
+		padding: 0.875rem 1.125rem 0;
+		border-top: 1px solid var(--color-border);
 	}
 
 	.branding-submit {

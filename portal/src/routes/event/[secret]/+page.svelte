@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { page } from '$app/state';
+	import { replaceState } from '$app/navigation';
 	import { onMount, tick } from 'svelte';
 	import Icon from '@iconify/svelte';
 	import checkIcon from '@iconify-icons/tabler/check';
@@ -28,11 +29,13 @@
 	let canceling = $state(false);
 	let showCancelDialog = $state(false);
 	let view = $state<'summary' | 'edit' | 'cancel'>('summary');
+	let celebrate = $state(false);
 
 	const secret = $derived(page.params.secret!);
 	// Same weight the booking flow gives its Confirm tick.
 	const boldCheckIcon = { ...checkIcon, body: checkIcon.body.replace('stroke-width="2"', 'stroke-width="3"') };
-	const blockStyle ='background: rgb(var(--color-background)); box-shadow: var(--shadow-small);';
+	const blockStyle =
+		'background: rgb(var(--color-background)); border: 1px solid var(--color-border); box-shadow: 0 0 3vw var(--color-border);';
 	const reasonPresets = ['Schedule conflict', 'No longer needed', 'Booked by mistake', 'Rescheduling'];
 	// A preset owns the first line of the reason, so anything typed by hand survives
 	// switching between chips.
@@ -61,6 +64,9 @@
 	});
 
 	onMount(async () => {
+		celebrate = page.state.bookingCreated === true;
+		if (celebrate) replaceState('', {});
+
 		try {
 			const response = await callApi<{ booking: Booking; inviteeLimit: number | null; guestLimit: number | null; authenticated: boolean }>(
 				`/api/events/${encodeURIComponent(secret)}`
@@ -93,6 +99,7 @@
 
 	function syncViewWithHash() {
 		view = location.hash === '#event-details' ? 'edit' : location.hash === '#cancel-event' ? 'cancel' : 'summary';
+		if (view !== 'summary') celebrate = false;
 	}
 
 	function showSummary() {
@@ -199,6 +206,7 @@
 					</section>
 				{:else if view === 'summary'}
 					<BookingConfirmationView
+						{celebrate}
 						title={booking.title}
 						dateLabel={eventDateLabel}
 						timeLabel={eventTimeLabel}
@@ -211,8 +219,14 @@
 						editHref={`${appPath(`/event/${encodeURIComponent(secret)}`)}#event-details`}
 						cancelHref={`${appPath(`/event/${encodeURIComponent(secret)}`)}#cancel-event`}
 						newBookingHref={appPath(`/book/${encodeURIComponent(booking.eventSlug)}`)}
-						onedit={() => (view = 'edit')}
-						oncancel={() => (view = 'cancel')}
+						onedit={() => {
+							celebrate = false;
+							view = 'edit';
+						}}
+						oncancel={() => {
+							celebrate = false;
+							view = 'cancel';
+						}}
 					/>
 				{:else if view === 'edit'}
 					<header id="event-details" class="event-manage-header">

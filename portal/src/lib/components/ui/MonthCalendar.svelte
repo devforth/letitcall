@@ -116,7 +116,7 @@
 					>
 						{day}
 						{#if date === today}
-							<span class="pointer-events-none absolute bottom-1 left-1/2 size-1.5 -translate-x-1/2 rounded-full bg-current"></span>
+							<span class="calendar-today-dot pointer-events-none absolute bottom-1 left-1/2 -translate-x-1/2 rounded-full bg-current"></span>
 						{/if}
 					</button>
 				{/each}
@@ -182,6 +182,11 @@
 
 	.calendar-month {
 		animation: calendar-month-next 260ms cubic-bezier(0.22, 1, 0.36, 1);
+	}
+
+	.calendar-today-dot {
+		width: 10%;
+		aspect-ratio: 1;
 	}
 
 	.calendar-month-previous {

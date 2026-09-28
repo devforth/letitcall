@@ -189,7 +189,7 @@
 		/* Light theme (default) */
 		--color-background: var(--branding-light-background, 255 255 255);
 		--color-text: var(--branding-light-text, 100 100 100);
-		--color-border: color-mix(in srgb, rgb(var(--color-text)) 36%, rgb(var(--color-background)));
+		--color-border: color-mix(in srgb, rgb(var(--color-text)) 24%, rgb(var(--color-background)));
 		--color-primary: var(--branding-light-primary, 2 132 199);
 		--shadow: 0 0px 4vw rgb(0 0 0 / 0.15);
 		--shadow-small: 0 0px 1vw rgb(0 0 0 / 0.15);
@@ -213,7 +213,6 @@
 		/* Dark theme */
 		--color-background: var(--branding-dark-background, 100 100 100);
 		--color-text: var(--branding-dark-text, 255 255 255);
-		--color-border: color-mix(in srgb, rgb(var(--color-text)) 13%, rgb(var(--color-background)));
 		--color-primary: var(--branding-dark-primary, 2 132 199);
 		--shadow: 0 0px 4vw rgb(0 0 0 / 0.5);
 		--shadow-small: 0 0px 1vw rgb(0 0 0 / 0.2);

@@ -234,7 +234,9 @@
 			// the secret alone to stay on the origin the visitor is already using.
 			const secret = response.manageURL.split('/').pop()!;
 			// The spinner stays up until the event page takes over.
-			await goto(appPath(`/event/${encodeURIComponent(secret)}`));
+			await goto(appPath(`/event/${encodeURIComponent(secret)}`), {
+				state: { bookingCreated: true }
+			});
 		} catch {
 			// callApi reports the error globally.
 			saving = false;
@@ -357,12 +359,20 @@
 					{#if !booking}
 						<div class="bk-progress" class:bk-progress-with-heading={currentStep > 0}>
 							<div class="bk-progress-summary">
-								<div class="bk-progress-icon" aria-hidden="true">
+								<div class="bk-progress-icon-desktop" aria-hidden="true">
 									<Icon icon={bookingSteps[currentStep].icon} width="46" height="46" />
 								</div>
 								<div class="bk-progress-heading">
-									<h2>{bookingSteps[currentStep].title}</h2>
-									<p>{bookingSteps[currentStep].subtitle}</p>
+									<h2>
+										<span class="bk-progress-icon" aria-hidden="true">
+											<Icon icon={bookingSteps[currentStep].icon} width="34" height="34" />
+										</span>
+										{bookingSteps[currentStep].title}
+									</h2>
+									<p>
+										<span class="bk-progress-count-mobile">Step {currentStep + 1} of {bookingSteps.length} · </span>
+										{bookingSteps[currentStep].subtitle}
+									</p>
 								</div>
 								<p class="bk-progress-count">Step {currentStep + 1} of {bookingSteps.length}</p>
 							</div>
@@ -837,17 +847,25 @@
 	}
 
 	.bk-progress-icon {
+		display: none;
 		flex: none;
 		color: rgb(var(--color-text));
 	}
 
-	.bk-progress-icon :global(svg) {
+	.bk-progress-icon-desktop {
+		flex: none;
+		color: rgb(var(--color-text));
+	}
+
+	.bk-progress-icon :global(svg),
+	.bk-progress-icon-desktop :global(svg) {
 		margin: -4px -8px -8px;
 		transform: scale(0.95);
 		transform-origin: center;
 	}
 
-	.bk-progress-icon :global([stroke]) {
+	.bk-progress-icon :global([stroke]),
+	.bk-progress-icon-desktop :global([stroke]) {
 		stroke-width: 1.5;
 	}
 
@@ -878,6 +896,10 @@
 		font-size: 0.875rem;
 		line-height: 1.25;
 		white-space: nowrap;
+	}
+
+	.bk-progress-count-mobile {
+		display: none;
 	}
 
 	.bk-labels {
@@ -948,6 +970,38 @@
 	@media (max-width: 640px) {
 		.bk-progress {
 			margin-bottom: 1.5rem;
+		}
+	}
+
+	@media (max-width: 1023px) {
+		.bk-progress-icon-desktop {
+			display: none;
+		}
+
+		.bk-progress-heading h2 {
+			display: flex;
+			align-items: center;
+			gap: 0.625rem;
+		}
+
+		.bk-progress-icon {
+			display: inline-flex;
+		}
+
+		.bk-progress-icon :global(svg) {
+			margin: 0;
+		}
+
+		.bk-progress-icon :global([stroke]) {
+			stroke-width: 1.75;
+		}
+
+		.bk-progress-count {
+			display: none;
+		}
+
+		.bk-progress-count-mobile {
+			display: inline;
 		}
 	}
 </style>

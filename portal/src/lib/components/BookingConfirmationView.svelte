@@ -21,6 +21,7 @@
 		newBookingHref,
 		onedit,
 		oncancel,
+		celebrate = false,
 		reloadNewBooking = false
 	}: {
 		title: string;
@@ -37,20 +38,30 @@
 		newBookingHref: string;
 		onedit?: (event: MouseEvent) => void;
 		oncancel?: (event: MouseEvent) => void;
+		celebrate?: boolean;
 		reloadNewBooking?: boolean;
 	} = $props();
+
+	const bookingEventActionStyle =
+		'height: 2.75rem !important; min-height: 2.75rem !important; border-radius: 9999px !important;';
 </script>
 
 <section class="booking-confirmed" aria-labelledby="booking-confirmed-title">
-	<div class="booking-celebration" aria-hidden="true">
-		{#each Array(18) as _, index}
-			<span
-				style={`--x: ${4 + index * 5.4}%; --drift: ${(index % 5) - 2}rem; --fall: ${7 + (index % 4) * 1.25}rem; --turn: ${180 + (index % 7) * 55}deg; --delay: ${(index % 6) * 0.045}s;`}
-			></span>
-		{/each}
-	</div>
-	<BookingStatusHeading text="Booking confirmed" />
-	<BookingSubtitle id="booking-confirmed-title" text={`You’re booked for ${title}`} />
+	{#if celebrate}
+		<div class="booking-celebration" aria-hidden="true">
+			{#each Array(18) as _, index}
+				<span
+					style={`--x: ${4 + index * 5.4}%; --drift: ${(index % 5) - 2}rem; --fall: ${7 + (index % 4) * 1.25}rem; --turn: ${180 + (index % 7) * 55}deg; --delay: ${(index % 6) * 0.045}s;`}
+				></span>
+			{/each}
+		</div>
+	{/if}
+	<header class="booking-confirmed-header">
+		<div>
+			<BookingStatusHeading text="Booking confirmed" />
+			<BookingSubtitle id="booking-confirmed-title" text={`You’re booked for ${title}`} />
+		</div>
+	</header>
 	<BookingDetailsCard
 		{dateLabel}
 		{timeLabel}
@@ -63,8 +74,18 @@
 	/>
 	<div class="booking-confirmed-actions">
 		<div class="booking-event-actions">
-			<a class="booking-event-action booking-edit-action" href={editHref} onclick={onedit}><Icon icon={pencilIcon} width="22" height="22" />Edit event</a>
-			<a class="booking-event-action booking-cancel-action" href={cancelHref} onclick={oncancel}><Icon icon={xIcon} width="22" height="22" />Cancel event</a>
+			<a
+				class="booking-event-action button-primary-outline outlined-action-button"
+				style={`${bookingEventActionStyle} border: 2px solid rgb(var(--color-primary)) !important; box-shadow: none !important;`}
+				href={cancelHref}
+				onclick={oncancel}
+			><Icon icon={xIcon} width="22" height="22" />Cancel event</a>
+			<a
+				class="booking-event-action button-primary primary-action-button"
+				style={bookingEventActionStyle}
+				href={editHref}
+				onclick={onedit}
+			><Icon icon={pencilIcon} width="22" height="22" />Edit event</a>
 		</div>
 		{#if reloadNewBooking}
 			<a class="booking-new-link" href={newBookingHref} data-sveltekit-reload>Make another booking</a>
@@ -77,12 +98,21 @@
 <style>
 	.booking-confirmed {
 		position: relative;
+		display: flex;
+		flex: 1;
+		min-height: 0;
+		flex-direction: column;
 		isolation: isolate;
 	}
 
 	.booking-confirmed > :not(.booking-celebration) {
 		position: relative;
 		z-index: 1;
+	}
+
+	.booking-confirmed-header {
+		margin-top: -0.5rem;
+		padding: 0 0 1.25rem;
 	}
 
 	.booking-celebration {
@@ -138,13 +168,15 @@
 		align-items: center;
 		justify-content: space-between;
 		gap: 1rem;
-		margin-top: 1.5rem;
+		margin-top: auto;
+		padding-top: 1.5rem;
 	}
 
 	.booking-event-actions {
 		display: flex;
 		flex-wrap: wrap;
 		gap: 0.75rem;
+		order: 2;
 	}
 
 	.booking-event-action {
@@ -152,41 +184,22 @@
 		align-items: center;
 		justify-content: center;
 		gap: 0.5rem;
-		min-height: 3rem;
-		border-radius: 11px;
 		padding: 0.5rem 1rem;
 		font-size: 0.875rem;
 		font-weight: 600;
 		transition: background 0.2s ease, color 0.2s ease;
 	}
 
-	.booking-edit-action {
-		background: rgb(var(--color-primary) / 0.14);
-		color: rgb(var(--color-primary));
-	}
-
-	.booking-edit-action:hover {
-		background: rgb(var(--color-primary) / 0.2);
-	}
-
-	.booking-cancel-action {
-		background: rgb(var(--error) / 0.14);
-		color: rgb(var(--error));
-	}
-
-	.booking-cancel-action:hover {
-		background: rgb(var(--error) / 0.2);
-	}
-
 	.booking-new-link {
-		font-size: 0.875rem;
-		font-weight: 600;
+		order: 1;
+		font-size: 1rem;
+		font-weight: 500;
 		color: rgb(var(--color-primary));
-		text-decoration: underline;
 	}
 
 	.booking-new-link:hover {
-		text-decoration: none;
+		text-decoration: underline;
+		text-underline-offset: 0.25rem;
 	}
 
 	@media (prefers-reduced-motion: reduce) {

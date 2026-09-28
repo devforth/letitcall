@@ -110,7 +110,7 @@
 		width: 3.25rem;
 		height: 3.25rem;
 		border-radius: 0.75rem;
-		box-shadow: inset 0 0 0 1px rgb(var(--color-primary));
+		box-shadow: inset 0 0 0 1px var(--color-border);
 		overflow: hidden;
 	}
 
@@ -118,7 +118,7 @@
 		grid-column: 1 / -1;
 		grid-row: 2;
 		width: 100%;
-		height: 6.125rem;
+		height: 4.5rem;
 	}
 
 	.color-input {
@@ -141,7 +141,7 @@
 		width: 100%;
 		height: 2.75rem;
 		padding: 0.5rem 0.75rem;
-		border: 1px solid rgb(var(--color-primary));
+		border: 1px solid var(--color-border);
 		border-radius: 0.75rem;
 		outline: none;
 		background: rgb(var(--color-background));

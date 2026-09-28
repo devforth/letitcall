@@ -6,9 +6,10 @@
 
 <style>
 	.booking-status-heading {
-		font-size: var(--text-3xl);
-		font-weight: 400;
-		line-height: 1.25;
-		color: rgb(var(--color-primary));
+		color: rgb(var(--color-text));
+		font-size: clamp(1.625rem, 3vw, 2rem);
+		font-weight: 600;
+		letter-spacing: -0.025em;
+		line-height: 1.1;
 	}
 </style>

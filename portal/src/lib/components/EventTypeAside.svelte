@@ -129,7 +129,7 @@
 	{/if}
 	<!-- Mobile puts the brand row above the event name; from sm up it drops back to the
 	     foot of the aside where the "Powered by" line sits beneath it. -->
-	<div class="order-first flex items-center justify-between gap-4 pb-1 sm:order-none sm:mt-auto sm:pb-0 sm:pt-12">
+	<div class="order-first flex items-center justify-between gap-4 pb-1 sm:order-none sm:mt-auto sm:pb-4 sm:pt-12">
 		<p class="text-xl font-semibold">{branding.name}</p>
 		<div class="theme-toggle-contrast shrink-0">
 			<ThemeToggle />
