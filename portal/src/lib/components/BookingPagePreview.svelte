@@ -91,21 +91,20 @@
 		<div id="booking-preview-content" class="preview-page grid" style={previewStyle} hidden={!previewVisible} inert>
 			<aside class="preview-aside flex flex-col justify-between gap-8 p-8">
 				<div>
-					<h4 class="m-0 text-2xl font-semibold tracking-tight">Discovery Call</h4>
-					<div class="mt-8 flex items-center gap-3">
-						<span class="avatar grid size-14 shrink-0 place-items-center rounded-full text-sm font-bold" aria-hidden="true">AM</span>
-						<div>
-							<p class="m-0 text-sm font-semibold">Alex Morgan</p>
-							<span class="text-xs opacity-70">Product specialist</span>
-						</div>
+					<h4 class="m-0 text-3xl font-semibold tracking-tight">Discovery Call</h4>
+					<div class="mt-8 flex items-end">
+						<span class="avatar grid size-12 shrink-0 place-items-center rounded-full text-xs font-bold" aria-hidden="true">AM</span>
 					</div>
-					<p class="mt-7 flex items-center gap-2 text-sm font-semibold">
-						<Icon icon={clockIcon} width="18" height="18" />30 min
+					<p class="mt-3 text-sm font-medium">Alex Morgan</p>
+					<p class="mt-7 flex items-center gap-2 text-sm font-medium">
+						<Icon icon={clockIcon} width="22" height="22" />30 min
 					</p>
 				</div>
 				<div>
-					<p class="m-0 font-bold">{displayName}</p>
-					<span class="text-xs opacity-70">Powered by Let It Call</span>
+					<p class="m-0 text-xl font-semibold">{displayName}</p>
+					{#if displayName !== 'Let It Call'}
+						<span class="text-xs opacity-70">Powered by <strong>Let It Call</strong></span>
+					{/if}
 				</div>
 			</aside>
 
