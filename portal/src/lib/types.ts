@@ -4,6 +4,23 @@ export type SessionUser = {
 	timezone: string;
 	googleConnected: boolean;
 	avatarPath?: string;
+	avatarSource?: ImageSource;
+};
+
+export type ImageEditor = {
+	transform: [number, number, number, number, number, number];
+	selection: { x: number; y: number; width: number; height: number };
+};
+
+export type ImageSource = {
+	path: string;
+	editor: ImageEditor;
+};
+
+export type ImageUpload = {
+	rendered: string;
+	original?: string;
+	editor: ImageEditor;
 };
 
 export type ManagedUser = SessionUser & {
@@ -32,6 +49,7 @@ export type PublicConfig = {
 export type Branding = {
 	name: string;
 	logoPath?: string;
+	logoSource?: ImageSource;
 	theme: BrandingTheme;
 	preset?: string;
 };

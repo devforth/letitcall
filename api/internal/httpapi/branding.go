@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/letitcall/letitcall/api/internal/content"
 	"github.com/letitcall/letitcall/api/internal/model"
 )
 
@@ -22,7 +21,7 @@ func (s *Server) getBranding(w http.ResponseWriter, _ *http.Request) {
 
 type updateBrandingRequest struct {
 	Name   string               `json:"name"`
-	Logo   *string              `json:"logo"`
+	Logo   *imageUploadRequest  `json:"logo"`
 	Theme  *model.BrandingTheme `json:"theme"`
 	Preset *string              `json:"preset"`
 }
@@ -55,23 +54,22 @@ func (s *Server) updateBranding(w http.ResponseWriter, r *http.Request) {
 	if request.Preset != nil {
 		branding.Preset = *request.Preset
 	}
-	var logo content.Logo
+	var logo preparedImage
 	if request.Logo != nil {
-		logo, err = s.logos.Prepare(*request.Logo)
+		logo, err = prepareImageUpload(*request.Logo, branding.LogoSource, s.logos.Prepare, s.logos.PrepareOriginal)
 		if err != nil {
 			writeError(w, http.StatusBadRequest, err.Error())
 			return
 		}
-		branding.LogoPath = logo.Filename
-		if err := s.logos.Write(logo); err != nil {
+		branding.LogoPath = logo.rendered.Filename
+		branding.LogoSource = logo.source
+		if err := writePreparedImage(s.logos, logo); err != nil {
 			internalError(w, err, "store brand logo")
 			return
 		}
 	}
 	if err := s.store.PutBranding(branding); err != nil {
-		if logo.Filename != "" {
-			_ = s.logos.Remove(logo.Filename)
-		}
+		removePreparedImage(s.logos, logo)
 		internalError(w, err, "store branding")
 		return
 	}
@@ -84,9 +82,14 @@ func (s *Server) updateBranding(w http.ResponseWriter, r *http.Request) {
 		internalError(w, err, "record branding audit log")
 		return
 	}
-	if logo.Filename != "" && previousLogoFilename != "" {
+	if logo.rendered.Filename != "" && previousLogoFilename != "" {
 		if err := s.logos.Remove(previousLogoFilename); err != nil {
 			slog.Error("remove previous brand logo", "error", err, "filename", previousLogoFilename)
+		}
+	}
+	if logo.original.Filename != "" && previousBranding.LogoSource != nil {
+		if err := s.logos.Remove(previousBranding.LogoSource.Path); err != nil {
+			slog.Error("remove previous brand logo source", "error", err, "filename", previousBranding.LogoSource.Path)
 		}
 	}
 	writeJSON(w, http.StatusOK, map[string]any{"branding": branding})

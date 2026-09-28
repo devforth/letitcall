@@ -68,7 +68,7 @@
 		<div class="preview-toolbar flex min-h-15 items-center justify-between gap-4 px-4 py-2.5" class:preview-hidden={!previewVisible}>
 			<div class="min-w-0">
 				<h3 id="booking-preview-title" class="m-0 text-base font-semibold">Booking page preview</h3>
-				<p class="m-0 mt-1 text-xs opacity-60">Mocked event data · changes update before you apply</p>
+				<p class="m-0 mt-1 text-sm opacity-60">Mocked event data · changes update before you apply</p>
 			</div>
 			{#if previewVisible}
 				<SegmentedControl

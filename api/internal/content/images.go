@@ -17,6 +17,7 @@ import (
 	"strings"
 
 	xdraw "golang.org/x/image/draw"
+	_ "golang.org/x/image/webp"
 )
 
 const (
@@ -61,7 +62,29 @@ func (i *squareImages) Prepare(subject, dataURL string) (Image, error) {
 	if _, err := jpeg.Decode(bytes.NewReader(contents)); err != nil {
 		return Image{}, fmt.Errorf("%s must be a valid JPEG image", i.noun)
 	}
-	return prepareImage(subject, contents)
+	return prepareImage(subject, contents, ".jpg")
+}
+
+func (i *squareImages) PrepareOriginal(subject, dataURL string) (Image, error) {
+	formats := map[string]string{
+		"data:image/jpeg;base64,": ".jpg",
+		"data:image/png;base64,":  ".png",
+		"data:image/webp;base64,": ".webp",
+	}
+	for prefix, extension := range formats {
+		if !strings.HasPrefix(dataURL, prefix) {
+			continue
+		}
+		contents, err := base64.StdEncoding.Strict().DecodeString(strings.TrimPrefix(dataURL, prefix))
+		if err != nil {
+			return Image{}, fmt.Errorf("%s original must be a valid image", i.noun)
+		}
+		if _, _, err := image.Decode(bytes.NewReader(contents)); err != nil {
+			return Image{}, fmt.Errorf("%s original must be a valid image", i.noun)
+		}
+		return prepareImage(subject+"-original", contents, extension)
+	}
+	return Image{}, fmt.Errorf("%s original must be a JPEG, PNG, or WebP image", i.noun)
 }
 
 func (i *squareImages) PrepareImage(subject string, source image.Image) (Image, error) {
@@ -83,7 +106,7 @@ func (i *squareImages) PrepareImage(subject string, source image.Image) (Image, 
 	if err := jpeg.Encode(&contents, resized, &jpeg.Options{Quality: 90}); err != nil {
 		return Image{}, fmt.Errorf("encode %s: %w", i.noun, err)
 	}
-	return prepareImage(subject, contents.Bytes())
+	return prepareImage(subject, contents.Bytes(), ".jpg")
 }
 
 func (i *squareImages) Write(image Image) error {
@@ -124,13 +147,13 @@ func (i *squareImages) Remove(filename string) error {
 	return nil
 }
 
-func prepareImage(subject string, contents []byte) (Image, error) {
+func prepareImage(subject string, contents []byte, extension string) (Image, error) {
 	token := make([]byte, imageTokenBytes)
 	if _, err := rand.Read(token); err != nil {
 		return Image{}, fmt.Errorf("generate image token: %w", err)
 	}
 	return Image{
-		Filename: slugImageSubject(subject) + "-" + hex.EncodeToString(token) + ".jpg",
+		Filename: slugImageSubject(subject) + "-" + hex.EncodeToString(token) + extension,
 		contents: contents,
 	}, nil
 }
@@ -154,10 +177,11 @@ func slugImageSubject(subject string) string {
 }
 
 func validImageFilename(filename string) bool {
-	if len(filename) <= len(".jpg") || !strings.HasSuffix(filename, ".jpg") {
+	extension := filepath.Ext(filename)
+	if extension != ".jpg" && extension != ".png" && extension != ".webp" {
 		return false
 	}
-	for _, character := range strings.TrimSuffix(filename, ".jpg") {
+	for _, character := range strings.TrimSuffix(filename, extension) {
 		if !((character >= 'a' && character <= 'z') || (character >= '0' && character <= '9') || character == '.' || character == '-' || character == '_' || character == '+' || character == '~') {
 			return false
 		}

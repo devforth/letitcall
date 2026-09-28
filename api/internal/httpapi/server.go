@@ -350,7 +350,7 @@ func decodeJSON(w http.ResponseWriter, r *http.Request, destination any) error {
 		writeError(w, http.StatusUnsupportedMediaType, "Content-Type must be application/json")
 		return errors.New("invalid content type")
 	}
-	r.Body = http.MaxBytesReader(w, r.Body, 1<<20)
+	r.Body = http.MaxBytesReader(w, r.Body, 10<<20)
 	decoder := json.NewDecoder(r.Body)
 	decoder.DisallowUnknownFields()
 	if err := decoder.Decode(destination); err != nil {

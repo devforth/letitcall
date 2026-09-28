@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"image"
 	"image/jpeg"
+	"image/png"
 	"io"
 	"net/http"
 	"net/http/cookiejar"
@@ -208,20 +209,26 @@ func TestBrandingAPIsStoreAndServeLogo(t *testing.T) {
 
 	theme := model.DefaultBrandingTheme()
 	theme.Light.Primary = "#123abc"
+	logoEditor := testImageEditor(24)
 	updated := expectStatus(t, f.request(http.MethodPut, "/api/branding", map[string]any{
-		"name": "DevForth", "logo": jpegDataURL(t, 512, 512), "preset": "ocean", "theme": theme,
+		"name": "DevForth", "logo": imageUpload(t, 512, 512, 900, 600, logoEditor), "preset": "ocean", "theme": theme,
 	}), http.StatusOK)
 	logoFilename := logoFilenameFromResponse(t, updated)
 	branding, err := f.store.GetBranding()
-	if err != nil || branding.Name != "DevForth" || branding.LogoPath != logoFilename || branding.Preset != "ocean" || branding.Theme.Light.Primary != "#123ABC" {
+	if err != nil || branding.Name != "DevForth" || branding.LogoPath != logoFilename || branding.LogoSource == nil || branding.LogoSource.Editor != logoEditor || branding.Preset != "ocean" || branding.Theme.Light.Primary != "#123ABC" {
 		t.Fatalf("branding was not stored: branding=%#v err=%v", branding, err)
 	}
+	logoSourceFilename := branding.LogoSource.Path
 	if _, err := os.Stat(filepath.Join(f.dataPath, "branding.leveldb")); err != nil {
 		t.Fatalf("branding LevelDB was not created: %v", err)
 	}
 	stored, err := os.ReadFile(filepath.Join(f.dataPath, "content", "logos", logoFilename))
 	if err != nil || !bytes.Equal(stored, jpegBytes(t, 512, 512)) {
 		t.Fatalf("logo JPEG was not stored: %v", err)
+	}
+	original, err := os.ReadFile(filepath.Join(f.dataPath, "content", "logos", logoSourceFilename))
+	if err != nil || !bytes.Equal(original, jpegBytes(t, 900, 600)) {
+		t.Fatalf("original logo was not stored: %v", err)
 	}
 	served := f.request(http.MethodGet, "/content/logos/"+logoFilename, nil)
 	servedBody := expectStatus(t, served, http.StatusOK)
@@ -237,8 +244,9 @@ func TestBrandingAPIsStoreAndServeLogo(t *testing.T) {
 		t.Fatalf("public branding did not include stored theme: %s", publicBranding)
 	}
 
-	reuploaded := expectStatus(t, f.request(http.MethodPut, "/api/branding", map[string]string{
-		"name": "DevForth", "logo": jpegDataURL(t, 512, 512),
+	editedLogoEditor := testImageEditor(48)
+	reuploaded := expectStatus(t, f.request(http.MethodPut, "/api/branding", map[string]any{
+		"name": "DevForth", "logo": imageEdit(t, 512, 512, editedLogoEditor),
 	}), http.StatusOK)
 	secondLogoFilename := logoFilenameFromResponse(t, reuploaded)
 	if secondLogoFilename == logoFilename {
@@ -246,6 +254,13 @@ func TestBrandingAPIsStoreAndServeLogo(t *testing.T) {
 	}
 	if _, err := os.Stat(filepath.Join(f.dataPath, "content", "logos", logoFilename)); !os.IsNotExist(err) {
 		t.Fatalf("previous logo was not removed: %v", err)
+	}
+	branding, err = f.store.GetBranding()
+	if err != nil || branding.LogoSource == nil || branding.LogoSource.Path != logoSourceFilename || branding.LogoSource.Editor != editedLogoEditor {
+		t.Fatalf("logo source and editor were not preserved on edit: branding=%#v err=%v", branding, err)
+	}
+	if _, err := os.Stat(filepath.Join(f.dataPath, "content", "logos", logoSourceFilename)); err != nil {
+		t.Fatalf("original logo was removed during an edit: %v", err)
 	}
 	expectStatus(t, f.request(http.MethodGet, "/content/logos/not-a-logo.txt", nil), http.StatusNotFound)
 }
@@ -271,8 +286,8 @@ func TestBrandingAPIValidatesNameAndLogo(t *testing.T) {
 	f := newFixture(t, false)
 	expectStatus(t, f.login(adminEmail, adminPassword), http.StatusOK)
 	expectStatus(t, f.request(http.MethodPut, "/api/branding", map[string]string{"name": " "}), http.StatusBadRequest)
-	expectStatus(t, f.request(http.MethodPut, "/api/branding", map[string]string{
-		"name": "DevForth", "logo": jpegDataURL(t, 64, 64),
+	expectStatus(t, f.request(http.MethodPut, "/api/branding", map[string]any{
+		"name": "DevForth", "logo": imageUpload(t, 64, 64, 800, 600, testImageEditor(0)),
 	}), http.StatusBadRequest)
 	invalidTheme := model.DefaultBrandingTheme()
 	invalidTheme.Dark.Text = "white"
@@ -377,18 +392,26 @@ func TestUserManagementAPIs(t *testing.T) {
 	if !strings.Contains(string(profileUpdated), `"fullName":"Grace Hopper"`) {
 		t.Fatalf("unexpected profile update response: %s", profileUpdated)
 	}
-	updated := expectStatus(t, f.request(http.MethodPatch, "/api/users/member@example.com", map[string]string{"avatar": jpegDataURL(t, 512, 512)}), http.StatusOK)
+	updated := expectStatus(t, f.request(http.MethodPatch, "/api/users/member@example.com", map[string]any{"avatar": imageUpload(t, 512, 512, 800, 600, testImageEditor(12))}), http.StatusOK)
 	firstAvatarFilename := avatarFilenameFromResponse(t, updated, "member__example.com")
+	firstAvatarUser, err := f.store.GetUser("member@example.com")
+	if err != nil || firstAvatarUser.AvatarSource == nil {
+		t.Fatalf("avatar source was not stored: user=%#v err=%v", firstAvatarUser, err)
+	}
+	firstAvatarSourceFilename := firstAvatarUser.AvatarSource.Path
 	if _, err := os.Stat(filepath.Join(f.dataPath, "content", "avatars", firstAvatarFilename)); err != nil {
 		t.Fatalf("updated avatar file was not stored: %v", err)
 	}
-	reuploaded := expectStatus(t, f.request(http.MethodPatch, "/api/users/member@example.com", map[string]string{"avatar": jpegDataURL(t, 512, 512)}), http.StatusOK)
+	reuploaded := expectStatus(t, f.request(http.MethodPatch, "/api/users/member@example.com", map[string]any{"avatar": imageUpload(t, 512, 512, 700, 900, testImageEditor(18))}), http.StatusOK)
 	secondAvatarFilename := avatarFilenameFromResponse(t, reuploaded, "member__example.com")
 	if secondAvatarFilename == firstAvatarFilename {
 		t.Fatal("re-uploaded avatar reused the previous filename")
 	}
 	if _, err := os.Stat(filepath.Join(f.dataPath, "content", "avatars", firstAvatarFilename)); !os.IsNotExist(err) {
 		t.Fatalf("previous avatar file was not removed: %v", err)
+	}
+	if _, err := os.Stat(filepath.Join(f.dataPath, "content", "avatars", firstAvatarSourceFilename)); !os.IsNotExist(err) {
+		t.Fatalf("previous avatar source was not removed: %v", err)
 	}
 	if _, err := os.Stat(filepath.Join(f.dataPath, "content", "avatars", secondAvatarFilename)); err != nil {
 		t.Fatalf("re-uploaded avatar file was not stored: %v", err)
@@ -402,15 +425,18 @@ func TestUserManagementAPIs(t *testing.T) {
 func TestUserAvatarStorageAndServing(t *testing.T) {
 	f := newFixtureAtBasePath(t, false, "/team")
 	expectStatus(t, f.login(adminEmail, adminPassword), http.StatusOK)
-	avatar := jpegDataURL(t, 512, 512)
-	created := expectStatus(t, f.request(http.MethodPost, "/api/users", map[string]string{
-		"email": "member+calls@example.com", "password": "MemberPassword123!", "timezone": "UTC", "avatar": avatar,
+	editor := testImageEditor(30)
+	avatarUpload := imageUpload(t, 512, 512, 960, 640, editor)
+	avatarUpload["original"] = pngDataURL(t, 960, 640)
+	created := expectStatus(t, f.request(http.MethodPost, "/api/users", map[string]any{
+		"email": "member+calls@example.com", "password": "MemberPassword123!", "timezone": "UTC", "avatar": avatarUpload,
 	}), http.StatusCreated)
 	avatarFilename := avatarFilenameFromResponse(t, created, "member+calls__example.com")
 	user, err := f.store.GetUser("member+calls@example.com")
-	if err != nil || user.AvatarPath != avatarFilename {
+	if err != nil || user.AvatarPath != avatarFilename || user.AvatarSource == nil || user.AvatarSource.Editor != editor {
 		t.Fatalf("avatar filename was not stored on the user: user=%#v err=%v", user, err)
 	}
+	avatarSourceFilename := user.AvatarSource.Path
 	stored, err := os.ReadFile(filepath.Join(f.dataPath, "content", "avatars", avatarFilename))
 	if err != nil {
 		t.Fatal(err)
@@ -422,6 +448,25 @@ func TestUserAvatarStorageAndServing(t *testing.T) {
 	servedBody := expectStatus(t, served, http.StatusOK)
 	if served.Header.Get("Content-Type") != "image/jpeg" || !bytes.Equal(servedBody, stored) {
 		t.Fatal("avatar response did not serve the stored JPEG")
+	}
+	original, err := os.ReadFile(filepath.Join(f.dataPath, "content", "avatars", avatarSourceFilename))
+	if err != nil || !bytes.Equal(original, pngBytes(t, 960, 640)) {
+		t.Fatalf("original avatar was not stored: %v", err)
+	}
+	sourceResponse := f.request(http.MethodGet, "/content/avatars/"+avatarSourceFilename, nil)
+	if sourceResponse.Header.Get("Content-Type") != "image/png" || !bytes.Equal(expectStatus(t, sourceResponse, http.StatusOK), original) {
+		t.Fatal("original avatar was not served")
+	}
+	editedEditor := testImageEditor(36)
+	expectStatus(t, f.request(http.MethodPatch, "/api/users/member+calls@example.com", map[string]any{
+		"avatar": imageEdit(t, 512, 512, editedEditor),
+	}), http.StatusOK)
+	user, err = f.store.GetUser("member+calls@example.com")
+	if err != nil || user.AvatarSource == nil || user.AvatarSource.Path != avatarSourceFilename || user.AvatarSource.Editor != editedEditor {
+		t.Fatalf("avatar source and editor were not preserved on edit: user=%#v err=%v", user, err)
+	}
+	if preserved, err := os.ReadFile(filepath.Join(f.dataPath, "content", "avatars", avatarSourceFilename)); err != nil || !bytes.Equal(preserved, original) {
+		t.Fatalf("original avatar changed during an edit: %v", err)
 	}
 
 	expectStatus(t, f.request(http.MethodGet, "/content/avatars/not-an-avatar.txt", nil), http.StatusNotFound)
@@ -436,8 +481,8 @@ func TestUserAvatarStorageAndServing(t *testing.T) {
 func TestUserAvatarValidation(t *testing.T) {
 	f := newFixture(t, false)
 	expectStatus(t, f.login(adminEmail, adminPassword), http.StatusOK)
-	expectStatus(t, f.request(http.MethodPost, "/api/users", map[string]string{
-		"email": "member@example.com", "password": "MemberPassword123!", "timezone": "UTC", "avatar": jpegDataURL(t, 64, 64),
+	expectStatus(t, f.request(http.MethodPost, "/api/users", map[string]any{
+		"email": "member@example.com", "password": "MemberPassword123!", "timezone": "UTC", "avatar": imageUpload(t, 64, 64, 800, 600, testImageEditor(0)),
 	}), http.StatusBadRequest)
 	if _, err := f.store.GetUser("member@example.com"); err == nil {
 		t.Fatal("user was created with an invalid avatar")
@@ -1122,10 +1167,48 @@ func jpegDataURL(t *testing.T, width, height int) string {
 	return "data:image/jpeg;base64," + base64.StdEncoding.EncodeToString(jpegBytes(t, width, height))
 }
 
+func imageUpload(t *testing.T, width, height, originalWidth, originalHeight int, editor model.ImageEditor) map[string]any {
+	t.Helper()
+	return map[string]any{
+		"rendered": jpegDataURL(t, width, height),
+		"original": jpegDataURL(t, originalWidth, originalHeight),
+		"editor":   editor,
+	}
+}
+
+func imageEdit(t *testing.T, width, height int, editor model.ImageEditor) map[string]any {
+	t.Helper()
+	return map[string]any{
+		"rendered": jpegDataURL(t, width, height),
+		"editor":   editor,
+	}
+}
+
+func testImageEditor(offset float64) model.ImageEditor {
+	return model.ImageEditor{
+		Transform: [6]float64{1.25, 0, 0, 1.25, offset, 16},
+		Selection: model.ImageSelection{X: 40, Y: 32, Width: 280, Height: 280},
+	}
+}
+
 func jpegBytes(t *testing.T, width, height int) []byte {
 	t.Helper()
 	var encoded bytes.Buffer
 	if err := jpeg.Encode(&encoded, image.NewRGBA(image.Rect(0, 0, width, height)), &jpeg.Options{Quality: 90}); err != nil {
+		t.Fatal(err)
+	}
+	return encoded.Bytes()
+}
+
+func pngDataURL(t *testing.T, width, height int) string {
+	t.Helper()
+	return "data:image/png;base64," + base64.StdEncoding.EncodeToString(pngBytes(t, width, height))
+}
+
+func pngBytes(t *testing.T, width, height int) []byte {
+	t.Helper()
+	var encoded bytes.Buffer
+	if err := png.Encode(&encoded, image.NewRGBA(image.Rect(0, 0, width, height))); err != nil {
 		t.Fatal(err)
 	}
 	return encoded.Bytes()

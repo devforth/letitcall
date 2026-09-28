@@ -15,6 +15,23 @@ type BrandingTheme struct {
 	Dark  ThemeColors `json:"dark"`
 }
 
+type ImageSelection struct {
+	X      float64 `json:"x"`
+	Y      float64 `json:"y"`
+	Width  float64 `json:"width"`
+	Height float64 `json:"height"`
+}
+
+type ImageEditor struct {
+	Transform [6]float64     `json:"transform"`
+	Selection ImageSelection `json:"selection"`
+}
+
+type ImageSource struct {
+	Path   string      `json:"path"`
+	Editor ImageEditor `json:"editor"`
+}
+
 func DefaultBrandingTheme() BrandingTheme {
 	return BrandingTheme{
 		Light: ThemeColors{
@@ -31,32 +48,35 @@ func DefaultBrandingTheme() BrandingTheme {
 }
 
 type Branding struct {
-	Name     string        `json:"name"`
-	LogoPath string        `json:"logoPath,omitempty"`
-	Theme    BrandingTheme `json:"theme"`
-	Preset   string        `json:"preset,omitempty"`
+	Name       string        `json:"name"`
+	LogoPath   string        `json:"logoPath,omitempty"`
+	LogoSource *ImageSource  `json:"logoSource,omitempty"`
+	Theme      BrandingTheme `json:"theme"`
+	Preset     string        `json:"preset,omitempty"`
 }
 
 type User struct {
-	Email                string    `json:"email"`
-	FullName             string    `json:"fullName"`
-	PasswordHash         string    `json:"passwordHash"`
-	Timezone             string    `json:"timezone"`
-	AvatarPath           string    `json:"avatarPath,omitempty"`
-	GoogleConnected      bool      `json:"googleConnected"`
-	EncryptedGoogleToken string    `json:"encryptedGoogleToken,omitempty"`
-	CreatedAt            time.Time `json:"createdAt"`
-	UpdatedAt            time.Time `json:"updatedAt"`
+	Email                string       `json:"email"`
+	FullName             string       `json:"fullName"`
+	PasswordHash         string       `json:"passwordHash"`
+	Timezone             string       `json:"timezone"`
+	AvatarPath           string       `json:"avatarPath,omitempty"`
+	AvatarSource         *ImageSource `json:"avatarSource,omitempty"`
+	GoogleConnected      bool         `json:"googleConnected"`
+	EncryptedGoogleToken string       `json:"encryptedGoogleToken,omitempty"`
+	CreatedAt            time.Time    `json:"createdAt"`
+	UpdatedAt            time.Time    `json:"updatedAt"`
 }
 
 type PublicUser struct {
-	Email           string    `json:"email"`
-	FullName        string    `json:"fullName"`
-	Timezone        string    `json:"timezone"`
-	AvatarPath      string    `json:"avatarPath,omitempty"`
-	GoogleConnected bool      `json:"googleConnected"`
-	CreatedAt       time.Time `json:"createdAt"`
-	UpdatedAt       time.Time `json:"updatedAt"`
+	Email           string       `json:"email"`
+	FullName        string       `json:"fullName"`
+	Timezone        string       `json:"timezone"`
+	AvatarPath      string       `json:"avatarPath,omitempty"`
+	AvatarSource    *ImageSource `json:"avatarSource,omitempty"`
+	GoogleConnected bool         `json:"googleConnected"`
+	CreatedAt       time.Time    `json:"createdAt"`
+	UpdatedAt       time.Time    `json:"updatedAt"`
 }
 
 func (u User) Public() PublicUser {
@@ -65,6 +85,7 @@ func (u User) Public() PublicUser {
 		FullName:        u.FullName,
 		Timezone:        u.Timezone,
 		AvatarPath:      u.AvatarPath,
+		AvatarSource:    u.AvatarSource,
 		GoogleConnected: u.GoogleConnected,
 		CreatedAt:       u.CreatedAt,
 		UpdatedAt:       u.UpdatedAt,

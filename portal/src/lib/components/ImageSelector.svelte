@@ -13,13 +13,25 @@
 	import trashIcon from '@iconify-icons/tabler/trash';
 	import Button from '$lib/components/ui/Button.svelte';
 	import IconButton from '$lib/components/ui/IconButton.svelte';
+	import type { ImageEditor, ImageUpload } from '$lib/types';
 
 	let {
 		id,
 		legend,
 		current = '',
+		original = '',
+		editor,
+		onchange,
 		ondelete
-	}: { id: string; legend: string; current?: string; ondelete?: () => void } = $props();
+	}: {
+		id: string;
+		legend: string;
+		current?: string;
+		original?: string;
+		editor?: ImageEditor;
+		onchange?: () => void;
+		ondelete?: () => void;
+	} = $props();
 
 	let editing = $state(false);
 
@@ -39,6 +51,7 @@
 	let image = $state<HTMLImageElement>();
 	let cropper: Cropper | null = null;
 	let source = $state('');
+	let originalData = $state('');
 	let filename = $state('');
 	let isDragOver = $state(false);
 
@@ -49,22 +62,47 @@
 	}
 
 	async function loadImage(file: File) {
-		await openImage(URL.createObjectURL(file), file.name);
+		originalData = await readImage(file);
+		await openImage(originalData, file.name);
+		onchange?.();
 	}
 
 	async function editImage() {
 		editing = true;
-		await openImage(current, current);
+		if (original) {
+			originalData = '';
+			await openImage(original, original, editor);
+			return;
+		}
+		const response = await fetch(current);
+		originalData = await readImage(await response.blob());
+		await openImage(originalData, current);
 	}
 
-	async function openImage(imageSource: string, imageName: string) {
+	function readImage(blob: Blob): Promise<string> {
+		return new Promise((resolve) => {
+			const reader = new FileReader();
+			reader.onload = () => resolve(reader.result as string);
+			reader.readAsDataURL(blob);
+		});
+	}
+
+	async function openImage(imageSource: string, imageName: string, savedEditor?: ImageEditor) {
 		destroyCropper();
 		source = imageSource;
 		filename = imageName;
 		await tick();
 		if (!container || !image) return;
 		cropper = new Cropper(image, { container, template: imageTemplate });
-		await cropper.getCropperImage()?.$ready();
+		const cropperImage = cropper.getCropperImage();
+		await cropperImage?.$ready();
+		if (cropperImage && savedEditor) {
+			cropperImage.$setTransform(savedEditor.transform);
+			const selection = savedEditor.selection;
+			cropper.getCropperSelection()?.$change(selection.x, selection.y, selection.width, selection.height);
+		}
+		cropperImage?.addEventListener('transform', () => onchange?.());
+		cropper.getCropperSelection()?.addEventListener('change', () => onchange?.());
 	}
 
 	function dragOver(event: DragEvent) {
@@ -100,12 +138,12 @@
 	function destroyCropper() {
 		cropper?.destroy();
 		cropper = null;
-		if (source) URL.revokeObjectURL(source);
 	}
 
-	export async function exportImage(): Promise<string> {
+	export async function exportImage(): Promise<ImageUpload | undefined> {
 		const selection = cropper?.getCropperSelection();
-		if (!selection) return '';
+		const cropperImage = cropper?.getCropperImage();
+		if (!selection || !cropperImage) return;
 		// Backend requires a 512×512 JPEG; the round look is applied cosmetically in the UI.
 		const canvas = await selection.$toCanvas({
 			width: 512,
@@ -115,7 +153,19 @@
 				context.fillRect(0, 0, output.width, output.height);
 			}
 		});
-		return canvas.toDataURL('image/jpeg', 0.9);
+		return {
+			rendered: canvas.toDataURL('image/jpeg', 0.9),
+			...(originalData ? { original: originalData } : {}),
+			editor: {
+				transform: cropperImage.$getTransform() as ImageEditor['transform'],
+				selection: {
+					x: selection.x,
+					y: selection.y,
+					width: selection.width,
+					height: selection.height
+				}
+			}
+		};
 	}
 
 	onDestroy(destroyCropper);

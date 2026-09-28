@@ -12,7 +12,7 @@
 	import { contrastRatio, wcagAAContrast } from '$lib/color-contrast';
 	import { defaultBrandingTheme, loadBranding } from '$lib/stores/branding.svelte';
 	import { generateThemeColors } from '$lib/theme-colors';
-	import type { Branding, BrandingTheme } from '$lib/types';
+	import type { Branding, BrandingTheme, ImageSource } from '$lib/types';
 	import { showSuccess } from '$lib/notifications';
 	import BookingPagePreview from '$lib/components/BookingPagePreview.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
@@ -85,12 +85,17 @@
 
 	let name = $state('');
 	let logoPath = $state('');
+	let logoSource = $state<ImageSource>();
 	let brandingTheme = $state<BrandingTheme>(structuredClone(defaultBrandingTheme));
 	let selectedThemePreset = $state('custom');
 	let themeSource = $state('custom');
 	let imageSelector = $state<ImageSelector | null>(null);
 	let loading = $state(true);
 	let saving = $state(false);
+	let savedForm = $state('');
+	let logoChanged = $state(false);
+	let formState = $derived(JSON.stringify({ name, logoPath, theme: brandingTheme, preset: selectedThemePreset }));
+	let hasUnsavedChanges = $derived(logoChanged || formState !== savedForm);
 	let contrastFailures = $derived.by(() => {
 		return (['light', 'dark'] as const).flatMap((mode) => {
 			const colors = brandingTheme[mode];
@@ -106,9 +111,12 @@
 	function setForm(loaded: Branding) {
 		name = loaded.name;
 		logoPath = loaded.logoPath ?? '';
+		logoSource = loaded.logoSource;
 		brandingTheme = structuredClone(loaded.theme);
 		selectedThemePreset = loaded.preset && themePresets[loaded.preset] ? loaded.preset : 'custom';
 		themeSource = 'custom';
+		logoChanged = false;
+		savedForm = JSON.stringify({ name, logoPath, theme: brandingTheme, preset: selectedThemePreset });
 	}
 
 	onMount(async () => {
@@ -264,7 +272,7 @@
 	{#if loading}
 		<p class="loading-panel p-6 text-sm">Loading branding…</p>
 	{:else}
-		<form class="branding-form" onsubmit={saveBranding}>
+		<form class="branding-form" class:has-unsaved-changes={hasUnsavedChanges} onsubmit={saveBranding}>
 			<fieldset class="section">
 				<legend>Identity</legend>
 				<div class="identity-fields">
@@ -275,6 +283,9 @@
 						id="brand-logo"
 						legend="Logo"
 						current={logoPath ? logoURL(logoPath) : ''}
+						original={logoSource ? logoURL(logoSource.path) : ''}
+						editor={logoSource?.editor}
+						onchange={() => (logoChanged = true)}
 						ondelete={() => (logoPath = '')}
 						bind:this={imageSelector}
 					/>
@@ -324,14 +335,24 @@
 						</div>
 					</div>
 				{/if}
-				<div class="branding-actions">
-					<Button type="submit" rounded class="primary-action-button" disabled={saving}>
-						<span class="flex items-center gap-2">
-							<Icon icon={checkIcon} width="20" height="20" />
-							{saving ? 'Applying…' : 'Apply'}
-						</span>
-					</Button>
-				</div>
+				{#if hasUnsavedChanges}
+					<div class="unsaved-panel-position">
+						<div class="unsaved-panel-boundary">
+							<div class="unsaved-panel" aria-live="polite">
+								<div>
+									<p class="unsaved-title">You have unsaved changes</p>
+									<p class="unsaved-description">Apply them to update your branding.</p>
+								</div>
+								<Button type="submit" rounded class="primary-action-button" disabled={saving}>
+									<span class="flex items-center gap-2">
+										<Icon icon={checkIcon} width="20" height="20" />
+										{saving ? 'Applying…' : 'Apply'}
+									</span>
+								</Button>
+							</div>
+						</div>
+					</div>
+				{/if}
 			</div>
 		</form>
 	{/if}
@@ -348,6 +369,10 @@
 	.branding-form {
 		display: grid;
 		gap: 2rem;
+	}
+
+	.branding-form.has-unsaved-changes {
+		padding-bottom: 5rem;
 	}
 
 	.section {
@@ -556,10 +581,52 @@
 		color: rgb(var(--color-text) / 0.75);
 	}
 
-	.branding-actions {
+	.unsaved-panel-position {
+		position: fixed;
+		z-index: 30;
+		bottom: 1.5rem;
+		right: 0;
+		left: var(--sidebar-w, 0);
+		padding: 0 2rem;
+		pointer-events: none;
+		transition: left 0.3s ease-out;
+	}
+
+	.unsaved-panel-boundary {
 		display: flex;
 		justify-content: flex-end;
-		margin-top: 0.5rem;
+		width: 100%;
+		max-width: 72rem;
+		margin: 0 auto;
+	}
+
+	.unsaved-panel {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 2rem;
+		width: min(30rem, 100%);
+		padding: 0.875rem 1rem;
+		border-radius: 8px;
+		background: color-mix(in srgb, rgb(var(--color-background)) 92%, rgb(var(--warning)) 8%);
+		box-shadow: 0 0 0 1px var(--color-border), 0 8px 24px rgb(var(--color-text) / 0.16);
+		pointer-events: auto;
+	}
+
+	.unsaved-title,
+	.unsaved-description {
+		margin: 0;
+	}
+
+	.unsaved-title {
+		font-size: 0.9375rem;
+		font-weight: 600;
+	}
+
+	.unsaved-description {
+		margin-top: 0.125rem;
+		font-size: 0.8125rem;
+		color: rgb(var(--color-text) / 0.72);
 	}
 
 	@media (max-width: 900px) {
@@ -572,7 +639,34 @@
 		}
 	}
 
+	@media (max-width: 1023px) {
+		.unsaved-panel-position {
+			padding-right: 1.5rem;
+			padding-left: 1.5rem;
+		}
+	}
+
+	@media (max-width: 767px) {
+		.unsaved-panel-position {
+			left: 0;
+		}
+	}
+
 	@media (max-width: 520px) {
+		.unsaved-panel-position {
+			bottom: 1rem;
+			left: 0;
+			padding: 0 1rem;
+		}
+
+		.unsaved-panel {
+			gap: 1rem;
+		}
+
+		.unsaved-description {
+			display: none;
+		}
+
 		.brand-name-field {
 			width: 100%;
 		}

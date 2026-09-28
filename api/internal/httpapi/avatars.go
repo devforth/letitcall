@@ -36,6 +36,5 @@ func (s *Server) serveImage(w http.ResponseWriter, r *http.Request, noun string,
 		return
 	}
 	w.Header().Set("Cache-Control", "public, max-age=3600")
-	w.Header().Set("Content-Type", "image/jpeg")
 	http.ServeContent(w, r, info.Name(), info.ModTime(), file)
 }

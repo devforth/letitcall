@@ -27,11 +27,11 @@ func (s *Server) listUsers(w http.ResponseWriter, _ *http.Request) {
 }
 
 type createUserRequest struct {
-	Email    string `json:"email"`
-	FullName string `json:"fullName"`
-	Password string `json:"password"`
-	Timezone string `json:"timezone"`
-	Avatar   string `json:"avatar"`
+	Email    string              `json:"email"`
+	FullName string              `json:"fullName"`
+	Password string              `json:"password"`
+	Timezone string              `json:"timezone"`
+	Avatar   *imageUploadRequest `json:"avatar"`
 }
 
 func (s *Server) createUser(w http.ResponseWriter, r *http.Request) {
@@ -45,14 +45,20 @@ func (s *Server) createUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	user.FullName = strings.TrimSpace(request.FullName)
-	var avatar content.Avatar
-	if request.Avatar != "" {
-		avatar, err = s.avatars.Prepare(user.Email, request.Avatar)
+	var avatar preparedImage
+	if request.Avatar != nil {
+		avatar, err = prepareImageUpload(
+			*request.Avatar,
+			nil,
+			func(dataURL string) (content.Image, error) { return s.avatars.Prepare(user.Email, dataURL) },
+			func(dataURL string) (content.Image, error) { return s.avatars.PrepareOriginal(user.Email, dataURL) },
+		)
 		if err != nil {
 			writeError(w, http.StatusBadRequest, err.Error())
 			return
 		}
-		user.AvatarPath = avatar.Filename
+		user.AvatarPath = avatar.rendered.Filename
+		user.AvatarSource = avatar.source
 	}
 	if err := s.store.CreateUser(user); errors.Is(err, store.ErrExists) {
 		writeError(w, http.StatusConflict, "a user with this email already exists")
@@ -61,8 +67,8 @@ func (s *Server) createUser(w http.ResponseWriter, r *http.Request) {
 		internalError(w, err, "create user")
 		return
 	}
-	if avatar.Filename != "" {
-		if err := s.avatars.Write(avatar); err != nil {
+	if avatar.rendered.Filename != "" {
+		if err := writePreparedImage(s.avatars, avatar); err != nil {
 			_ = s.store.DeleteUser(user.Email)
 			internalError(w, err, "store user avatar")
 			return
@@ -85,10 +91,10 @@ func (s *Server) createUser(w http.ResponseWriter, r *http.Request) {
 }
 
 type updateUserRequest struct {
-	FullName *string `json:"fullName"`
-	Password *string `json:"password"`
-	Timezone *string `json:"timezone"`
-	Avatar   *string `json:"avatar"`
+	FullName *string             `json:"fullName"`
+	Password *string             `json:"password"`
+	Timezone *string             `json:"timezone"`
+	Avatar   *imageUploadRequest `json:"avatar"`
 }
 
 func (s *Server) updateUser(w http.ResponseWriter, r *http.Request) {
@@ -135,23 +141,30 @@ func (s *Server) updateUser(w http.ResponseWriter, r *http.Request) {
 		}
 		user.Timezone = timezone
 	}
-	var avatar content.Avatar
+	var avatar preparedImage
 	if request.Avatar != nil {
-		avatar, err = s.avatars.Prepare(user.Email, *request.Avatar)
+		avatar, err = prepareImageUpload(
+			*request.Avatar,
+			user.AvatarSource,
+			func(dataURL string) (content.Image, error) { return s.avatars.Prepare(user.Email, dataURL) },
+			func(dataURL string) (content.Image, error) { return s.avatars.PrepareOriginal(user.Email, dataURL) },
+		)
 		if err != nil {
 			writeError(w, http.StatusBadRequest, err.Error())
 			return
 		}
-		user.AvatarPath = avatar.Filename
+		user.AvatarPath = avatar.rendered.Filename
+		user.AvatarSource = avatar.source
 	}
 	user.UpdatedAt = s.now().UTC().Truncate(time.Second)
-	if avatar.Filename != "" {
-		if err := s.avatars.Write(avatar); err != nil {
+	if avatar.rendered.Filename != "" {
+		if err := writePreparedImage(s.avatars, avatar); err != nil {
 			internalError(w, err, "store user avatar")
 			return
 		}
 	}
 	if err := s.store.PutUser(user); err != nil {
+		removePreparedImage(s.avatars, avatar)
 		internalError(w, err, "update user")
 		return
 	}
@@ -167,9 +180,14 @@ func (s *Server) updateUser(w http.ResponseWriter, r *http.Request) {
 		internalError(w, err, "record user update audit log")
 		return
 	}
-	if avatar.Filename != "" && previousAvatarFilename != "" {
+	if avatar.rendered.Filename != "" && previousAvatarFilename != "" {
 		if err := s.avatars.Remove(previousAvatarFilename); err != nil {
 			slog.Error("remove previous user avatar", "error", err, "filename", previousAvatarFilename)
+		}
+	}
+	if avatar.original.Filename != "" && previousUser.AvatarSource != nil {
+		if err := s.avatars.Remove(previousUser.AvatarSource.Path); err != nil {
+			slog.Error("remove previous user avatar source", "error", err, "filename", previousUser.AvatarSource.Path)
 		}
 	}
 	writeJSON(w, http.StatusOK, map[string]any{"user": user.Public()})

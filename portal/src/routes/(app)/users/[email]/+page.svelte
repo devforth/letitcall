@@ -15,7 +15,7 @@
 	import Input from '$lib/components/ui/Input.svelte';
 	import SearchableSelect from '$lib/components/ui/SearchableSelect.svelte';
 	import { getLocalTimezones } from '$lib/timezones';
-	import type { ManagedUser } from '$lib/types';
+	import type { ImageSource, ImageUpload, ManagedUser } from '$lib/types';
 
 	let email = $state('');
 	let fullName = $state('');
@@ -23,6 +23,7 @@
 	let timezone = $state('UTC');
 	let timezones = $state<string[]>(['UTC']);
 	let avatarPath = $state('');
+	let avatarSource = $state<ImageSource>();
 	let avatarSelector = $state<ImageSelector | null>(null);
 	let loading = $state(true);
 	let saving = $state(false);
@@ -39,6 +40,7 @@
 			fullName = user.fullName;
 			timezone = user.timezone;
 			avatarPath = user.avatarPath ?? '';
+			avatarSource = user.avatarSource;
 			if (!timezones.includes(timezone)) timezones = [timezone, ...timezones];
 		} catch (cause) {
 			error = cause instanceof Error ? cause.message : 'Unable to load user';
@@ -52,7 +54,7 @@
 		saving = true;
 		error = '';
 		try {
-			const update: { fullName: string; timezone: string; password?: string; avatar?: string } = {
+			const update: { fullName: string; timezone: string; password?: string; avatar?: ImageUpload } = {
 				fullName,
 				timezone
 			};
@@ -116,6 +118,8 @@
 					id="edit-avatar"
 					legend="Avatar"
 					current={avatarPath ? avatarURL(avatarPath) : ''}
+					original={avatarSource ? avatarURL(avatarSource.path) : ''}
+					editor={avatarSource?.editor}
 					ondelete={() => (avatarPath = '')}
 					bind:this={avatarSelector}
 				/>

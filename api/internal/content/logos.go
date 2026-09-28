@@ -20,6 +20,10 @@ func (l *Logos) Prepare(dataURL string) (Logo, error) {
 	return l.images.Prepare("logo", dataURL)
 }
 
+func (l *Logos) PrepareOriginal(dataURL string) (Logo, error) {
+	return l.images.PrepareOriginal("logo", dataURL)
+}
+
 func (l *Logos) Write(logo Logo) error {
 	return l.images.Write(logo)
 }

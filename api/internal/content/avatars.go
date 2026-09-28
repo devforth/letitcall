@@ -23,6 +23,10 @@ func (a *Avatars) Prepare(email, dataURL string) (Avatar, error) {
 	return a.images.Prepare(email, dataURL)
 }
 
+func (a *Avatars) PrepareOriginal(email, dataURL string) (Avatar, error) {
+	return a.images.PrepareOriginal(email, dataURL)
+}
+
 func (a *Avatars) PrepareImage(email string, source image.Image) (Avatar, error) {
 	return a.images.PrepareImage(email, source)
 }
