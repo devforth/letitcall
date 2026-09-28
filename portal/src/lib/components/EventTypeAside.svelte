@@ -148,7 +148,9 @@
 <style>
 	.host-avatar {
 		display: inline-flex;
+		border: 2px solid rgb(var(--color-background) / 0.75);
 		border-radius: 9999px;
+		background: rgb(var(--color-background));
 		transition: transform 0.15s ease;
 	}
 

@@ -27,8 +27,10 @@
 	"dependencies": {
 		"@iconify-icons/at-icons": "^2.0.1",
 		"@iconify-icons/charm": "^2.0.1",
+		"@iconify-icons/griddy-icons": "^2.0.0",
 		"@iconify-icons/hugeicons": "^2.0.2",
 		"@iconify-icons/humbleicons": "^1.2.4",
+		"@iconify-icons/iconmind": "^2.0.2",
 		"@iconify-icons/la": "^1.2.3",
 		"@iconify-icons/logos": "^1.2.36",
 		"@iconify-icons/material-symbols": "^1.2.58",

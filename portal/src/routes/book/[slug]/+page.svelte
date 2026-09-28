@@ -2,11 +2,11 @@
 	import { page } from '$app/state';
 	import { onDestroy, onMount } from 'svelte';
 	import Icon from '@iconify/svelte';
-	import stepCalendarIcon from '@iconify-icons/humbleicons/calendar';
-	import stepCheckIcon from '@iconify-icons/humbleicons/check';
-	import stepUserIcon from '@iconify-icons/la/user';
+	import userEditIcon from '@iconify-icons/griddy-icons/user-edit';
+	import bookingConfirmIcon from '@iconify-icons/iconmind/booking-confirm-outline-thin';
 	import arrowRightIcon from '@iconify-icons/tabler/arrow-right';
 	import calendarOffIcon from '@iconify-icons/tabler/calendar-off';
+	import calendarTimeIcon from '@iconify-icons/tabler/calendar-time';
 	import checkIcon from '@iconify-icons/tabler/check';
 	import clockIcon from '@iconify-icons/tabler/clock';
 	import lockIcon from '@iconify-icons/material-symbols/lock';
@@ -29,14 +29,6 @@
 
 	const blockStyle =
 		'background: rgb(var(--color-background)); border: 1px solid var(--color-border); box-shadow: 0 0 3vw var(--color-border);';
-	const boldStepUserIcon = {
-		...stepUserIcon,
-		body: stepUserIcon.body.replace('<path ', '<path stroke="currentColor" stroke-width="1" stroke-linejoin="round" ')
-	};
-	const boldStepCheckIcon = {
-		...stepCheckIcon,
-		body: stepCheckIcon.body.replace('stroke-width="2"', 'stroke-width="3"')
-	};
 	const boldArrowRightIcon = { ...arrowRightIcon, body: arrowRightIcon.body.replace('stroke-width="2"', 'stroke-width="3"') };
 	const boldCheckIcon = { ...checkIcon, body: checkIcon.body.replace('stroke-width="2"', 'stroke-width="3"') };
 
@@ -64,9 +56,9 @@
 	let availabilityClock: number | undefined;
 
 	const bookingSteps = [
-		{ title: 'Date and Time', shortTitle: 'Date', subtitle: 'Find a time that works', icon: stepCalendarIcon },
-		{ title: 'Contact Information', shortTitle: 'Contact', subtitle: 'Your name, email and guests', icon: boldStepUserIcon },
-		{ title: 'Confirmation', shortTitle: 'Confirm', subtitle: "Review and you're booked", icon: boldStepCheckIcon }
+		{ title: 'Date and Time', subtitle: 'Choose a date and time that works best for you', icon: calendarTimeIcon },
+		{ title: 'Contact Information', subtitle: 'Enter your contact details and add any guests', icon: userEditIcon },
+		{ title: 'Confirmation', subtitle: 'Review your booking details before confirming', icon: bookingConfirmIcon }
 	];
 	const timezone = $derived(timezones.includes(timezoneInput) ? timezoneInput : localTimezone);
 	const minimumMonth = $derived(timezoneDateKey(now, timezone).slice(0, 7));
@@ -251,8 +243,6 @@
 
 	function selectTime(time: string) {
 		selectedTime = time;
-		furthestStep = 0;
-		if (guestLimit !== null) guestEmails = guestEmails.slice(0, guestLimit);
 	}
 
 	// Each new date lands on its first free time, so the Time field arrives filled and a
@@ -306,8 +296,8 @@
 	}
 
 	function stepState(index: number) {
-		if (index === currentStep) return 'is-active';
-		return index < furthestStep ? 'is-done' : 'is-upcoming';
+		const active = index === currentStep ? 'is-active ' : '';
+		return `${active}${index < furthestStep ? 'is-done' : 'is-upcoming'}`;
 	}
 
 	function scrollFades(node: HTMLElement) {
@@ -362,61 +352,33 @@
 		<div class="mx-auto grid min-h-screen max-w-7xl overflow-hidden sm:min-h-[calc(100vh-5rem)] sm:rounded-2xl lg:h-[calc(100vh-5rem)] lg:min-h-0 lg:grid-cols-[21rem_1fr]" style={blockStyle}>
 			<EventTypeAside {eventType} />
 
-			<section class="flex min-h-0 flex-col overflow-hidden p-6 pt-4 lg:p-10 lg:pt-6" aria-label="Book a meeting">
+			<section class="flex min-h-0 flex-col overflow-hidden p-6 lg:p-10" aria-label="Book a meeting">
 				<div class="bk-stepper">
 					{#if !booking}
-						<div class="bk-progress">
+						<div class="bk-progress" class:bk-progress-with-heading={currentStep > 0}>
 							<div class="bk-progress-summary">
+								<div class="bk-progress-icon" aria-hidden="true">
+									<Icon icon={bookingSteps[currentStep].icon} width="46" height="46" />
+								</div>
 								<div class="bk-progress-heading">
 									<h2>{bookingSteps[currentStep].title}</h2>
 									<p>{bookingSteps[currentStep].subtitle}</p>
 								</div>
 								<p class="bk-progress-count">Step {currentStep + 1} of {bookingSteps.length}</p>
 							</div>
-						<div class="bk-rail" aria-hidden="true">
-							<div class="bk-track">
-								<div class="bk-fill" style="--bk-progress: {furthestStep / (bookingSteps.length - 1)};"></div>
-								<div class="bk-marks">
-									{#each bookingSteps as step, i (step.title)}
-										<span class="bk-dot {stepState(i)}">
-											{#if i === currentStep}
-												<Icon icon={step.icon} width="20" height="20" />
-											{/if}
-										</span>
-									{/each}
-								</div>
-							</div>
-						</div>
-
-						<ol class="bk-labels">
-							{#each bookingSteps as step, i (step.title)}
-								<li class="bk-step {stepState(i)}" aria-current={i === currentStep ? 'step' : undefined}>
-									<button
-										type="button"
-										class="bk-head"
-										onclick={() => goToStep(i)}
-										disabled={i > furthestStep}
-									>
-										<!-- The wrappers collapse to display: contents above the phone
-										     breakpoint, where the three labels stack centred as before. -->
-										<span class="bk-head-icon" aria-hidden="true">
-											{#if stepState(i) === 'is-done'}
-												<Icon icon={boldCheckIcon} width="14" height="14" />
-											{:else}
-												{i + 1}
-											{/if}
-										</span>
-										<span class="bk-head-text">
-											<span class="bk-head-line">
-												<span class="bk-count"><span class="bk-count-current">{i + 1}</span><span class="bk-count-slash">/</span>{bookingSteps.length}</span>
-												<span class="bk-title"><span class="bk-title-full">{step.title}</span><span class="bk-title-short">{step.shortTitle}</span></span>
-											</span>
-											<span class="bk-sub">{step.subtitle}</span>
-										</span>
-									</button>
-								</li>
-							{/each}
-						</ol>
+							<ol class="bk-labels">
+								{#each bookingSteps as step, i (step.title)}
+									<li class="bk-step {stepState(i)}" aria-current={i === currentStep ? 'step' : undefined}>
+										<button
+											type="button"
+											class="bk-head"
+											aria-label={step.title}
+											onclick={() => goToStep(i)}
+											disabled={i > furthestStep}
+										></button>
+									</li>
+								{/each}
+							</ol>
 						</div>
 					{/if}
 
@@ -864,56 +826,58 @@
 		background: rgb(var(--color-background));
 	}
 
+	.bk-progress-with-heading {
+		margin-bottom: 1.25rem;
+	}
+
 	.bk-progress-summary {
 		display: flex;
 		align-items: center;
-		justify-content: space-between;
 		gap: 1rem;
 	}
 
-	.bk-progress-summary h2 {
-		margin: 0;
-		font-size: 1.125rem;
-		font-weight: 700;
-		line-height: 1.25;
+	.bk-progress-icon {
+		flex: none;
+		color: rgb(var(--color-text));
 	}
 
+	.bk-progress-icon :global(svg) {
+		margin: -4px -8px -8px;
+		transform: scale(0.95);
+		transform-origin: center;
+	}
+
+	.bk-progress-icon :global([stroke]) {
+		stroke-width: 1.5;
+	}
 
 	.bk-progress-heading {
-		display: flex;
-		align-items: baseline;
-		gap: 0.375rem;
 		min-width: 0;
+	}
+
+	.bk-progress-heading h2 {
+		margin: 0;
+		color: rgb(var(--color-text));
+		font-size: 1.5rem;
+		font-weight: 600;
+		letter-spacing: -0.025em;
+		line-height: 1.25;
 	}
 
 	.bk-progress-heading p {
 		margin: 0;
-		color: rgb(var(--color-text) / 0.6);
-		font-size: 1rem;
+		color: rgb(var(--color-text) / 0.65);
+		font-size: 0.875rem;
 		line-height: 1.25;
 	}
-
-	.bk-progress-heading p::before {
-		content: '·';
-		margin-right: 0.375rem;
-	}
-
-	.bk-title-short {
-		display: none;
-	}
-
 
 	.bk-progress-count {
-		margin: 0;
-		color: rgb(var(--color-text) / 0.6);
-		font-size: 1rem;
+		align-self: flex-end;
+		margin: 0 0 0 auto;
+		color: rgb(var(--color-text) / 0.65);
+		font-size: 0.875rem;
 		line-height: 1.25;
-		text-align: right;
 		white-space: nowrap;
-	}
-
-	.bk-rail {
-		display: none !important;
 	}
 
 	.bk-labels {
@@ -921,7 +885,7 @@
 		grid-template-columns: repeat(3, minmax(0, 1fr));
 		gap: 0.375rem;
 		height: auto;
-		margin: 0.4375rem 0 0 !important;
+		margin: 0.3rem 0 0 !important;
 		padding: 0;
 		border-radius: 0;
 		background: none;
@@ -933,11 +897,6 @@
 		min-width: 0;
 		border: 0 !important;
 		background: transparent !important;
-		color: rgb(var(--color-text) / 0.55);
-	}
-
-	.bk-step.is-active {
-		color: rgb(var(--color-text));
 	}
 
 	.bk-step::before,
@@ -946,63 +905,49 @@
 	}
 
 	.bk-head {
-		display: flex !important;
-		flex-direction: column !important;
-		align-items: stretch !important;
-		gap: 0.5rem !important;
+		position: relative;
+		display: block !important;
 		width: 100%;
+		height: 1.5rem;
 		padding: 0 !important;
 		background: transparent !important;
-		color: inherit !important;
-		text-align: left !important;
+	}
+
+	.bk-head::before,
+	.bk-head::after {
+		content: '';
+		position: absolute;
+		inset-inline: 0;
+		top: 50%;
+		height: 0.125rem;
+		border-radius: 999px;
 	}
 
 	.bk-head::before {
-		content: '';
-		height: 0.375rem;
-		border-radius: 999px;
 		background: rgb(var(--color-text) / 0.12);
+		transform: translateY(-50%);
 	}
 
-	.bk-step.is-done .bk-head::before,
-	.bk-step.is-active .bk-head::before {
+	.bk-head::after {
 		background: rgb(var(--color-primary));
+		transform: translateY(-50%) scaleX(0);
+		transform-origin: left center;
+		transition: transform 420ms ease-out;
 	}
 
-	.bk-head-icon,
-	.bk-count,
-	.bk-sub {
-		display: none !important;
+	.bk-step.is-done .bk-head::after {
+		transform: translateY(-50%) scaleX(1);
 	}
 
-	.bk-head-text {
-		display: none !important;
-	}
-
-	.bk-title {
-		display: block;
-		overflow: hidden;
-		font-size: 0.8125rem !important;
-		font-weight: 500;
-		line-height: 1.25;
-		text-overflow: ellipsis;
-	}
-
-	.bk-step.is-active .bk-title {
-		font-weight: 700;
+	@media (prefers-reduced-motion: reduce) {
+		.bk-head::after {
+			transition: none;
+		}
 	}
 
 	@media (max-width: 640px) {
 		.bk-progress {
 			margin-bottom: 1.5rem;
-		}
-
-		.bk-title-full {
-			display: none;
-		}
-
-		.bk-title-short {
-			display: inline;
 		}
 	}
 </style>

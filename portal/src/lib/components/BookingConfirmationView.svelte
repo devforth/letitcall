@@ -42,6 +42,13 @@
 </script>
 
 <section class="booking-confirmed" aria-labelledby="booking-confirmed-title">
+	<div class="booking-celebration" aria-hidden="true">
+		{#each Array(18) as _, index}
+			<span
+				style={`--x: ${4 + index * 5.4}%; --drift: ${(index % 5) - 2}rem; --fall: ${7 + (index % 4) * 1.25}rem; --turn: ${180 + (index % 7) * 55}deg; --delay: ${(index % 6) * 0.045}s;`}
+			></span>
+		{/each}
+	</div>
 	<BookingStatusHeading text="Booking confirmed" />
 	<BookingSubtitle id="booking-confirmed-title" text={`You’re booked for ${title}`} />
 	<BookingDetailsCard
@@ -68,6 +75,64 @@
 </section>
 
 <style>
+	.booking-confirmed {
+		position: relative;
+		isolation: isolate;
+	}
+
+	.booking-confirmed > :not(.booking-celebration) {
+		position: relative;
+		z-index: 1;
+	}
+
+	.booking-celebration {
+		position: absolute;
+		z-index: 0;
+		top: -2rem;
+		right: -1rem;
+		left: -1rem;
+		height: 13rem;
+		overflow: hidden;
+		pointer-events: none;
+	}
+
+	.booking-celebration span {
+		position: absolute;
+		top: 0;
+		left: var(--x);
+		width: 0.35rem;
+		height: 0.75rem;
+		border: 1px solid rgb(var(--color-primary));
+		background: rgb(var(--color-primary));
+		opacity: 0;
+		animation: booking-hooray 1.2s cubic-bezier(0.18, 0.72, 0.28, 1) var(--delay) both;
+	}
+
+	.booking-celebration span:nth-child(even) {
+		background: rgb(var(--color-text));
+	}
+
+	.booking-celebration span:nth-child(3n) {
+		width: 0.45rem;
+		height: 0.45rem;
+		border-radius: 999px;
+		background: transparent;
+	}
+
+	@keyframes booking-hooray {
+		0% {
+			opacity: 0;
+			transform: translate3d(0, -0.75rem, 0) rotate(0deg) scale(0.6);
+		}
+		12% {
+			opacity: 1;
+		}
+		100% {
+			opacity: 0;
+			transform: translate3d(var(--drift), var(--fall), 0) rotate(var(--turn)) scale(1);
+		}
+	}
+
 	.booking-confirmed-actions {
 		display: flex;
 		align-items: center;
@@ -122,6 +187,12 @@
 
 	.booking-new-link:hover {
 		text-decoration: none;
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.booking-celebration {
+			display: none;
+		}
 	}
 
 	@media (max-width: 640px) {

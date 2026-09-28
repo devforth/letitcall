@@ -14,12 +14,18 @@ importers:
       '@iconify-icons/charm':
         specifier: ^2.0.1
         version: 2.0.1
+      '@iconify-icons/griddy-icons':
+        specifier: ^2.0.0
+        version: 2.0.0
       '@iconify-icons/hugeicons':
         specifier: ^2.0.2
         version: 2.0.2
       '@iconify-icons/humbleicons':
         specifier: ^1.2.4
         version: 1.2.4
+      '@iconify-icons/iconmind':
+        specifier: ^2.0.2
+        version: 2.0.2
       '@iconify-icons/la':
         specifier: ^1.2.3
         version: 1.2.3
@@ -126,11 +132,17 @@ packages:
   '@iconify-icons/charm@2.0.1':
     resolution: {integrity: sha512-BU/p1OZSy4aatRWn4cmH78u6ouJh1qSb/oqr9H8BrAFrPal5a2KxmGVOR3qn9nVyjEAVYMDEGmeqyQ8SRuzMBg==}
 
+  '@iconify-icons/griddy-icons@2.0.0':
+    resolution: {integrity: sha512-8hk0xVd8uw74DlFwqU+13dGHG0nmwE33oYMnsYxSPNzWTRhy8oKnzM56nlcmal5Zx/8dighpYYrmBkoTLSVFBA==}
+
   '@iconify-icons/hugeicons@2.0.2':
     resolution: {integrity: sha512-NGervUGXqntEK1PKxYjN99Q8A0F5K3TdH207SQBiokc59amn3RrHWOFWn/8h2qh7QVkQh05p/D5CCaWibGumSw==}
 
   '@iconify-icons/humbleicons@1.2.4':
     resolution: {integrity: sha512-J0tKxbuwEy9sQZrNpzeVsgDpeQVWPWY4nO1826q7sq4q83LA+3H6jAHvxwGRjQmovJnuomq/NlG5eJLpy9CJCA==}
+
+  '@iconify-icons/iconmind@2.0.2':
+    resolution: {integrity: sha512-wAPrwfNu1dDQ3i7Sfrm4NSWFsul49PZkGA/rS4pyYJm6NA+tfLUZ4DF2YxwlzeLs3UgzJzJYWrdJ/ighiQDTUQ==}
 
   '@iconify-icons/la@1.2.3':
     resolution: {integrity: sha512-jhQ3dFlxjGFOqNyFJyxbbKvH0VO4RnVIiEZzjpl5ylFlI8FBzdtHUxN+GdYWc8Akdnwx3atO/cSySa9YRM2GcA==}
@@ -828,11 +840,19 @@ snapshots:
     dependencies:
       '@iconify/types': 2.0.0
 
+  '@iconify-icons/griddy-icons@2.0.0':
+    dependencies:
+      '@iconify/types': 2.0.0
+
   '@iconify-icons/hugeicons@2.0.2':
     dependencies:
       '@iconify/types': 2.0.0
 
   '@iconify-icons/humbleicons@1.2.4':
+    dependencies:
+      '@iconify/types': 2.0.0
+
+  '@iconify-icons/iconmind@2.0.2':
     dependencies:
       '@iconify/types': 2.0.0
 
