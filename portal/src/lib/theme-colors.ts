@@ -43,51 +43,35 @@ function hslToHex(hue: number, saturation: number, lightness: number): string {
 	return `#${channels.map((channel) => Math.round((channel + match) * 255).toString(16).padStart(2, '0')).join('')}`.toUpperCase();
 }
 
-function grayHex(channel: number): string {
-	const hex = channel.toString(16).padStart(2, '0');
-	return `#${hex}${hex}${hex}`.toUpperCase();
-}
-
-function lightBackground(primary: string): string {
-	if (contrastRatio(primary, '#FFFFFF') >= wcagAAContrast) return '#FFFFFF';
-
-	let passing = 0;
-	let failing = 255;
-	while (failing - passing > 1) {
-		const channel = Math.floor((passing + failing) / 2);
-		if (contrastRatio(primary, grayHex(channel)) >= wcagAAContrast) {
-			passing = channel;
-		} else {
-			failing = channel;
-		}
-	}
-	return grayHex(passing);
-}
-
-function darkBackground(primary: string): string {
-	if (contrastRatio(primary, '#000000') >= wcagAAContrast) return '#000000';
-
-	let failing = 0;
-	let passing = 255;
-	while (passing - failing > 1) {
-		const channel = Math.floor((passing + failing) / 2);
-		if (contrastRatio(primary, grayHex(channel)) >= wcagAAContrast) {
-			passing = channel;
-		} else {
-			failing = channel;
-		}
-	}
-	return grayHex(passing);
-}
-
 function entropy(range: number): number {
 	return (Math.random() * 2 - 1) * range;
+}
+
+function themedBackground(primary: string, mode: 'light' | 'dark', hue: number, saturation: number): string {
+	const backgroundSaturation = Math.min(mode === 'light' ? 32 : 44, saturation * 0.55);
+	const preferredLightness = mode === 'light' ? 94 + entropy(3) : 12 + entropy(3);
+	const preferred = hslToHex(hue, backgroundSaturation, preferredLightness);
+	if (contrastRatio(primary, preferred) >= wcagAAContrast) return preferred;
+
+	const themedExtreme = mode === 'light' ? 100 : 0;
+	const themedExtremeColor = hslToHex(hue, backgroundSaturation, themedExtreme);
+	let passing = contrastRatio(primary, themedExtremeColor) >= wcagAAContrast
+		? themedExtreme
+		: mode === 'light' ? 0 : 100;
+	let failing = preferredLightness;
+	while (Math.abs(passing - failing) > 0.1) {
+		const lightness = (passing + failing) / 2;
+		const candidate = hslToHex(hue, backgroundSaturation, lightness);
+		if (contrastRatio(primary, candidate) >= wcagAAContrast) passing = lightness;
+		else failing = lightness;
+	}
+	return hslToHex(hue, backgroundSaturation, passing);
 }
 
 export function generateThemeColors(primary: string, mode: 'light' | 'dark'): ThemeColors {
 	const { hue, saturation } = rgbToHSL(hexToRGB(primary));
 	const shiftedHue = (offset: number) => (hue + offset + 360) % 360;
-	const background = mode === 'light' ? lightBackground(primary) : darkBackground(primary);
+	const background = themedBackground(primary, mode, shiftedHue(entropy(12)), saturation);
 	const preferredText = mode === 'light'
 		? hslToHex(shiftedHue(entropy(2)), Math.min(22, saturation * 0.22), 17 + entropy(0.8))
 		: hslToHex(shiftedHue(entropy(2)), Math.min(10, saturation * 0.1), 96 + entropy(0.8));

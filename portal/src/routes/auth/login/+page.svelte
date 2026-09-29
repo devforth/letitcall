@@ -190,7 +190,7 @@
 	<div class:initial={!flashlightStarted} class="background-dot-core pointer-events-none absolute inset-0" aria-hidden="true"></div>
 	<div class="login-theme-toggle fixed right-4 top-4 z-20 flex items-center gap-2 px-3 py-2">
 		<span class="text-xs opacity-45">Theme</span>
-		<ThemeToggle compact />
+		<ThemeToggle />
 	</div>
 
 	<main class="relative z-10 grid min-h-screen place-items-center p-4">

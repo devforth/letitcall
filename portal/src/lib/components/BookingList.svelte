@@ -152,7 +152,7 @@
 		display: none;
 	}
 
-	@media (min-width: 40rem) {
+	@media (min-width: 40rem) and (hover: hover) and (pointer: fine) {
 		.booking-action-slot {
 			display: flex;
 			min-width: 2.5rem;

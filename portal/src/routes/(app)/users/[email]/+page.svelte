@@ -120,6 +120,7 @@
 					current={avatarPath ? avatarURL(avatarPath) : ''}
 					original={avatarSource ? avatarURL(avatarSource.path) : ''}
 					editor={avatarSource?.editor}
+					showCurrentCopy={false}
 					ondelete={() => (avatarPath = '')}
 					bind:this={avatarSelector}
 				/>

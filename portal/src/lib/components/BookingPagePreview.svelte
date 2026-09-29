@@ -4,7 +4,7 @@
 	import calendarTimeIcon from '@iconify-icons/tabler/calendar-time';
 	import clockIcon from '@iconify-icons/tabler/clock';
 	import moonIcon from '@iconify-icons/tabler/moon';
-	import sunIcon from '@iconify-icons/tabler/sun';
+	import sunIcon from '@iconify-icons/tabler/sun-high';
 	import worldIcon from '@iconify-icons/tabler/world';
 	import type { BrandingTheme } from '$lib/types';
 	import Button from '$lib/components/ui/Button.svelte';
@@ -12,11 +12,15 @@
 	import SearchableSelect from '$lib/components/ui/SearchableSelect.svelte';
 	import SegmentedControl from '$lib/components/ui/SegmentedControl.svelte';
 
-	let { brandName, theme }: { brandName: string; theme: BrandingTheme } = $props();
+	let { theme }: { theme: BrandingTheme } = $props();
 
 	const previewModes = [
 		{ value: 'light', label: 'Light', icon: sunIcon },
 		{ value: 'dark', label: 'Dark', icon: moonIcon }
+	];
+	const previewVisibilityOptions = [
+		{ value: 'show', label: 'Shown' },
+		{ value: 'hide', label: 'Hidden' }
 	];
 	const availableDates = [
 		'2026-10-01', '2026-10-02', '2026-10-05', '2026-10-07', '2026-10-08',
@@ -32,7 +36,7 @@
 	let selectedTime = $state('10:30 AM');
 	let previewVisible = $state(false);
 	const colors = $derived(theme[mode]);
-	const displayName = $derived(brandName.trim() || 'Let It Call');
+	const displayName = 'Your Brand';
 	const selectedDateLabel = $derived(
 		new Intl.DateTimeFormat(undefined, {
 			weekday: 'long',
@@ -54,45 +58,54 @@
 		'--color-primary: ' + channels(colors.primary) + '; ' +
 		'--color-text: ' + channels(colors.text) + '; ' +
 		'--color-background: ' + channels(colors.background) + '; ' +
-		'--color-border: color-mix(in srgb, rgb(var(--color-text)) 26%, rgb(var(--color-background))); ' +
+		'--color-border: color-mix(in srgb, rgb(var(--color-text)) ' + (mode === 'dark' ? 14 : 26) + '%, rgb(var(--color-background))); ' +
 		'--shadow-small: 0 8px 24px rgb(0 0 0 / 0.12); color-scheme: ' + mode + ';'
 	);
 
 	function selectMode(value: string) {
 		mode = value as 'light' | 'dark';
 	}
+
+	function setPreviewVisibility(value: string) {
+		previewVisible = value === 'show';
+	}
+
 </script>
 
 <section aria-labelledby="booking-preview-title">
 	<div class="preview-shell overflow-hidden rounded-xl">
 		<div class="preview-toolbar flex min-h-15 items-center justify-between gap-4 px-4 py-2.5" class:preview-hidden={!previewVisible}>
-			<div class="min-w-0">
-				<h3 id="booking-preview-title" class="m-0 text-base font-semibold">Booking page preview</h3>
-				<p class="m-0 mt-1 text-sm opacity-60">Mocked event data · changes update before you apply</p>
+			<div class="preview-toolbar-copy min-w-0">
+				<h3
+					id="booking-preview-title"
+					class="preview-title text-lg font-semibold leading-none"
+				>Booking page preview</h3>
+				{#if previewVisible}
+					<div class="preview-theme-switch">
+						<SegmentedControl
+							options={previewModes}
+							value={mode}
+							label="Preview color theme"
+							onchange={selectMode}
+						/>
+					</div>
+				{/if}
 			</div>
-			{#if previewVisible}
+			<div class="preview-visibility-switch">
 				<SegmentedControl
-				options={previewModes}
-				value={mode}
-				label="Preview color theme"
-				onchange={selectMode}
+					options={previewVisibilityOptions}
+					value={previewVisible ? 'show' : 'hide'}
+					label="Preview visibility"
+					onchange={setPreviewVisibility}
 				/>
-			{/if}
-			<Button
-				variant="primary-outline"
-				class="preview-visibility-button outlined-action-button"
-				style="padding-left: 1.25rem !important; padding-right: 1.25rem !important;"
-				onclick={() => (previewVisible = !previewVisible)}
-			>
-				{previewVisible ? 'Hide preview' : 'Show preview'}
-			</Button>
+			</div>
 		</div>
 
 		<div id="booking-preview-content" class="preview-page grid" style={previewStyle} hidden={!previewVisible} inert>
-			<aside class="preview-aside flex flex-col justify-between gap-8 p-8">
+			<aside class="preview-aside relative flex flex-col justify-between gap-8 p-8">
 				<div>
-					<h4 class="m-0 text-3xl font-semibold tracking-tight">Discovery Call</h4>
-					<div class="mt-8 flex items-end">
+					<h4 class="m-0 text-2xl font-semibold tracking-tight">Discovery Call</h4>
+					<div class="mt-5 flex items-end">
 						<span class="avatar grid size-10 shrink-0 place-items-center rounded-full text-xs font-bold" aria-hidden="true">AM</span>
 					</div>
 					<p class="mt-3 text-sm font-medium">Alex Morgan</p>
@@ -100,12 +113,10 @@
 						<Icon icon={clockIcon} width="22" height="22" />30 min
 					</p>
 				</div>
-				<div>
-					<p class="m-0 text-xl font-semibold">{displayName}</p>
-					{#if displayName !== 'Let It Call'}
-						<span class="text-xs opacity-70">Powered by <strong>Let It Call</strong></span>
-					{/if}
-				</div>
+				<p class="m-0 pb-4 text-lg font-semibold">{displayName}</p>
+				<p class="preview-powered-by">
+					Powered by <span>Let It Call</span>
+				</p>
 			</aside>
 
 			<div class="preview-main flex min-w-0 flex-col p-8">
@@ -190,7 +201,7 @@
 
 	.preview-toolbar {
 		display: grid;
-		grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+		grid-template-columns: minmax(0, 1fr) auto;
 		border-bottom: 1px solid var(--color-border);
 		background: color-mix(in srgb, rgb(var(--color-text)) 4%, rgb(var(--color-background)));
 	}
@@ -199,13 +210,20 @@
 		border-bottom: 0;
 	}
 
-	.preview-toolbar :global(.segmented-control) {
+	.preview-visibility-switch {
 		grid-column: 2;
+		align-self: start;
+		justify-self: end;
 	}
 
-	.preview-toolbar :global(.preview-visibility-button) {
-		grid-column: 3;
-		justify-self: end;
+	.preview-toolbar-copy {
+		grid-column: 1;
+		align-self: center;
+	}
+
+	.preview-title {
+		margin-top: 0.7rem;
+		margin-bottom: 0.9rem;
 	}
 
 	.preview-page {
@@ -220,6 +238,23 @@
 	.preview-aside {
 		background: rgb(var(--color-primary));
 		color: rgb(var(--color-background));
+	}
+
+	.preview-powered-by {
+		position: absolute;
+		bottom: 0.75rem;
+		left: 50%;
+		margin: 0;
+		transform: translateX(-50%);
+		color: rgb(var(--color-background) / 0.72);
+		font-size: 0.75rem;
+		font-weight: 400;
+		white-space: nowrap;
+	}
+
+	.preview-powered-by span {
+		color: rgb(var(--color-background));
+		font-weight: 500;
 	}
 
 	.avatar {
@@ -374,21 +409,6 @@
 	}
 
 	@container (max-width: 640px) {
-		.preview-toolbar {
-			grid-template-columns: minmax(0, 1fr) auto;
-		}
-
-		.preview-toolbar :global(.segmented-control) {
-			grid-column: 1 / -1;
-			grid-row: 2;
-			justify-self: center;
-		}
-
-		.preview-toolbar :global(.preview-visibility-button) {
-			grid-column: 2;
-			grid-row: 1;
-		}
-
 		.preview-aside,
 		.preview-actions {
 			align-items: stretch;
@@ -401,6 +421,44 @@
 
 		.schedule {
 			grid-template-columns: 1fr;
+		}
+	}
+
+	@container (max-width: 390px) {
+		.preview-toolbar {
+			grid-template-columns: 1fr;
+			row-gap: 0.5rem;
+		}
+
+		.preview-toolbar-copy {
+			display: contents;
+		}
+
+		.preview-title {
+			grid-column: 1;
+			grid-row: 1;
+			margin-bottom: 0.375rem;
+		}
+
+		.preview-theme-switch {
+			grid-column: 1;
+			grid-row: 3;
+			justify-self: start;
+			width: 100%;
+			margin-top: 0.75rem;
+		}
+
+		.preview-visibility-switch {
+			grid-column: 1;
+			grid-row: 2;
+			align-self: start;
+			justify-self: start;
+			width: 100%;
+		}
+
+		.preview-theme-switch :global(.segmented-control),
+		.preview-visibility-switch :global(.segmented-control) {
+			width: 100%;
 		}
 	}
 </style>

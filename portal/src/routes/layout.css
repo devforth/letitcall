@@ -190,9 +190,9 @@
 		--shadow: 0 0px 4vw rgb(0 0 0 / 0.15);
 		--shadow-small: 0 0px 1vw rgb(0 0 0 / 0.15);
 
-		--error: 255 77 77;
-		--success: 0 201 80;
-		--warning: 255 204 0;
+		--error: 180 35 24;
+		--success: 6 118 71;
+		--warning: 122 90 0;
 
 		color-scheme: light;
 		color: rgb(var(--color-text));
@@ -209,9 +209,13 @@
 		/* Dark theme */
 		--color-background: var(--branding-dark-background, 100 100 100);
 		--color-text: var(--branding-dark-text, 255 255 255);
+		--color-border: color-mix(in srgb, rgb(var(--color-text)) 14%, rgb(var(--color-background)));
 		--color-primary: var(--branding-dark-primary, 2 132 199);
 		--shadow: 0 0px 4vw rgb(0 0 0 / 0.5);
 		--shadow-small: 0 0px 1vw rgb(0 0 0 / 0.2);
+		--error: 255 216 212;
+		--success: 183 244 210;
+		--warning: 255 230 156;
 
 
 		color-scheme: dark;

@@ -232,8 +232,7 @@
 			<ColorPicker
 				id={`${mode}-primary`}
 					label="Brand color"
-				description="Buttons and active elements"
-				size="brand"
+				description="Color of clicable elements (hex)"
 				bind:value={brandingTheme[mode].primary}
 				onchange={useCustomPalette}
 			/>
@@ -242,14 +241,14 @@
 				<ColorPicker
 					id={`${mode}-text`}
 					label="Text color"
-					description="Text across the theme"
+					description="Text on background (hex)"
 					bind:value={brandingTheme[mode].text}
 					onchange={useCustomPalette}
 				/>
 				<ColorPicker
 					id={`${mode}-background`}
 					label="Background"
-					description="Surfaces, panels and page"
+					description="Surfaces color (hex)"
 					bind:value={brandingTheme[mode].background}
 					onchange={useCustomPalette}
 				/>
@@ -286,6 +285,7 @@
 						current={logoPath ? logoURL(logoPath) : ''}
 						original={logoSource ? logoURL(logoSource.path) : ''}
 						editor={logoSource?.editor}
+						showCurrentCopy={false}
 						onchange={() => (logoChanged = true)}
 						ondelete={() => (logoPath = '')}
 						bind:this={imageSelector}
@@ -295,7 +295,6 @@
 
 			<fieldset class="section">
 				<legend>Color theme</legend>
-				<p class="section-description">Choose a preset, customize your colors, or generate an accessible palette from your brand color</p>
 				<div class="theme-source-control">
 					<SegmentedControl
 						options={themeSourceOptions}
@@ -321,9 +320,11 @@
 
 				{#if contrastFailures.length}
 					<div class="contrast-warning" role="alert">
-						<Icon icon={alertTriangleIcon} width="22" height="22" />
 						<div>
-							<p class="contrast-warning-title">Palette does not meet WCAG AA</p>
+							<p class="contrast-warning-title">
+								<Icon icon={alertTriangleIcon} width="18" height="18" />
+								Palette does not meet WCAG AA
+							</p>
 							<p class="contrast-warning-details">
 								{contrastFailures.join('; ')}. Required contrast is {wcagAAContrast}:1. Use Generate or adjust the colors before applying
 							</p>
@@ -332,7 +333,7 @@
 				{/if}
 
 				<div class="booking-preview-wrap">
-					<BookingPagePreview brandName={name} theme={brandingTheme} />
+					<BookingPagePreview theme={brandingTheme} />
 				</div>
 			</fieldset>
 
@@ -396,23 +397,34 @@
 
 	.identity-fields {
 		display: grid;
+		grid-template-columns: minmax(0, 1fr);
 		gap: 1rem;
 		margin-top: 1rem;
 	}
 
-	.brand-name-field {
-		width: 50%;
+	.brand-name-field,
+	.identity-fields > :global(fieldset.image-selector) {
+		min-width: 0;
+		width: 36rem;
+		max-width: 100%;
 	}
 
-	.section-description {
-		margin: -0.25rem 0 1rem;
-		font-size: 1rem;
-		color: rgb(var(--color-text) / 0.75);
+	.brand-name-field {
+		width: 20rem;
+	}
+
+	.identity-fields > :global(fieldset.image-selector.current-state) {
+		width: fit-content;
+	}
+
+	.identity-fields > :global(fieldset.image-selector.editing-state) {
+		width: 100%;
 	}
 
 	.theme-source-control {
 		display: flex;
-		margin-bottom: 1rem;
+		margin-top: 1rem;
+		margin-bottom: 1.25rem;
 	}
 
 	.preset-grid {
@@ -520,7 +532,7 @@
 
 	.theme-card-title :global(svg) {
 		flex: none;
-		color: rgb(var(--color-primary));
+		color: rgb(var(--color-text));
 	}
 
 	.theme-card-title h3 {
@@ -532,15 +544,16 @@
 	.theme-card-body {
 		display: grid;
 		gap: 0.625rem;
-		padding: 1rem 1.125rem;
+		padding: 1.375rem 1.125rem;
 	}
 
 	.supporting-colors {
 		display: grid;
-		gap: 0.875rem;
-		margin-top: 0.5rem;
+		grid-template-columns: repeat(auto-fit, minmax(min(13rem, 100%), 1fr));
+		gap: 1.25rem;
+		margin-top: 0.75rem;
 		margin-inline: -1.125rem;
-		padding: 0.875rem 1.125rem 0;
+		padding: 1.375rem 1.125rem 0;
 		border-top: 1px solid var(--color-border);
 	}
 
@@ -550,20 +563,17 @@
 	}
 
 	.contrast-warning {
-		display: flex;
-		align-items: flex-start;
-		gap: 0.75rem;
+		width: 100%;
+		min-height: 44px;
 		margin-top: 1.625rem;
-		padding: 0.875rem 1rem;
-		border-radius: 8px;
-		background: rgb(var(--color-text) / 0.06);
-		box-shadow: inset 0 0 0 1px var(--color-border);
-		color: rgb(var(--color-text));
-	}
-
-	.contrast-warning > :global(svg) {
-		flex: none;
-		margin-top: 0.0625rem;
+		border-left: 4px solid rgb(var(--error));
+		padding: 0.5rem 0.875rem;
+		background: rgb(var(--error) / 0.08);
+		color: rgb(var(--error));
+		font-size: 0.8125rem;
+		font-weight: 600;
+		line-height: 1.25;
+		animation: contrast-warning-pulse 480ms ease-in-out;
 	}
 
 	.contrast-warning-title,
@@ -572,14 +582,35 @@
 	}
 
 	.contrast-warning-title {
-		font-size: 0.875rem;
-		font-weight: 600;
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		font: inherit;
+	}
+
+	.contrast-warning-title > :global(svg) {
+		flex: none;
 	}
 
 	.contrast-warning-details {
-		margin-top: 0.1875rem;
-		font-size: 0.8125rem;
-		color: rgb(var(--color-text) / 0.75);
+		margin-top: 0.25rem;
+		font: inherit;
+	}
+
+	@keyframes contrast-warning-pulse {
+		0%, 100% {
+			background: rgb(var(--error) / 0.08);
+		}
+
+		45% {
+			background: rgb(var(--error) / 0.14);
+		}
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.contrast-warning {
+			animation: none;
+		}
 	}
 
 	.unsaved-panel-position {
@@ -633,13 +664,13 @@
 	}
 
 	.unsaved-panel::before {
-		background: var(--color-border);
+		background: rgb(var(--color-primary));
 		filter: drop-shadow(0 8px 24px rgb(var(--color-text) / 0.16));
 	}
 
 	.unsaved-panel::after {
 		z-index: -1;
-		inset: 2px;
+		inset: 1px 1px 0;
 		background: rgb(var(--color-background));
 	}
 
@@ -647,7 +678,7 @@
 		margin: 0;
 		line-height: 1.2;
 		font-size: 1.125rem;
-		font-weight: 600;
+		font-weight: 400;
 	}
 
 	.unsaved-actions {
@@ -707,10 +738,6 @@
 		.unsaved-panel::after {
 			clip-path: none;
 			border-radius: 12px 12px 0 0;
-		}
-
-		.brand-name-field {
-			width: 100%;
 		}
 
 		.preset-grid {

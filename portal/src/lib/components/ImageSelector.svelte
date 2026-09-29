@@ -22,6 +22,7 @@
 		current = '',
 		original = '',
 		editor,
+		showCurrentCopy = true,
 		onchange,
 		ondelete
 	}: {
@@ -30,6 +31,7 @@
 		current?: string;
 		original?: string;
 		editor?: ImageEditor;
+		showCurrentCopy?: boolean;
 		onchange?: () => void;
 		ondelete?: () => void;
 	} = $props();
@@ -206,15 +208,22 @@
 	onDestroy(destroyCropper);
 </script>
 
-<fieldset class="image-selector" class:current-state={Boolean(current) && !source && !editing}>
+<fieldset
+	class="image-selector"
+	class:current-state={Boolean(current) && !source && !editing}
+	class:editing-state={Boolean(source) || editing}
+	class:without-current-copy={!showCurrentCopy}
+>
 	<legend class="selector-legend">{legend}</legend>
 	{#if current && !source && !editing}
-		<div class="current-avatar" in:fade={{ duration: 180 }}>
+		<div class="current-avatar" class:without-copy={!showCurrentCopy} in:fade={{ duration: 180 }}>
 			<img class:round-image={roundCrop} src={current} alt={`Current ${legend.toLowerCase()}`} />
-			<div class="current-copy">
-				<p class="current-title">Current {legend.toLowerCase()}</p>
-				<p class="current-hint">Edit the image or remove it</p>
-			</div>
+			{#if showCurrentCopy}
+				<div class="current-copy">
+					<p class="current-title">Current {legend.toLowerCase()}</p>
+					<p class="current-hint">Edit the image or remove it</p>
+				</div>
+			{/if}
 			<div class="current-actions">
 				<IconButton filled tone="primary" label={`Edit ${legend.toLowerCase()}`} onclick={editImage}>
 					<Icon icon={editIcon} width="20" height="20" />
@@ -309,6 +318,15 @@
 		width: 50%;
 	}
 
+	.image-selector.current-state.without-current-copy {
+		width: fit-content;
+		max-width: 100%;
+	}
+
+	.image-selector.editing-state {
+		width: 100%;
+	}
+
 	.selector-legend {
 		padding: 0 0.25rem;
 		background: rgb(var(--color-background));
@@ -327,6 +345,14 @@
 		transform: translateY(-0.25rem);
 		font-size: 0.8125rem;
 		color: rgb(var(--color-text) / 0.75);
+	}
+
+	.current-avatar.without-copy {
+		grid-template-columns: auto minmax(0, 1fr);
+	}
+
+	.current-avatar.without-copy .current-actions {
+		justify-self: end;
 	}
 
 	.current-title {
@@ -351,6 +377,11 @@
 		width: 4.5rem;
 		height: 4.5rem;
 		object-fit: cover;
+	}
+
+	.current-avatar.without-copy img {
+		width: 5.3rem;
+		height: 5.3rem;
 	}
 
 	.current-avatar img.round-image {
