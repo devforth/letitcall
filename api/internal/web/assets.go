@@ -7,7 +7,7 @@ import (
 
 // static is replaced with the compiled Svelte portal during the Docker build.
 //
-//go:embed static
+//go:embed all:static
 var embedded embed.FS
 
 var Assets fs.FS

@@ -28,6 +28,16 @@ import (
 	"golang.org/x/oauth2/google"
 )
 
+func init() {
+	_ = mime.AddExtensionType(".js", "application/javascript")
+	_ = mime.AddExtensionType(".css", "text/css")
+	_ = mime.AddExtensionType(".svg", "image/svg+xml")
+	_ = mime.AddExtensionType(".png", "image/png")
+	_ = mime.AddExtensionType(".jpg", "image/jpeg")
+	_ = mime.AddExtensionType(".jpeg", "image/jpeg")
+	_ = mime.AddExtensionType(".json", "application/json")
+}
+
 const (
 	sessionCookieName     = "letitcall_session"
 	portalBasePlaceholder = "/__LETITCALL_BASE_PATH__"
