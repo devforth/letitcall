@@ -107,7 +107,7 @@
 		saving = true;
 		error = '';
 		try {
-			const avatar = (await avatarSelector?.exportImage()) ?? '';
+			const avatar = await avatarSelector?.exportImage();
 			const response = await callApi<{ user: ManagedUser }>('/api/users', {
 				method: 'POST',
 				body: JSON.stringify({ email, fullName, password, timezone, avatar })

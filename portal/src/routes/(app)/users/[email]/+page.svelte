@@ -59,7 +59,7 @@
 				timezone
 			};
 			if (password) update.password = password;
-			const avatar = (await avatarSelector?.exportImage()) ?? '';
+			const avatar = await avatarSelector?.exportImage();
 			if (avatar) update.avatar = avatar;
 			await callApi(`/api/users/${encodeURIComponent(email)}`, {
 				method: 'PATCH',
