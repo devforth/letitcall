@@ -168,7 +168,7 @@
 		event.preventDefault();
 		saving = true;
 		try {
-			const logo = (await imageSelector?.exportImage()) ?? '';
+			const logo = await imageSelector?.exportImage();
 		await callApi<{ branding: Branding }>('/api/branding', {
 				method: 'PUT',
 				body: JSON.stringify({ name, theme: brandingTheme, preset: selectedThemePreset, ...(logo ? { logo } : {}) })
