@@ -17,7 +17,7 @@
 	}
 </script>
 
-<div class="flex flex-wrap items-center gap-2">
+<div class="flex flex-wrap items-stretch gap-2">
 	{#each hosts as host (host.email)}
 		{@const recipient = user(host.email)}
 		{@const hostName = recipient?.fullName || host.email}
@@ -51,7 +51,7 @@
 		display: inline-flex;
 		align-items: center;
 		flex-shrink: 0;
-		color: rgb(var(--warning));
+		color: rgb(var(--color-text) / 0.6);
 		font-weight: 600;
 	}
 </style>

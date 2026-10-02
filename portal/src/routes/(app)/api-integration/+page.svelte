@@ -7,7 +7,6 @@
 	import checkIcon from '@iconify-icons/tabler/check';
 	import codeIcon from '@iconify-icons/tabler/code';
 	import copyIcon from '@iconify-icons/tabler/copy';
-	import dotsVerticalIcon from '@iconify-icons/tabler/dots-vertical';
 	import externalLinkIcon from '@iconify-icons/tabler/external-link';
 	import linkIcon from '@iconify-icons/tabler/link';
 	import trashIcon from '@iconify-icons/tabler/trash';
@@ -23,6 +22,7 @@
 	import Dialog from '$lib/components/ui/Dialog.svelte';
 	import IconButton from '$lib/components/ui/IconButton.svelte';
 	import Input from '$lib/components/ui/Input.svelte';
+	import TimedActions from '$lib/components/ui/TimedActions.svelte';
 
 	let integration = $state<APIIntegration | null>(null);
 	let name = $state('');
@@ -247,20 +247,21 @@
 								</thead>
 								<tbody>
 									{#each sortedTokens as token (token.id)}
-										<tr>
+										<tr data-timed-actions-row>
 											<td class="px-4 py-3 font-medium">{token.name}</td>
 											<td class="px-4 py-3"><time datetime={token.createdAt}>{formatDateTime(token.createdAt)}</time></td>
 											<td class="px-4 py-3 text-right">
-												<div class="token-action-slot">
-													<span class="token-action-hint" aria-hidden="true">
-														<Icon icon={dotsVerticalIcon} width="22" height="22" />
-													</span>
+												<TimedActions
+													label={`Show actions for ${token.name}`}
+													controlsId={`token-actions-${token.id}`}
+													size="2.75rem"
+												>
 													<div class="token-actions">
 														<IconButton class="revoke-token-button" filled label="Revoke token" onclick={() => (tokenToRevoke = token)}>
 															<Icon icon={trashIcon} width="20" height="20" />
 														</IconButton>
 													</div>
-												</div>
+												</TimedActions>
 											</td>
 										</tr>
 									{:else}
@@ -407,55 +408,6 @@
 		color: rgb(var(--color-text) / 0.65);
 		font-size: 0.875rem;
 		text-align: center;
-	}
-
-	.token-action-slot {
-		position: relative;
-		display: flex;
-		min-height: 2.75rem;
-		align-items: center;
-		justify-content: flex-end;
-	}
-
-	.token-action-hint {
-		position: absolute;
-		right: 0;
-		display: grid;
-		width: 2.75rem;
-		height: 2.75rem;
-		place-items: center;
-		color: rgb(var(--color-text) / 0.6);
-		pointer-events: none;
-		transition:
-			opacity 0.18s ease,
-			transform 0.18s ease;
-	}
-
-	.token-actions {
-		opacity: 0;
-		pointer-events: none;
-		transform: translateX(0.5rem);
-		transition:
-			opacity 0.18s ease,
-			transform 0.18s ease;
-	}
-
-	.token-table tbody tr:hover .token-actions {
-		opacity: 1;
-		pointer-events: auto;
-		transform: translateX(0);
-	}
-
-	.token-table tbody tr:hover .token-action-hint {
-		opacity: 0;
-		transform: translateX(-0.5rem) scale(0.85);
-	}
-
-	@media (prefers-reduced-motion: reduce) {
-		.token-action-hint,
-		.token-actions {
-			transition: none;
-		}
 	}
 
 	.connection-cards {

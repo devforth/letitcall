@@ -127,19 +127,20 @@
 	}
 
 	.booking-celebration span {
+		--confetti-color: var(--color-primary);
 		position: absolute;
 		top: 0;
 		left: var(--x);
 		width: 0.35rem;
 		height: 0.75rem;
-		border: 1px solid rgb(var(--color-primary));
-		background: rgb(var(--color-primary));
+		border: 1px solid rgb(var(--confetti-color));
+		background: rgb(var(--confetti-color));
 		opacity: 0;
 		animation: booking-hooray 1.2s cubic-bezier(0.18, 0.72, 0.28, 1) var(--delay) both;
 	}
 
 	.booking-celebration span:nth-child(even) {
-		background: rgb(var(--color-text));
+		--confetti-color: var(--color-text);
 	}
 
 	.booking-celebration span:nth-child(3n) {

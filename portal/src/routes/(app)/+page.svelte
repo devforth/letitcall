@@ -1,6 +1,5 @@
 <script lang="ts">
 	import { onDestroy, onMount } from 'svelte';
-	import Icon from '@iconify/svelte';
 	import calendarEventIcon from '@iconify-icons/tabler/calendar-event';
 	import clockIcon from '@iconify-icons/tabler/clock';
 	import historyIcon from '@iconify-icons/tabler/history';
@@ -9,12 +8,14 @@
 	import BookingList from '$lib/components/BookingList.svelte';
 	import PageHeader from '$lib/components/PageHeader.svelte';
 	import PageTitle from '$lib/components/PageTitle.svelte';
+	import SegmentedControl from '$lib/components/ui/SegmentedControl.svelte';
 
 	let bookings = $state<Booking[]>([]);
 	let eventTypes = $state<EventType[]>([]);
 	let users = $state<ManagedUser[]>([]);
 	let loading = $state(true);
 	let now = $state(new Date());
+	let bookingView = $state('upcoming');
 	let clock: number | undefined;
 
 	const blockStyle =
@@ -30,6 +31,10 @@
 			.filter((booking) => Boolean(booking.canceledAt) || new Date(booking.time) < now)
 			.sort((left, right) => right.time.localeCompare(left.time))
 	);
+	const bookingViews = $derived([
+		{ value: 'upcoming', label: 'Upcoming', icon: clockIcon, suffix: `· ${upcoming.length}` },
+		{ value: 'history', label: 'History', icon: historyIcon, suffix: `· ${history.length}` }
+	]);
 
 	onMount(async () => {
 		clock = window.setInterval(() => (now = new Date()), 60_000);
@@ -64,7 +69,14 @@
 			title="Bookings"
 			description="Upcoming appointments and booking history."
 			icon={calendarEventIcon}
-		/>
+		>
+			<SegmentedControl
+				options={bookingViews}
+				value={bookingView}
+				label="Booking view"
+				onchange={(value) => (bookingView = value)}
+			/>
+		</PageHeader>
 	</div>
 
 	{#if loading}
@@ -76,62 +88,29 @@
 			<p class="empty-state">No bookings yet</p>
 		</div>
 	{:else}
-		<section class="booking-group overflow-hidden rounded-lg" style={blockStyle} aria-labelledby="upcoming-title">
-			<div class="booking-group-heading">
-				<Icon icon={clockIcon} width="18" height="18" />
-				<div class="group-label">
-					<h2 id="upcoming-title">Upcoming</h2>
-					{#if upcoming.length > 0}
-						<span class="group-count">· {upcoming.length}</span>
-					{/if}
-				</div>
-			</div>
-			{#if upcoming.length > 0}
-				<BookingList bookings={upcoming} {eventTypes} {users} {now} />
-			{:else}
-				<p class="empty-state">No upcoming bookings</p>
-			{/if}
-		</section>
-
-		{#if history.length > 0}
-			<section class="booking-group overflow-hidden rounded-lg" style={blockStyle} aria-labelledby="history-title">
-				<div class="booking-group-heading">
-					<Icon icon={historyIcon} width="18" height="18" />
-					<div class="group-label">
-						<h2 id="history-title">Booking history</h2>
-						<span class="group-count">· {history.length}</span>
-					</div>
-				</div>
-				<BookingList bookings={history} {eventTypes} {users} {now} historical />
+		{#if bookingView === 'upcoming'}
+			<section aria-labelledby="upcoming-title">
+				<h2 id="upcoming-title" class="sr-only">Upcoming</h2>
+				{#if upcoming.length > 0}
+					<BookingList bookings={upcoming} {eventTypes} {users} {now} />
+				{:else}
+					<p class="empty-state rounded-lg" style={blockStyle}>No upcoming bookings</p>
+				{/if}
+			</section>
+		{:else}
+			<section aria-labelledby="history-title">
+				<h2 id="history-title" class="sr-only">Booking history</h2>
+				{#if history.length > 0}
+					<BookingList bookings={history} {eventTypes} {users} {now} />
+				{:else}
+					<p class="empty-state rounded-lg" style={blockStyle}>No booking history</p>
+				{/if}
 			</section>
 		{/if}
 	{/if}
 </section>
 
 <style>
-	.booking-group-heading {
-		display: flex;
-		align-items: center;
-		gap: 0.5rem;
-		border-bottom: 1px solid var(--color-border);
-		padding: 0.75rem 1rem;
-		background: rgb(var(--color-text) / 0.06);
-		color: rgb(var(--color-text));
-	}
-
-	.group-label {
-		display: flex;
-		align-items: baseline;
-		gap: 0.25rem;
-		font-size: 0.875rem;
-		font-weight: 500;
-	}
-
-	.group-count {
-		opacity: 0.45;
-		font-variant-numeric: tabular-nums;
-	}
-
 	.empty-state {
 		padding: 2.5rem 1rem;
 		color: rgb(var(--color-text) / 0.65);

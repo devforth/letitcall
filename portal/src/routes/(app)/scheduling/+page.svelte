@@ -4,7 +4,6 @@
 	import Icon from '@iconify/svelte';
 	import calendarCogIcon from '@iconify-icons/tabler/calendar-cog';
 	import calendarPlusIcon from '@iconify-icons/tabler/calendar-plus';
-	import dotsVerticalIcon from '@iconify-icons/tabler/dots-vertical';
 	import editIcon from '@iconify-icons/mdi/edit';
 	import externalLinkIcon from '@iconify-icons/charm/link-external';
 	import listDetailsIcon from '@iconify-icons/tabler/list-details';
@@ -14,6 +13,7 @@
 	import HostBadges from '$lib/components/HostBadges.svelte';
 	import ConfirmationDialog from '$lib/components/ui/ConfirmationDialog.svelte';
 	import IconButton from '$lib/components/ui/IconButton.svelte';
+	import TimedActions from '$lib/components/ui/TimedActions.svelte';
 	import PageHeader from '$lib/components/PageHeader.svelte';
 	import PageTitle from '$lib/components/PageTitle.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
@@ -119,7 +119,7 @@
 		{:else}
 			<div class="event-type-list">
 				{#each eventTypes as eventType (eventType.eventSlug)}
-					<article class="event-type-row grid gap-4 p-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-start sm:p-5">
+					<article data-timed-actions-row class="event-type-row grid gap-4 p-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-start sm:p-5">
 						<div class="min-w-0">
 							<div class="flex flex-wrap items-center gap-2">
 								<h3 class="truncate font-semibold" style="color: rgb(var(--color-text));">{eventType.name}</h3>
@@ -130,10 +130,7 @@
 								<HostBadges hosts={hosts(eventType)} {users} />
 							</div>
 						</div>
-						<div class="action-slot">
-							<span class="event-action-hint" aria-hidden="true">
-								<Icon icon={dotsVerticalIcon} width="22" height="22" />
-							</span>
+						<TimedActions label={`Show actions for ${eventType.name}`} controlsId={`event-actions-${eventType.eventSlug}`}>
 							<div class="event-actions">
 								<a
 									class="event-icon-link"
@@ -156,7 +153,7 @@
 									<Icon icon={trashIcon} width="20" height="20" />
 								</IconButton>
 							</div>
-						</div>
+						</TimedActions>
 					</article>
 				{:else}
 					<p class="empty-state">No event types yet</p>
@@ -232,49 +229,9 @@
 		outline-offset: 2px;
 	}
 
-	.action-slot {
-		position: relative;
-		display: flex;
-		min-width: 8.5rem;
-		min-height: 2.5rem;
-		align-items: center;
-		justify-content: flex-end;
-	}
-
-	.event-action-hint {
-		position: absolute;
-		right: 0;
-		display: grid;
-		width: 2.5rem;
-		height: 2.5rem;
-		place-items: center;
-		color: rgb(var(--color-text) / 0.6);
-		pointer-events: none;
-		transition:
-			opacity 0.18s ease,
-			transform 0.18s ease;
-	}
-
 	.event-actions {
 		display: flex;
 		gap: 0.5rem;
-		opacity: 0;
-		pointer-events: none;
-		transform: translateX(0.5rem);
-		transition:
-			opacity 0.18s ease,
-			transform 0.18s ease;
-	}
-
-	.event-type-row:hover .event-actions {
-		opacity: 1;
-		pointer-events: auto;
-		transform: translateX(0);
-	}
-
-	.event-type-row:hover .event-action-hint {
-		opacity: 0;
-		transform: translateX(-0.5rem) scale(0.85);
 	}
 
 	.empty-state {
@@ -289,9 +246,7 @@
 	}
 
 	@media (prefers-reduced-motion: reduce) {
-		.event-type-row,
-		.event-action-hint,
-		.event-actions {
+		.event-type-row {
 			transition: none;
 		}
 	}

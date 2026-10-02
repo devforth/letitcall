@@ -6,12 +6,12 @@
 	import arrowDownIcon from '@iconify-icons/tabler/arrow-down';
 	import arrowUpIcon from '@iconify-icons/tabler/arrow-up';
 	import editIcon from '@iconify-icons/mdi/edit';
-	import dotsIcon from '@iconify-icons/tabler/dots-vertical';
 	import trashIcon from '@iconify-icons/tabler/trash';
 	import worldIcon from '@iconify-icons/tabler/world';
 	import type { ManagedUser } from '$lib/types';
 	import IconButton from '$lib/components/ui/IconButton.svelte';
 	import Avatar from '$lib/components/ui/Avatar.svelte';
+	import TimedActions from '$lib/components/ui/TimedActions.svelte';
 
 	type SortKey = 'name' | 'calendar' | 'timezone';
 	type SortDirection = 'ascending' | 'descending';
@@ -93,7 +93,7 @@
 		</thead>
 		<tbody>
 			{#each sortedUsers as user (user.email)}
-				<tr>
+				<tr data-timed-actions-row>
 					<td class="px-5 py-4">
 						<div class="flex min-w-0 items-center gap-3">
 							<span class="avatar-wrap">
@@ -128,10 +128,7 @@
 						</span>
 					</td>
 					<td class="px-5 py-4">
-						<div class="action-slot">
-							<span class="user-action-hint" aria-hidden="true">
-								<Icon icon={dotsIcon} width="22" height="22" />
-							</span>
+						<TimedActions label={`Show actions for ${user.email}`} controlsId={`user-actions-${user.email}`}>
 							<div class="user-actions flex justify-end gap-2">
 								<IconButton filled tone="primary" label={`Edit ${user.email}`} onclick={() => onedit(user.email)}>
 									<Icon icon={editIcon} width="20" height="20" />
@@ -148,7 +145,7 @@
 									</IconButton>
 								{/if}
 							</div>
-						</div>
+						</TimedActions>
 					</td>
 				</tr>
 			{:else}
@@ -228,57 +225,6 @@
 		color: rgb(var(--color-text) / 0.65);
 		font-size: 0.875rem;
 		text-align: center;
-	}
-
-	.action-slot {
-		position: relative;
-		display: flex;
-		min-height: 2.5rem;
-		align-items: center;
-		justify-content: flex-end;
-	}
-
-	.user-action-hint {
-		position: absolute;
-		right: 0;
-		display: grid;
-		width: 2.5rem;
-		height: 2.5rem;
-		place-items: center;
-		color: rgb(var(--color-text) / 0.6);
-		pointer-events: none;
-		transition:
-			opacity 0.18s ease,
-			transform 0.18s ease;
-	}
-
-	.user-actions {
-		opacity: 0;
-		pointer-events: none;
-		transform: translateX(0.5rem);
-		transition:
-			opacity 0.18s ease,
-			transform 0.18s ease;
-	}
-
-	.user-table tbody tr:hover .user-actions,
-	.user-table tbody tr:focus-within .user-actions {
-		opacity: 1;
-		pointer-events: auto;
-		transform: translateX(0);
-	}
-
-	.user-table tbody tr:hover .user-action-hint,
-	.user-table tbody tr:focus-within .user-action-hint {
-		opacity: 0;
-		transform: translateX(-0.5rem) scale(0.85);
-	}
-
-	@media (prefers-reduced-motion: reduce) {
-		.user-actions,
-		.user-action-hint {
-			transition: none;
-		}
 	}
 
 	:global(.calendar-status path) {

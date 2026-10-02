@@ -121,10 +121,25 @@
 	.segmented-control-option:hover:not(.on) {
 		background: rgb(var(--color-background));
 		color: rgb(var(--color-primary));
+		font-weight: 500;
+		letter-spacing: -0.012em;
 		box-shadow: 0 1px 3px rgb(0 0 0 / 0.12);
 	}
 
 	.segmented-control-option.on {
 		color: rgb(var(--color-text));
+		font-weight: 500;
+		letter-spacing: -0.012em;
+	}
+
+	:global(html.dark) .segmented-control-option {
+		font-weight: 500;
+		letter-spacing: -0.012em;
+	}
+
+	:global(html.dark) .segmented-control-option.on,
+	:global(html.dark) .segmented-control-option:hover:not(.on) {
+		font-weight: 400;
+		letter-spacing: normal;
 	}
 </style>
