@@ -53,6 +53,45 @@ The requested scopes include identity and permission to manage Google Calendar e
 
 When a booking is created, Mailgun delivery and Google Calendar delivery run in parallel. Email is sent to every event-type recipient when Mailgun is configured. A Google Calendar event is added separately to each recipient whose user account is Google-connected; recipients without a Google connection are silently skipped.
 
+## Custom styles
+
+Optional. Add `/custom.css` to the container to override portal styles:
+
+```css
+/*
+	Custom Let It Call styles, served at /custom.css and loaded before the portal styles.
+
+	For agents: the markup you style is the Svelte portal at
+	https://github.com/devforth/letitcall/tree/main/portal/src
+		routes/layout.css    global classes (.button-primary, ...) and theme variables (--color-*)
+		lib/components/ui/   reusable controls: Button, Input, Select, Checkbox, Calendar, Dialog
+		lib/components/      feature blocks: AppShell, BookingList, EventTypeEditor, ...
+		routes/              pages: (app)/ back office, book/ public booking, event/ booking management, auth/ login
+	Portal rules use !important inside Tailwind cascade layers, so keep every rule in
+	@layer custom and mark each declaration !important. Native CSS nesting works.
+*/
+
+@layer custom {
+	.button-primary {
+		background: linear-gradient(135deg, #7c3aed, #db2777) !important;
+		border-color: transparent !important;
+	}
+}
+```
+
+Mount it:
+
+```sh
+docker run ... -v "$PWD/custom.css:/custom.css:ro" devforth/letitcall
+```
+
+Or extend the image:
+
+```dockerfile
+FROM devforth/letitcall
+COPY custom.css /custom.css
+```
+
 ## For Developers
 
 VS Code starts the portal on `41783` and API on `41784`. To run manually:
@@ -69,6 +108,8 @@ pnpm run dev --host 127.0.0.1 --port 41783 --strictPort
 ```
 
 Open `http://127.0.0.1:41783`; default login is `admin@example.com` / `admin`. There is no signup: the first user comes from `FIRSTUSER__CREDENTIALS__EMAIL` and `FIRSTUSER__CREDENTIALS__PASSWORD`; add later users in Users. Set the product name and logo in Branding. Manage event types in Scheduling and book at `/book/{event-slug}`.
+
+Locally, [custom styles](#custom-styles) come from `api/custom.css` (the Go API working directory); it is excluded from Docker builds.
 
 ### Google OAuth test credentials
 

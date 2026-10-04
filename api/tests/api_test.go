@@ -303,6 +303,20 @@ func TestBrandingAPIValidatesNameAndLogo(t *testing.T) {
 	}
 }
 
+func TestCustomCSSIsServedFromWorkingDirectory(t *testing.T) {
+	f := newFixture(t, false)
+	t.Chdir(t.TempDir())
+	expectStatus(t, f.request(http.MethodGet, "/custom.css", nil), http.StatusNotFound)
+	if err := os.WriteFile("custom.css", []byte(".button-primary { color: red; }"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	served := f.request(http.MethodGet, "/custom.css", nil)
+	body := expectStatus(t, served, http.StatusOK)
+	if served.Header.Get("Content-Type") != "text/css; charset=utf-8" || string(body) != ".button-primary { color: red; }" {
+		t.Fatalf("custom CSS was not served: %s", body)
+	}
+}
+
 func TestBasePathMountsAPIAndPortal(t *testing.T) {
 	f := newFixtureAtBasePath(t, false, "/letitcall")
 	expectStatus(t, f.request(http.MethodGet, "/api/health", nil), http.StatusOK)
