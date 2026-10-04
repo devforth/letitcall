@@ -13,7 +13,7 @@
 
 @layer custom {
 	.button-primary {
-		background: linear-gradient(135deg, #7c3aed, #db2777) !important;
-		border-color: transparent !important;
+		/* background: linear-gradient(135deg, #7c3aed, #db2777) !important; */
+		/* border-color: transparent !important; */
 	}
 }

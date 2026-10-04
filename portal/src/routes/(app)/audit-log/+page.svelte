@@ -32,6 +32,7 @@
 			title="Audit log"
 			description="Immutable history of backoffice changes. Dates and times use your local timezone."
 			icon={historyIcon}
+			count={auditLogs.length}
 		/>
 	</div>
 

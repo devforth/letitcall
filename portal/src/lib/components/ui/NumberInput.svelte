@@ -37,6 +37,7 @@
 			{required}
 			step="1"
 			class="input"
+			onwheel={(event) => event.currentTarget.blur()}
 		/>
 		<label class="float-label" for={id}>{label}</label>
 		{#if icon}

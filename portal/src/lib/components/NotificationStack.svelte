@@ -1,14 +1,15 @@
 <script lang="ts">
 	import xIcon from '@iconify-icons/tabler/x';
+	import alertTriangleIcon from '@iconify-icons/tabler/alert-triangle';
 	import checkIcon from '@iconify-icons/tabler/check';
-	import exclamationIcon from '@iconify-icons/tabler/exclamation-mark';
+	import infoIcon from '@iconify-icons/tabler/info-small';
 	import Icon from '@iconify/svelte';
 	import { dismissNotification, notificationDurationMs, notifications } from '$lib/notifications';
 
 	const variantIcons = {
 		success: checkIcon,
-		error: xIcon,
-		info: exclamationIcon
+		error: alertTriangleIcon,
+		info: infoIcon
 	};
 </script>
 
@@ -18,48 +19,44 @@
 >
 	{#each $notifications as notification (notification.id)}
 		<div
-			class="notification pointer-events-auto overflow-hidden rounded-lg"
-		class:notification-info={notification.variant === 'info'}
-		class:notification-error={notification.variant === 'error'}
-		class:notification-success={notification.variant === 'success'}
+			class="notification pointer-events-auto"
+			class:notification-info={notification.variant === 'info'}
+			class:notification-error={notification.variant === 'error'}
+			class:notification-success={notification.variant === 'success'}
 		>
+			<span class="notification-badge">
+				<Icon icon={variantIcons[notification.variant]} width="20" height="20" aria-hidden="true" />
+			</span>
+			<div class="grid min-w-0 flex-1 gap-0.5">
+				<p class="notification-title">{notification.message}</p>
+				{#if notification.subtitle}
+					<p class="notification-subtitle">{notification.subtitle}</p>
+				{/if}
+				{#if notification.progress !== undefined}
+					<div class="mt-2 flex items-center justify-between gap-3 text-xs">
+						<div class="h-1.5 flex-1 overflow-hidden rounded bg-border">
+							<div
+								class="h-full bg-current transition-all"
+								style={`width: ${notification.progress}%`}
+								aria-valuenow={notification.progress}
+								aria-valuemin={0}
+								aria-valuemax={100}
+								role="progressbar"
+							></div>
+						</div>
+						<span class="whitespace-nowrap font-medium">{notification.progress}%</span>
+					</div>
+				{/if}
+			</div>
 			<button
 				type="button"
-				class="notification-close absolute top-2 right-2 grid size-6 place-items-center rounded-md transition"
+				class="notification-close"
 				aria-label="Dismiss notification"
 				onclick={() => dismissNotification(notification.id)}
 			>
-				<Icon icon={xIcon} width="14" height="14" aria-hidden="true" />
+				<Icon icon={xIcon} width="16" height="16" aria-hidden="true" />
 			</button>
-			<div class="flex items-stretch">
-				<span class="notification-badge flex shrink-0 items-center justify-center px-2.5">
-					<Icon icon={variantIcons[notification.variant]} width="30" height="30" aria-hidden="true" />
-				</span>
-				<div class="flex min-w-0 flex-1 flex-col gap-3 p-4">
-					<p class="text-sm">{notification.message}</p>
-					{#if notification.progress !== undefined}
-						<div class="flex items-center justify-between gap-3 text-xs">
-							<div class="flex-1">
-								<div class="h-1.5 bg-border rounded overflow-hidden">
-									<div
-										class="h-full bg-current transition-all"
-										style={`width: ${notification.progress}%`}
-										aria-valuenow={notification.progress}
-										aria-valuemin={0}
-										aria-valuemax={100}
-										role="progressbar"
-									></div>
-								</div>
-							</div>
-							<span class="whitespace-nowrap font-medium">{notification.progress}%</span>
-						</div>
-						{#if notification.subtitle}
-							<p class="text-xs opacity-75">{notification.subtitle}</p>
-						{/if}
-					{/if}
-					<div class="notification-timer" style={`--timer-duration: ${notificationDurationMs}ms;`} aria-hidden="true"></div>
-				</div>
-			</div>
+			<div class="notification-timer" style={`--timer-duration: ${notificationDurationMs}ms;`} aria-hidden="true"></div>
 		</div>
 	{/each}
 </div>
@@ -67,24 +64,18 @@
 <style>
 	.notification {
 		position: relative;
+		display: flex;
+		align-items: flex-start;
+		gap: 0.75rem;
+		overflow: hidden;
+		border-radius: 10px;
+		padding: 0.875rem 0.75rem 1rem 0.875rem;
 		--notification-color: rgb(var(--color-primary));
 		background: rgb(var(--color-background));
-		box-shadow: var(--shadow);
-		border: 1px solid var(--color-border);
-	}
-
-	.notification-close {
-		color: rgb(var(--color-text) / 0.5);
-	}
-
-	.notification-close:hover {
+		box-shadow:
+			0 0 0 1px var(--color-border),
+			0 8px 24px rgb(0 0 0 / 0.1);
 		color: rgb(var(--color-text));
-		background: rgb(var(--color-background));
-	}
-
-	.notification-badge {
-		color: var(--notification-color);
-		background: color-mix(in srgb, rgb(var(--color-background)), black 14%);
 	}
 
 	.notification-info {
@@ -99,26 +90,57 @@
 		--notification-color: rgb(var(--success));
 	}
 
-	.notification-timer {
-		position: relative;
-		margin-top: 0.25rem;
-		height: 4px;
-		border-radius: 9999px;
-		background: rgb(var(--color-background));
-		overflow: hidden;
+	.notification-badge {
+		display: grid;
+		width: 2.25rem;
+		height: 2.25rem;
+		flex: none;
+		place-items: center;
+		border-radius: 999px;
+		background: color-mix(in srgb, var(--notification-color) 14%, transparent);
+		color: var(--notification-color);
 	}
 
-	.notification-timer::after {
-		content: '';
+	.notification-title {
+		margin: 0;
+		font-size: 0.9375rem;
+		font-weight: 600;
+		line-height: 1.35;
+	}
+
+	.notification-subtitle {
+		margin: 0;
+		color: rgb(var(--color-text));
+		font-size: 0.8125rem;
+	}
+
+	.notification-close {
+		display: grid;
+		width: 1.75rem;
+		height: 1.75rem;
+		flex: none;
+		place-items: center;
+		border: 0;
+		border-radius: 6px;
+		background: transparent;
+		color: rgb(var(--color-text) / 0.65);
+		cursor: pointer;
+	}
+
+	.notification-close:hover {
+		background: rgb(var(--color-text) / 0.1);
+		color: rgb(var(--color-text));
+	}
+
+	.notification-timer {
 		position: absolute;
-		inset: 0;
-		border-radius: inherit;
-		background: var(--color-border);
-		transform-origin: right;
-		animation-name: expire;
-		animation-duration: var(--timer-duration);
-		animation-timing-function: linear;
-		animation-fill-mode: forwards;
+		left: 0;
+		right: 0;
+		bottom: 0;
+		height: 2px;
+		background: var(--notification-color);
+		transform-origin: left;
+		animation: expire var(--timer-duration) linear forwards;
 	}
 
 	@keyframes expire {
