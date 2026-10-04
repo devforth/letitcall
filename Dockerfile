@@ -30,6 +30,7 @@ FROM gcr.io/distroless/static-debian12:nonroot
 COPY --from=api --chown=65532:65532 /out/letitcall /letitcall
 COPY --from=api --chown=65532:65532 /out/data /data
 
+WORKDIR /
 ENV HTTP__PORT=80 \
 	STORAGE__LEVELDB__PATH=/data
 

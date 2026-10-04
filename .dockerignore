@@ -3,6 +3,7 @@
 .codex
 .data
 api/.env
+api/custom.css
 api/node_modules
 api/internal/mailing/templates/rendered
 portal/build

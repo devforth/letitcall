@@ -166,6 +166,7 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /content/avatars/{filename}", s.serveAvatar)
 	mux.HandleFunc("GET /content/logos/{filename}", s.serveLogo)
 	mux.HandleFunc("/content/", http.NotFound)
+	mux.HandleFunc("GET /custom.css", s.serveCustomCSS)
 	mux.HandleFunc("/", s.servePortal)
 	handler := s.middleware(mux)
 	basePath := s.cfg.HTTP.BasePath()
@@ -315,6 +316,11 @@ func (s *Server) servePortal(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", contentType)
 	}
 	_, _ = w.Write(contents)
+}
+
+// serveCustomCSS serves the optional operator stylesheet from the working directory (/custom.css in Docker).
+func (s *Server) serveCustomCSS(w http.ResponseWriter, r *http.Request) {
+	http.ServeFile(w, r, "custom.css")
 }
 
 func (s *Server) health(w http.ResponseWriter, _ *http.Request) {
