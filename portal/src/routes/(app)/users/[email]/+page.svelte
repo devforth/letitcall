@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
 	import { onMount } from 'svelte';
 	import Icon from '@iconify/svelte';
@@ -9,8 +8,10 @@
 	import xIcon from '@iconify-icons/tabler/x';
 	import { callApi, appPath, avatarURL } from '$lib/api';
 	import ImageSelector from '$lib/components/ImageSelector.svelte';
+	import LeaveGuard from '$lib/components/LeaveGuard.svelte';
 	import PageHeader from '$lib/components/PageHeader.svelte';
 	import PageTitle from '$lib/components/PageTitle.svelte';
+	import StickyActions from '$lib/components/StickyActions.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
 	import Input from '$lib/components/ui/Input.svelte';
 	import SearchableSelect from '$lib/components/ui/SearchableSelect.svelte';
@@ -28,6 +29,12 @@
 	let loading = $state(true);
 	let saving = $state(false);
 	let error = $state('');
+	let avatarChanged = $state(false);
+	let savedState = $state('');
+	let leaveGuard: LeaveGuard;
+	const changed = $derived(
+		JSON.stringify({ fullName, timezone, avatarPath }) !== savedState || !!password || avatarChanged
+	);
 
 	onMount(async () => {
 		const localTimezones = getLocalTimezones();
@@ -42,6 +49,7 @@
 			avatarPath = user.avatarPath ?? '';
 			avatarSource = user.avatarSource;
 			if (!timezones.includes(timezone)) timezones = [timezone, ...timezones];
+			savedState = JSON.stringify({ fullName, timezone, avatarPath });
 		} catch (cause) {
 			error = cause instanceof Error ? cause.message : 'Unable to load user';
 		} finally {
@@ -65,7 +73,7 @@
 				method: 'PATCH',
 				body: JSON.stringify(update)
 			});
-			await goto(appPath('/users'));
+			await leaveGuard.leave(appPath('/users'));
 		} catch (cause) {
 			error = cause instanceof Error ? cause.message : 'Unable to update user';
 		} finally {
@@ -83,6 +91,7 @@
 			title="Edit user"
 			description="Update account settings without changing the sign-in email."
 			icon={userEditIcon}
+			parent={{ href: appPath('/users'), label: 'Users' }}
 		/>
 	</div>
 
@@ -121,12 +130,13 @@
 					original={avatarSource ? avatarURL(avatarSource.path) : ''}
 					editor={avatarSource?.editor}
 					showCurrentCopy={false}
+					onchange={() => (avatarChanged = true)}
 					ondelete={() => (avatarPath = '')}
 					bind:this={avatarSelector}
 				/>
 			</div>
-			<div class="mt-3 flex flex-wrap justify-end gap-3 lg:col-span-2">
-				<Button variant="primary-outline" class="outlined-action-button" onclick={() => goto(appPath('/users'))}>
+			<StickyActions class="lg:col-span-2">
+				<Button variant="primary-outline" class="outlined-action-button" onclick={() => leaveGuard.leave(appPath('/users'))}>
 					<span class="flex items-center gap-2">
 						<Icon icon={xIcon} width="20" height="20" />
 						Cancel
@@ -138,7 +148,14 @@
 						{saving ? 'Saving…' : 'Save changes'}
 					</span>
 				</Button>
-			</div>
+			</StickyActions>
 		</form>
 	{/if}
 </section>
+
+<LeaveGuard
+	bind:this={leaveGuard}
+	{changed}
+	title="Leave without saving?"
+	description="Your changes to this user have not been saved and will be lost."
+/>

@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { goto } from '$app/navigation';
 	import { onDestroy, onMount } from 'svelte';
 	import Icon from '@iconify/svelte';
 	import calendarEventIcon from '@iconify-icons/tabler/calendar-event';
@@ -8,26 +7,23 @@
 	import clockIcon from '@iconify-icons/tabler/clock';
 	import usersIcon from '@iconify-icons/tabler/users';
 	import xIcon from '@iconify-icons/tabler/x';
+	import refreshIcon from '@iconify-icons/tabler/refresh';
 	import { appPath, callApi } from '$lib/api';
+	import LeaveGuard from '$lib/components/LeaveGuard.svelte';
 	import PageHeader from '$lib/components/PageHeader.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
 	import Input from '$lib/components/ui/Input.svelte';
 	import NumberInput from '$lib/components/ui/NumberInput.svelte';
 	import SearchableSelect from '$lib/components/ui/SearchableSelect.svelte';
 	import ScheduleEditor from '$lib/components/ScheduleEditor.svelte';
+	import StickyActions from '$lib/components/StickyActions.svelte';
 	import HostSelector from '$lib/components/HostSelector.svelte';
 	import type { EventType, ManagedUser, ScheduleDay } from '$lib/types';
 
 	let {
-		slug = '',
-		embedded = false,
-		oncancel,
-		oncreate
+		slug = ''
 	}: {
 		slug?: string;
-		embedded?: boolean;
-		oncancel?: () => void;
-		oncreate?: (eventType: EventType) => void;
 	} = $props();
 
 	let users = $state<ManagedUser[]>([]);
@@ -46,14 +42,25 @@
 	let saving = $state(false);
 
 	const eventSlug = $derived(slug || slugify(name));
-	const blockStyle =
-		'background: rgb(var(--color-background)); border-color: var(--color-border);';
+	const requestBody = $derived({
+		name,
+		durationMinutes: Number(durationChoice === 'custom' ? customDuration : durationChoice),
+		bookingWindowDays: Number(bookingWindowDays),
+		inviteeLimit: inviteeLimit === '' ? null : Number(inviteeLimit),
+		timezone,
+		requiredHostEmails,
+		optionalHostEmails,
+		schedule: schedule.map((day) =>
+			day.enabled ? day : { day: day.day, enabled: false, start: '', end: '', breaks: [] }
+		)
+	});
+	let savedEventType = $state<EventType>();
+	let savedBody = $state('');
+	const changed = $derived(JSON.stringify(requestBody) !== savedBody);
 	const outlinedBlockStyle =
 		'background: rgb(var(--color-background)); box-shadow: 0 0 0 1px var(--color-border);';
-	const eventDetailsContainerStyle = `${blockStyle} background: rgb(var(--color-primary));`;
-	const newEventContainerStyle =
-		'background: rgb(var(--color-primary)); box-shadow: 0 0 0 1px var(--color-border);';
 	let clock: number | undefined;
+	let leaveGuard: LeaveGuard;
 
 	onMount(async () => {
 		try {
@@ -66,11 +73,13 @@
 				const response = await callApi<{ eventType: EventType }>(
 					`/api/event-types/${encodeURIComponent(slug)}`
 				);
+				savedEventType = response.eventType;
 				applyEventType(response.eventType);
 			} else {
 				timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
 				requiredHostEmails = [sessionResponse.user.email];
 			}
+			savedBody = JSON.stringify(requestBody);
 			updateCurrentTime();
 			clock = window.setInterval(updateCurrentTime, 1000);
 		} catch {
@@ -121,33 +130,18 @@
 		}
 		saving = true;
 		try {
-			const body = {
-				name,
-				durationMinutes: Number(durationChoice === 'custom' ? customDuration : durationChoice),
-				bookingWindowDays: Number(bookingWindowDays),
-				inviteeLimit: inviteeLimit === '' ? null : Number(inviteeLimit),
-				timezone,
-				requiredHostEmails,
-				optionalHostEmails,
-				schedule: schedule.map((day) =>
-					day.enabled
-						? day
-						: { day: day.day, enabled: false, start: '', end: '', breaks: [] }
-				)
-			};
 			if (slug) {
 				await callApi(`/api/event-types/${encodeURIComponent(slug)}`, {
 					method: 'PUT',
-					body: JSON.stringify(body)
+					body: JSON.stringify(requestBody)
 				});
-				await goto(appPath('/scheduling'));
+				await leaveGuard.leave(appPath('/scheduling'));
 			} else {
-				const response = await callApi<{ eventType: EventType }>('/api/event-types', {
+				await callApi('/api/event-types', {
 					method: 'POST',
-					body: JSON.stringify(body)
+					body: JSON.stringify(requestBody)
 				});
-				if (oncreate) oncreate(response.eventType);
-				else await goto(appPath('/scheduling'));
+				await leaveGuard.leave(appPath('/scheduling'));
 			}
 		} catch {
 			// callApi reports the error globally.
@@ -157,8 +151,7 @@
 	}
 
 	function cancel() {
-		if (oncancel) oncancel();
-		else void goto(appPath('/scheduling'));
+		void leaveGuard.leave(appPath('/scheduling'));
 	}
 
 	function slugify(value: string) {
@@ -183,46 +176,19 @@
 		<p class="text-sm" style="color: rgb(var(--color-text) / 0.65);">Loading event type…</p>
 	</div>
 {:else}
-	{#if embedded && slug}
-		<div class="mb-8">
-			<PageHeader
-				id="edit-event-type-title"
-				title="Edit event type"
-				description="Configure the booking duration, recipients and availability."
-				icon={calendarEventIcon}
-			/>
-		</div>
-	{/if}
-	<form
-		class={embedded ? (slug ? '' : 'overflow-hidden rounded-[0.625rem]') : 'flex flex-col gap-4'}
-		style={embedded && !slug ? newEventContainerStyle : undefined}
-		onsubmit={save}
-	>
-		<div
-			class={embedded ? `${slug ? '' : 'ml-1 rounded-l-lg'} flex flex-col rounded-md` : 'contents'}
-			style={embedded ? 'background: rgb(var(--color-background));' : undefined}
-		>
-		{#if !embedded}
-			<PageHeader
-				id="event-type-title"
-				title={slug ? 'Edit event type' : 'New event type'}
-				description="Configure the booking duration, recipients and availability."
-				icon={slug ? calendarEventIcon : calendarPlusIcon}
-			/>
-		{/if}
-		{#if embedded && !slug}
-			<div class="flex min-w-0 items-center gap-2 rounded-t-md p-3 sm:p-4" style="background: linear-gradient(110deg, rgb(var(--color-primary) / 0.12), rgb(var(--color-background)) 42%); box-shadow: inset 0 -1px 0 var(--color-border);">
-				<span class="grid size-8 shrink-0 place-items-center" style="color: rgb(var(--color-primary));">
-					<Icon icon={slug ? calendarEventIcon : calendarPlusIcon} width="26" height="26" aria-hidden="true" />
-				</span>
-				<h1 class="text-xl font-semibold" style="color: rgb(var(--color-primary));">New event type</h1>
-			</div>
-		{/if}
-
-		<div class={embedded ? '' : 'rounded-[0.625rem] border-2'} style={embedded ? undefined : eventDetailsContainerStyle}>
+	<div class="mb-8">
+		<PageHeader
+			id="event-type-title"
+			title={slug ? 'Edit event type' : 'New event type'}
+			description="Configure the booking duration, recipients and availability."
+			icon={slug ? calendarEventIcon : calendarPlusIcon}
+			parent={{ href: appPath('/scheduling'), label: 'Scheduling' }}
+		/>
+	</div>
+	<form onsubmit={save}>
+		<div class="flex flex-col rounded-md" style="background: rgb(var(--color-background));">
 			<section
-				class={`grid gap-5 sm:grid-cols-2 ${embedded && slug ? '' : 'p-4 sm:p-5'} ${embedded ? '' : 'ml-1 rounded-md rounded-l-lg'}`}
-				style={`border-color: var(--color-border); ${embedded ? '' : 'background: rgb(var(--color-background));'}`}
+				class="grid gap-5 sm:grid-cols-2"
 				aria-labelledby="event-details-title"
 			>
 				<div class="-mb-2 sm:col-span-2">
@@ -253,48 +219,57 @@
 				{#if durationChoice === 'custom'}
 					<NumberInput id="custom-duration" label="Custom duration in minutes" bind:value={customDuration} max={1440} icon={clockIcon} required />
 				{/if}
-				<NumberInput id="booking-window" label="How many calendar days ahead can invitees book?" bind:value={bookingWindowDays} icon={calendarEventIcon} required />
+				<NumberInput id="booking-window" label="How many calendar days ahead can invitees book" bind:value={bookingWindowDays} icon={calendarEventIcon} required />
 				<NumberInput id="invitee-limit" label="Invitees limit (empty means one booking)" bind:value={inviteeLimit} placeholder="One booking" icon={usersIcon} />
 				<Input id="timezone" label="Schedule timezone (read-only)" value={`${timezone} — ${currentTime}`} readonly />
 			</section>
-		</div>
 
-		<div class={embedded ? (slug ? 'mt-8' : 'mt-4') : ''}>
+		<div class="mt-8">
 			<HostSelector
 				{users}
-				{embedded}
-				flush={embedded && Boolean(slug)}
 				bind:required={requiredHostEmails}
 				bind:optional={optionalHostEmails}
 				error={hostsError}
 				onchange={() => (hostsError = '')}
 			/>
 		</div>
-		<ScheduleEditor bind:schedule {embedded} flush={embedded && Boolean(slug)} />
+		<ScheduleEditor bind:schedule stepMinutes={requestBody.durationMinutes} />
 
-		<div class={`flex flex-wrap items-center gap-3 ${embedded ? `justify-end ${slug ? 'mt-8' : 'p-4 sm:p-5'}` : ''}`}>
-			<Button
-				variant="primary-outline"
-				class="outlined-action-button"
-				onclick={cancel}
-			>
-				<span class="flex items-center gap-2">
-					<Icon icon={xIcon} width="20" height="20" />
-					Cancel
-				</span>
-			</Button>
-			<Button
-				type="submit"
-				rounded
-				class="primary-action-button"
-				disabled={saving}
-			>
-				<span class="flex items-center gap-2">
-					<Icon icon={checkIcon} width="20" height="20" />
-					{saving ? (slug ? 'Saving…' : 'Creating…') : (slug ? 'Save' : 'Create')}
-				</span>
-			</Button>
-		</div>
+		{#if !slug || changed}
+			<StickyActions class="mt-3">
+				<Button
+					variant="primary-outline"
+					class="outlined-action-button"
+					disabled={saving}
+					onclick={slug ? () => applyEventType(savedEventType!) : cancel}
+				>
+					<span class="flex items-center gap-2">
+						<Icon icon={slug ? refreshIcon : xIcon} width="20" height="20" />
+						{slug ? 'Revert' : 'Cancel'}
+					</span>
+				</Button>
+				<Button
+					type="submit"
+					rounded
+					class="primary-action-button"
+					disabled={saving}
+				>
+					<span class="flex items-center gap-2">
+						<Icon icon={checkIcon} width="20" height="20" />
+						{saving ? (slug ? 'Saving…' : 'Creating…') : (slug ? 'Save' : 'Create')}
+					</span>
+				</Button>
+			</StickyActions>
+		{/if}
 		</div>
 	</form>
 {/if}
+
+<LeaveGuard
+	bind:this={leaveGuard}
+	{changed}
+	title={slug ? 'Leave without saving?' : 'Leave without creating?'}
+	description={slug
+		? 'Your changes to this event type have not been saved and will be lost.'
+		: 'This event type has not been created yet. Everything you entered will be lost.'}
+/>

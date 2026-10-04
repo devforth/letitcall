@@ -5,7 +5,6 @@
 	import checkIcon from '@iconify-icons/tabler/check';
 	import colorSwatchIcon from '@iconify-icons/tabler/color-swatch';
 	import moonIcon from '@iconify-icons/tabler/moon';
-	import refreshIcon from '@iconify-icons/tabler/refresh';
 	import sparklesIcon from '@iconify-icons/tabler/sparkles';
 	import archiveRestoreIcon from '@iconify-icons/lucide/archive-restore';
 	import sunIcon from '@iconify-icons/tabler/sun';
@@ -16,7 +15,8 @@
 	import type { Branding, BrandingTheme, ImageSource } from '$lib/types';
 	import { showSuccess } from '$lib/notifications';
 	import BookingPagePreview from '$lib/components/BookingPagePreview.svelte';
-	import Button from '$lib/components/ui/Button.svelte';
+	import UnsavedChangesActions from '$lib/components/UnsavedChangesActions.svelte';
+	import LeaveGuard from '$lib/components/LeaveGuard.svelte';
 	import ColorPicker from '$lib/components/ui/ColorPicker.svelte';
 	import IconButton from '$lib/components/ui/IconButton.svelte';
 	import ImageSelector from '$lib/components/ImageSelector.svelte';
@@ -272,7 +272,7 @@
 	{#if loading}
 		<p class="loading-panel p-6 text-sm">Loading branding…</p>
 	{:else}
-		<form class="branding-form" class:has-unsaved-changes={hasUnsavedChanges} onsubmit={saveBranding}>
+		<form class="branding-form" onsubmit={saveBranding}>
 			<fieldset class="section">
 				<legend>Identity</legend>
 				<div class="identity-fields">
@@ -337,34 +337,18 @@
 				</div>
 			</fieldset>
 
-			<div class="branding-submit">
-				{#if hasUnsavedChanges}
-					<div class="unsaved-panel-position">
-						<div class="unsaved-panel-boundary">
-							<div class="unsaved-panel" aria-live="polite">
-								<p class="unsaved-title">You have unsaved changes</p>
-								<div class="unsaved-actions">
-									<Button variant="primary-outline" class="outlined-action-button" onclick={revertChanges} disabled={saving}>
-										<span class="flex items-center gap-2">
-											<Icon icon={refreshIcon} width="20" height="20" />
-											Revert
-										</span>
-									</Button>
-									<Button type="submit" rounded class="primary-action-button" disabled={saving}>
-										<span class="flex items-center gap-2">
-											<Icon icon={checkIcon} width="20" height="20" />
-											{saving ? 'Applying…' : 'Apply'}
-										</span>
-									</Button>
-								</div>
-							</div>
-						</div>
-					</div>
-				{/if}
-			</div>
+			{#if hasUnsavedChanges}
+				<UnsavedChangesActions {saving} submitLabel="Apply" savingLabel="Applying…" onrevert={revertChanges} />
+			{/if}
 		</form>
 	{/if}
 </section>
+
+<LeaveGuard
+	changed={hasUnsavedChanges}
+	title="Leave without applying?"
+	description="Your branding changes have not been applied and will be lost."
+/>
 
 <style>
 	.loading-panel {
@@ -377,10 +361,6 @@
 	.branding-form {
 		display: grid;
 		gap: 2rem;
-	}
-
-	.branding-form.has-unsaved-changes {
-		padding-bottom: 5rem;
 	}
 
 	.section {
@@ -557,11 +537,6 @@
 		border-top: 1px solid var(--color-border);
 	}
 
-	.branding-submit {
-		display: grid;
-		gap: 0.75rem;
-	}
-
 	.contrast-warning {
 		width: 100%;
 		min-height: 44px;
@@ -613,91 +588,7 @@
 		}
 	}
 
-	.unsaved-panel-position {
-		position: fixed;
-		z-index: 30;
-		bottom: 0;
-		right: 0;
-		left: var(--sidebar-w, 0);
-		padding: 0 2rem;
-		pointer-events: none;
-		transition: left 0.3s ease-out;
-	}
-
-	.unsaved-panel-boundary {
-		display: flex;
-		justify-content: flex-end;
-		width: 100%;
-		max-width: 72rem;
-		margin: 0 auto;
-	}
-
-	.unsaved-panel {
-		position: relative;
-		isolation: isolate;
-		display: flex;
-		align-items: center;
-		gap: 1rem;
-		width: max-content;
-		max-width: 100%;
-		padding: 0.875rem 3rem;
-		transform: translateX(2rem);
-		pointer-events: auto;
-	}
-
-	.unsaved-panel::before,
-	.unsaved-panel::after {
-		position: absolute;
-		z-index: -2;
-		inset: 0;
-		clip-path: polygon(6% 0, 94% 0, 100% 100%, 0 100%);
-		clip-path: shape(
-			from 5% 12px,
-			curve to calc(6% + 12px) 0 with 6% 0,
-			line to calc(94% - 12px) 0,
-			curve to 95% 12px with 94% 0,
-			line to 100% 100%,
-			line to 0 100%,
-			close
-		);
-		content: '';
-	}
-
-	.unsaved-panel::before {
-		background: rgb(var(--color-primary));
-		filter: drop-shadow(0 8px 24px rgb(var(--color-text) / 0.16));
-	}
-
-	.unsaved-panel::after {
-		z-index: -1;
-		inset: 1px 1px 0;
-		background: rgb(var(--color-background));
-	}
-
-	.unsaved-title {
-		margin: 0;
-		line-height: 1.2;
-		font-size: 1.125rem;
-		font-weight: 400;
-	}
-
-	.unsaved-actions {
-		display: flex;
-		flex: none;
-		gap: 0.5rem;
-	}
-
 	@media (max-width: 900px) {
-		.unsaved-panel {
-			align-items: stretch;
-			flex-direction: column;
-			gap: 0.75rem;
-		}
-
-		.unsaved-actions {
-			justify-content: flex-end;
-		}
-
 		.theme-cards {
 			grid-template-columns: 1fr;
 		}
@@ -707,38 +598,7 @@
 		}
 	}
 
-	@media (max-width: 1023px) {
-		.unsaved-panel-position {
-			padding-right: 1.5rem;
-			padding-left: 1.5rem;
-		}
-	}
-
-	@media (max-width: 767px) {
-		.unsaved-panel-position {
-			left: 0;
-		}
-	}
-
 	@media (max-width: 520px) {
-		.unsaved-panel-position {
-			bottom: 0;
-			left: 0;
-			padding: 0 1rem;
-		}
-
-		.unsaved-panel {
-			gap: 1rem;
-			width: 100%;
-			padding: 0.875rem 1rem;
-			transform: none;
-		}
-
-		.unsaved-panel::before,
-		.unsaved-panel::after {
-			clip-path: none;
-			border-radius: 12px 12px 0 0;
-		}
 
 		.preset-grid {
 			grid-template-columns: repeat(2, minmax(0, 1fr));

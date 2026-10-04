@@ -350,14 +350,14 @@
 
 		</nav>
 
-		<main class="min-w-0 p-4 sm:p-6 lg:p-8">
+		<main class="page-main min-w-0">
 			{#if bareContent}
 				<div class="mx-auto w-full min-w-0 max-w-6xl">
 					{@render children()}
 				</div>
 			{:else}
 				<div
-					class="mx-auto w-full min-w-0 max-w-6xl rounded-xl p-3 sm:p-4 lg:p-5"
+					class="content-card mx-auto w-full min-w-0 max-w-6xl rounded-xl"
 					style="background: rgb(var(--color-background)); box-shadow: var(--shadow-small);"
 				>
 					{@render children()}
@@ -368,6 +368,40 @@
 </div>
 
 <style>
+	/* --content-padding lets full-bleed children (StickyActions) reach the nearest padded edge. */
+	.page-main,
+	.content-card {
+		padding: var(--content-padding);
+	}
+
+	.page-main {
+		--content-padding: 1rem;
+	}
+
+	.content-card {
+		--content-padding: 0.75rem;
+	}
+
+	@media (min-width: 40rem) {
+		.page-main {
+			--content-padding: 1.5rem;
+		}
+
+		.content-card {
+			--content-padding: 1rem;
+		}
+	}
+
+	@media (min-width: 64rem) {
+		.page-main {
+			--content-padding: 2rem;
+		}
+
+		.content-card {
+			--content-padding: 1.25rem;
+		}
+	}
+
 	.menu-toggle-button {
 		border: 0;
 		background: transparent;

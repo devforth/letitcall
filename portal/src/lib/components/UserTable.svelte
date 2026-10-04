@@ -2,19 +2,18 @@
 	import Icon from '@iconify/svelte';
 	import calendarCheckIcon from '@iconify-icons/tabler/check';
 	import calendarXIcon from '@iconify-icons/tabler/x';
-	import checkIcon from '@iconify-icons/tabler/circle-check-filled';
-	import arrowDownIcon from '@iconify-icons/tabler/arrow-down';
-	import arrowUpIcon from '@iconify-icons/tabler/arrow-up';
 	import editIcon from '@iconify-icons/mdi/edit';
 	import trashIcon from '@iconify-icons/tabler/trash';
 	import worldIcon from '@iconify-icons/tabler/world';
+	import calendarOffIcon from '@iconify-icons/tabler/calendar-off';
+	import { nextSort } from '$lib/sort';
 	import type { ManagedUser } from '$lib/types';
 	import IconButton from '$lib/components/ui/IconButton.svelte';
 	import Avatar from '$lib/components/ui/Avatar.svelte';
+	import SortButton from '$lib/components/ui/SortButton.svelte';
 	import TimedActions from '$lib/components/ui/TimedActions.svelte';
 
 	type SortKey = 'name' | 'calendar' | 'timezone';
-	type SortDirection = 'ascending' | 'descending';
 
 	const sortableColumns: { key: SortKey; label: string; padding: string }[] = [
 		{ key: 'name', label: 'User', padding: 'px-5' },
@@ -27,6 +26,7 @@
 		currentEmail,
 		checkingEmail = '',
 		deletingEmail = '',
+		sort = $bindable('name-ascending'),
 		onedit,
 		ondelete
 	}: {
@@ -34,12 +34,13 @@
 		currentEmail: string;
 		checkingEmail?: string;
 		deletingEmail?: string;
+		sort?: string;
 		onedit: (email: string) => void;
 		ondelete: (email: string) => void;
 	} = $props();
 
-	let sortKey = $state<SortKey>('name');
-	let sortDirection = $state<SortDirection>('ascending');
+	const sortKey = $derived(sort.split('-')[0] as SortKey);
+	const sortDirection = $derived(sort.split('-')[1] as 'ascending' | 'descending');
 
 	const sortedUsers = $derived([...users].sort(compareUsers));
 
@@ -55,13 +56,7 @@
 	}
 
 	function toggleSort(key: SortKey) {
-		if (sortKey === key) {
-			sortDirection = sortDirection === 'ascending' ? 'descending' : 'ascending';
-			return;
-		}
-
-		sortKey = key;
-		sortDirection = 'ascending';
+		sort = nextSort(sort, key);
 	}
 </script>
 
@@ -75,17 +70,7 @@
 						class:text-center={column.key === 'calendar'}
 						class={`${column.padding} py-3.5`}
 					>
-						<button
-							type="button"
-							class:active-sort={sortKey === column.key}
-							class="sort-button"
-							onclick={() => toggleSort(column.key)}
-						>
-							<span class="sort-label">{column.label}</span>
-							<span class:inactive-sort={sortKey !== column.key} class="sort-arrow">
-								<Icon icon={sortDirection === 'ascending' ? arrowUpIcon : arrowDownIcon} width="16" height="16" aria-hidden="true" />
-							</span>
-						</button>
+						<SortButton label={column.label} active={sortKey === column.key} direction={sortDirection} onclick={() => toggleSort(column.key)} />
 					</th>
 				{/each}
 				<th aria-label="Actions" class="px-5 py-3.5 text-right"></th>
@@ -103,9 +88,7 @@
 								<div class="flex items-center gap-2">
 									<p class="truncate font-semibold" style="color: rgb(var(--color-text));">{user.fullName?.trim() || 'Unnamed user'}</p>
 									{#if user.email === currentEmail}
-										<span class="current-user-marker">
-											<Icon icon={checkIcon} width="16" height="16" aria-label="Current user" />
-										</span>
+										<span class="shrink-0" style="color: rgb(var(--color-text) / 0.65);">· you</span>
 									{/if}
 								</div>
 								<p class="mt-0.5 truncate text-xs" style="color: rgb(var(--color-text) / 0.65);">{user.email}</p>
@@ -113,11 +96,12 @@
 						</div>
 					</td>
 					<td class="px-4 py-4">
-						<div class="calendar-cell">
+						<div class="calendar-cell" class:connected={user.googleConnected}>
 							{#if user.googleConnected}
 								<Icon icon={calendarCheckIcon} width="20" height="20" class="calendar-status" aria-label="Calendar connected" style="color: rgb(var(--success));" />
 							{:else}
 								<Icon icon={calendarXIcon} width="20" height="20" class="calendar-status" aria-label="Calendar not connected" style="color: rgb(var(--color-text) / 0.65);" />
+								<span class="calendar-text" aria-hidden="true"><Icon icon={calendarOffIcon} width="15" height="15" />Calendar not connected</span>
 							{/if}
 						</div>
 					</td>
@@ -128,7 +112,7 @@
 						</span>
 					</td>
 					<td class="px-5 py-4">
-						<TimedActions label={`Show actions for ${user.email}`} controlsId={`user-actions-${user.email}`}>
+						<TimedActions label={`Show actions for ${user.email}`} controlsId={`user-actions-${user.email}`} actionsVisibleOnSmallScreens>
 							<div class="user-actions flex justify-end gap-2">
 								<IconButton filled tone="primary" label={`Edit ${user.email}`} onclick={() => onedit(user.email)}>
 									<Icon icon={editIcon} width="20" height="20" />
@@ -162,10 +146,6 @@
 		border-collapse: collapse;
 	}
 
-	.user-table thead {
-		background: rgb(var(--color-text) / 0.06);
-	}
-
 	.user-table thead th {
 		border-bottom: 1px solid var(--color-border);
 		color: rgb(var(--color-text));
@@ -173,43 +153,6 @@
 		font-weight: 400;
 		letter-spacing: 0.025em;
 		text-transform: none;
-	}
-
-	.sort-button {
-		display: inline-flex;
-		align-items: center;
-		gap: 0.0625rem;
-		border: 0;
-		padding: 0;
-		background: transparent;
-		color: inherit;
-		font: inherit;
-		letter-spacing: inherit;
-		text-transform: inherit;
-		cursor: pointer;
-		transition: color 0.15s ease;
-	}
-
-	.sort-button:hover,
-	.sort-button.active-sort {
-		color: rgb(var(--color-primary));
-	}
-
-	.sort-label {
-		color: rgb(var(--color-primary));
-	}
-
-	.sort-button:focus-visible {
-		outline: 2px solid rgb(var(--color-primary));
-		outline-offset: 3px;
-	}
-
-	.sort-arrow {
-		color: rgb(var(--color-primary));
-	}
-
-	.sort-arrow.inactive-sort {
-		visibility: hidden;
 	}
 
 	.user-table tbody td {
@@ -229,6 +172,10 @@
 
 	:global(.calendar-status path) {
 		stroke-width: 3;
+	}
+
+	.calendar-text {
+		display: none;
 	}
 
 	.calendar-cell {
@@ -254,17 +201,83 @@
 		color: rgb(var(--color-text) / 0.65);
 	}
 
-	.current-user-marker {
-		display: inline-flex;
-		transform: translateY(1px);
-		color: rgb(var(--success));
-	}
-
 	.avatar-wrap {
 		display: block;
 		position: relative;
 		width: 2.5rem;
 		height: 2.5rem;
 		flex: none;
+	}
+
+	/* Below the table's 42rem minimum it would scroll, so each user becomes a card. */
+	@container users (max-width: 42rem) {
+		.user-table,
+		.user-table tbody {
+			display: grid;
+			gap: 1.25rem;
+			min-width: 0;
+		}
+
+		.user-table thead {
+			display: none;
+		}
+
+		.user-table tbody tr {
+			display: grid;
+			grid-template-columns: auto minmax(0, 1fr);
+			grid-template-areas: 'user user' 'calendar timezone' 'actions actions';
+			align-items: center;
+			gap: 0.75rem 1rem;
+			border-radius: 0.5rem;
+			padding: 1rem 1.25rem 1.25rem;
+			background: rgb(var(--color-background));
+			/* Inset: the table's scroll wrapper clips anything drawn outside the row. */
+			box-shadow: inset 0 0 0 1px var(--color-border);
+		}
+
+		.user-table tbody td {
+			border-bottom: 0;
+			padding: 0;
+		}
+
+		.user-table tbody td:nth-child(1) {
+			grid-area: user;
+		}
+
+		.user-table tbody td:nth-child(2) {
+			grid-area: calendar;
+		}
+
+		.user-table tbody td:nth-child(3) {
+			grid-area: timezone;
+		}
+
+		.user-table tbody td:nth-child(4) {
+			grid-area: actions;
+		}
+
+		.calendar-cell {
+			align-items: center;
+			margin-right: 0;
+			border: 1px solid var(--color-border);
+			border-radius: 999px;
+			padding: 0.25rem 0.5rem;
+			color: rgb(var(--color-text) / 0.65);
+			font-size: 0.75rem;
+			font-weight: 600;
+			line-height: 1;
+			white-space: nowrap;
+		}
+
+		.calendar-cell :global(.calendar-status),
+		.calendar-cell.connected {
+			display: none;
+		}
+
+		.calendar-text {
+			display: inline-flex;
+			align-items: center;
+			gap: 0.375rem;
+		}
 	}
 </style>

@@ -502,10 +502,10 @@
 		gap: 0.125rem;
 		width: 100%;
 		min-height: 44px;
-		border-left: 4px solid rgb(var(--warning));
-		background: rgb(var(--warning) / 0.08);
+		border-left: 4px solid rgb(var(--error));
+		background: rgb(var(--error) / 0.08);
 		padding: 0.5rem 0.875rem;
-		color: rgb(var(--warning));
+		color: rgb(var(--error));
 		font-size: 0.8125rem;
 		font-weight: 600;
 		line-height: 1.25;

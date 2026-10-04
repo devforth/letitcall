@@ -29,82 +29,66 @@
 	}
 </script>
 
-<Dialog {open} label={title} bare oncancel={cancel}>
-	<div class="confirm-card">
-		<div class="glyph" aria-hidden="true">
-			<svg
-				width="52"
-				height="52"
-				viewBox="0 0 24 24"
-				fill="none"
-				stroke="currentColor"
-				stroke-width="2.2"
-				stroke-linecap="round"
-				stroke-linejoin="round"
-			>
-				<path d="M12 9v4" />
-				<path d="M12 17h.01" />
-				<path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z" />
-			</svg>
-		</div>
-		<h2 class="confirm-title">{title}</h2>
-		<p class="confirm-desc">{description}</p>
-		<div class="confirm-actions">
-			<Button rounded variant="primary-outline" class="modal-action-button" disabled={confirming} onclick={cancel}>
-				{cancelLabel}
-			</Button>
-			<Button rounded class="modal-action-button" disabled={confirming} onclick={onconfirm}>
-				{confirming ? confirmingLabel : confirmLabel}
-			</Button>
+<Dialog {open} label={title} bare bottom oncancel={cancel}>
+	<div class="confirm-bar">
+		<div class="confirm-content">
+			<div class="confirm-text">
+				<h2 class="confirm-title">{title}</h2>
+				<p class="confirm-desc">{description}</p>
+			</div>
+			<div class="confirm-actions">
+				<Button rounded variant="primary-outline" class="modal-action-button" disabled={confirming} onclick={cancel}>
+					{cancelLabel}
+				</Button>
+				<Button rounded class="modal-action-button" disabled={confirming} onclick={onconfirm}>
+					{confirming ? confirmingLabel : confirmLabel}
+				</Button>
+			</div>
 		</div>
 	</div>
 </Dialog>
 
 <style>
-	.confirm-card {
+	.confirm-bar {
+		border-top: 3px solid rgb(var(--error));
 		background: rgb(var(--color-background));
-		border: 1px solid color-mix(in srgb, var(--color-border) 60%, transparent);
-		border-radius: 16px;
 		box-shadow: var(--shadow);
-		padding: 1.75rem 1.5rem;
-		text-align: center;
+		padding: 1rem 1.5rem calc(1rem + env(safe-area-inset-bottom, 0px));
 	}
 
-	.glyph {
+	.confirm-content {
 		display: flex;
-		justify-content: center;
-		margin-bottom: 1rem;
-		color: rgb(var(--error));
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 0.75rem 1.5rem;
+		max-width: 72rem;
+		margin: 0 auto;
+	}
+
+	.confirm-text {
+		display: grid;
+		flex: 1 1 16rem;
+		gap: 0.125rem;
+		min-width: 0;
 	}
 
 	.confirm-title {
 		margin: 0;
-		font-size: 1.25rem;
-		font-weight: 700;
-		letter-spacing: -0.01em;
-		color: #1a1a1a;
-	}
-
-	:global(html.dark) .confirm-title {
-		color: #f5f5f5;
+		color: rgb(var(--color-text));
+		font-size: 1.125rem;
+		font-weight: 600;
 	}
 
 	.confirm-desc {
-		margin: 0.5rem 0 0;
-		font-size: 0.9rem;
-		line-height: 1.55;
-		color: rgb(var(--color-text));
+		margin: 0;
+		color: rgb(var(--color-text) / 0.65);
+		font-size: 0.875rem;
+		line-height: 1.45;
 	}
 
 	.confirm-actions {
-		margin-top: 1.5rem;
 		display: flex;
-		gap: 1rem;
-	}
-
-	:global(.confirm-actions .modal-action-button) {
-		min-width: 0;
-		flex: 1;
-		padding-inline: 0.75rem !important;
+		flex: none;
+		gap: 0.5rem;
 	}
 </style>

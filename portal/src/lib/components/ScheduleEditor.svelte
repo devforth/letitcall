@@ -9,22 +9,22 @@
 	import Checkbox from '$lib/components/ui/Checkbox.svelte';
 	import IconButton from '$lib/components/ui/IconButton.svelte';
 	import TimeInput from '$lib/components/ui/TimeInput.svelte';
+	import { availabilityRanges } from '$lib/schedule';
 	import type { ScheduleDay, TimeRange } from '$lib/types';
 
 	let {
 		schedule = $bindable(),
-		embedded = false,
-		flush = false
+		stepMinutes
 	}: {
 		schedule: ScheduleDay[];
-		embedded?: boolean;
-		flush?: boolean;
+		stepMinutes: number;
 	} = $props();
 
 	let applyWeekdays = $state(true);
 	let applyWeekends = $state(false);
 	let quickStart = $state('10:00');
 	let quickEnd = $state('16:00');
+	const quickInvalid = $derived(endsBeforeStart({ start: quickStart, end: quickEnd }));
 
 	const labels: Record<string, string> = {
 		monday: 'Monday',
@@ -47,16 +47,8 @@
 		}
 	}
 
-	function availabilityRanges(day: ScheduleDay): TimeRange[] {
-		if (!day.enabled) return [];
-		const ranges: TimeRange[] = [];
-		let start = day.start ?? '';
-		for (const pause of day.breaks) {
-			ranges.push({ start, end: pause.start });
-			start = pause.end;
-		}
-		ranges.push({ start, end: day.end ?? '' });
-		return ranges;
+	function endsBeforeStart(range: TimeRange) {
+		return !!range.start && !!range.end && range.end <= range.start;
 	}
 
 	function availabilityHours(day: ScheduleDay) {
@@ -113,25 +105,16 @@
 	}
 </script>
 
-{#snippet durationChip(day: ScheduleDay)}
-	<span class="inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium" style="background: rgb(var(--color-background)); border-color: var(--color-border); color: rgb(var(--color-text) / 0.65);">
-		{availabilityHours(day)}
-	</span>
-{/snippet}
-
 <section
-	class={`grid gap-4 pt-4 pb-0 sm:pt-5 ${flush ? '' : 'px-4 sm:px-5'} ${embedded ? '' : 'rounded-lg border-2'}`}
+	class="grid gap-4 pt-4 pb-0 sm:pt-5"
 	aria-labelledby="schedule-title"
-	style={embedded
-		? undefined
-		: 'background: rgb(var(--color-background)); border-color: var(--color-border);'}
 >
 	<div class="grid gap-1">
 		<h2 id="schedule-title" class="font-semibold" style="color: rgb(var(--color-text));">Weekly schedule</h2>
 		<p class="text-sm" style="color: rgb(var(--color-text) / 0.65);">Start with one range, then customize only the days that differ</p>
 	</div>
 
-	<div class="overflow-hidden rounded-md border" style="border-color: var(--color-border);">
+	<div class="rounded-md border" style="border-color: var(--color-border);">
 		<details open>
 			<summary
 				id="quick-preset-title"
@@ -144,19 +127,20 @@
 		<div
 			class="grid gap-4 border-t p-4"
 			aria-labelledby="quick-preset-title"
-			style={`border-color: var(--color-border); ${embedded ? '' : 'background: rgb(var(--color-text) / 0.035);'}`}
+			style={`border-color: var(--color-border);`}
 		>
 			<div class="flex flex-wrap gap-x-6">
 				<Checkbox id="quick-weekdays" label="Weekdays" bind:checked={applyWeekdays} />
 				<Checkbox id="quick-weekends" label="Weekends" bind:checked={applyWeekends} />
 			</div>
 			<div class="grid gap-3 sm:grid-cols-[12rem_12rem_auto] sm:items-center">
-				<TimeInput id="quick-start" label="From" bind:value={quickStart} />
-				<TimeInput id="quick-end" label="To" bind:value={quickEnd} />
+				<TimeInput id="quick-start" label="From" bind:value={quickStart} step={stepMinutes * 60} />
+				<TimeInput id="quick-end" label="To" bind:value={quickEnd} invalid={quickInvalid} step={stepMinutes * 60} />
 				<Button
 					class="outlined-action-button justify-self-start"
 					variant="primary-outline"
 					style="padding-right: 1.125rem !important; padding-bottom: 0.5rem !important;"
+					disabled={quickInvalid}
 					onclick={applyQuickHours}
 				>
 					<span class="flex items-center gap-2">
@@ -179,29 +163,32 @@
 		<div class="grid border-t" style="border-color: var(--color-border);">
 			{#each schedule as day (day.day)}
 				{@const ranges = availabilityRanges(day)}
-				<div class="grid gap-4 border-b p-4 last:border-b-0 lg:grid-cols-[9rem_1fr_auto] lg:items-start" style="border-color: var(--color-border);">
-					<div class="flex min-h-11 items-center gap-2">
+				<div class="grid grid-cols-[minmax(0,1fr)_auto] gap-4 border-b p-4 last:border-b-0 lg:grid-cols-[9rem_1fr_auto] lg:items-start" style="border-color: var(--color-border);">
+					<div class="flex min-h-11 flex-col justify-center">
 						<span class="text-sm font-medium" style="color: rgb(var(--color-text));">{labels[day.day]}</span>
-						{#if day.enabled && ranges.length > 1}
-							{@render durationChip(day)}
+						{#if day.enabled}
+							<span class="text-xs" style="color: rgb(var(--color-text) / 0.65);">{availabilityHours(day)}</span>
 						{/if}
 					</div>
 
 					{#if day.enabled}
-						<div class="grid gap-3 lg:grid-cols-[auto_1fr] lg:items-center">
+						<div class="order-last col-span-2 grid gap-3 lg:order-none lg:col-span-1 lg:grid-cols-[auto_1fr] lg:items-center">
 							<div class="grid gap-3">
 								{#each ranges as range, index (`${day.day}-${index}`)}
-									<div class="grid gap-3 sm:grid-cols-[7.5rem_7.5rem_auto] sm:items-center sm:justify-start">
+									<div class="grid grid-cols-[minmax(0,7.5rem)_minmax(0,7.5rem)_auto] items-center justify-start gap-3">
 										<TimeInput
 											id={`${day.day}-${index}-start`}
 											label="From"
 											value={range.start}
+											step={stepMinutes * 60}
 											onchange={(value) => updateRange(day, index, 'start', value)}
 										/>
 										<TimeInput
 											id={`${day.day}-${index}-end`}
 											label="To"
 											value={range.end}
+											step={stepMinutes * 60}
+											invalid={endsBeforeStart(range)}
 											onchange={(value) => updateRange(day, index, 'end', value)}
 										/>
 										<IconButton filled tone="danger" label={`Remove ${labels[day.day]} range ${index + 1}`} onclick={() => removeRange(day, index)}>
@@ -210,17 +197,12 @@
 									</div>
 								{/each}
 								</div>
-							{#if ranges.length === 1}
-								<div class="w-20 justify-self-center">
-									{@render durationChip(day)}
-								</div>
-							{/if}
 						</div>
 					{:else}
-						<p class="flex min-h-11 items-center text-sm" style="color: rgb(var(--color-text) / 0.65);">Unavailable</p>
+						<p class="hidden min-h-11 items-center text-sm lg:flex" style="color: rgb(var(--color-text) / 0.65);">—</p>
 					{/if}
 
-					<div class="flex min-h-11 items-center gap-2">
+					<div class="flex min-h-11 items-center gap-2 lg:w-[5.5rem]">
 						<IconButton filled tone="primary" label={`Add ${labels[day.day]} range`} onclick={() => addRange(day)}>
 							<Icon icon={plusIcon} width="22" height="22" />
 						</IconButton>

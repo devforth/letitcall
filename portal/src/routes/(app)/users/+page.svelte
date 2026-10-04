@@ -2,13 +2,10 @@
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
 	import Icon from '@iconify/svelte';
-	import checkIcon from '@iconify-icons/tabler/check';
 	import userPlusIcon from '@iconify-icons/tabler/user-plus';
+	import sortIcon from '@iconify-icons/tabler/arrows-sort';
 	import usersIcon from '@iconify-icons/tabler/users';
-	import worldIcon from '@iconify-icons/tabler/world';
-	import xIcon from '@iconify-icons/tabler/x';
 	import { callApi, appPath, getSession } from '$lib/api';
-	import ImageSelector from '$lib/components/ImageSelector.svelte';
 	import UserDeletionDialog from '$lib/components/UserDeletionDialog.svelte';
 	import UserTable from '$lib/components/UserTable.svelte';
 	import PageHeader from '$lib/components/PageHeader.svelte';
@@ -16,28 +13,19 @@
 	import Button from '$lib/components/ui/Button.svelte';
 	import ConfirmationDialog from '$lib/components/ui/ConfirmationDialog.svelte';
 	import Input from '$lib/components/ui/Input.svelte';
-	import SearchableSelect from '$lib/components/ui/SearchableSelect.svelte';
 	import SegmentedControl from '$lib/components/ui/SegmentedControl.svelte';
+	import SearchableSelect from '$lib/components/ui/SearchableSelect.svelte';
 	import type { ManagedUser, UserDeletionImpact } from '$lib/types';
-	import { getLocalTimezones } from '$lib/timezones';
 
 	let users = $state<ManagedUser[]>([]);
 	let currentEmail = $state('');
-	let email = $state('');
-	let fullName = $state('');
-	let password = $state('');
-	let timezone = $state('UTC');
-	let timezones = $state<string[]>(['UTC']);
-	let showForm = $state(false);
 	let loading = $state(true);
-	let saving = $state(false);
 	let checkingEmail = $state('');
 	let deletingEmail = $state('');
 	let reassigning = $state(false);
 	let userToDelete = $state<ManagedUser | null>(null);
 	let deletionImpact = $state<UserDeletionImpact | null>(null);
 	let error = $state('');
-	let avatarSelector = $state<ImageSelector | null>(null);
 	let search = $state('');
 	let connFilter = $state<'all' | 'connected' | 'notConnected'>('all');
 
@@ -46,10 +34,15 @@
 		{ value: 'connected', label: 'Connected' },
 		{ value: 'notConnected', label: 'Not connected' }
 	];
-	const newUserContainerStyle =
-		'background: rgb(var(--color-primary)); box-shadow: 0 0 0 1px var(--color-border);';
-	const tableBlockStyle =
-		'background: rgb(var(--color-background)); box-shadow: 0 0 0 1px var(--color-border);';
+	let sort = $state('name-ascending');
+	const sortOptions = [
+		{ value: 'name-ascending', label: 'Name, A-Z' },
+		{ value: 'name-descending', label: 'Name, Z-A' },
+		{ value: 'calendar-ascending', label: 'Calendar connected first' },
+		{ value: 'calendar-descending', label: 'Calendar not connected first' },
+		{ value: 'timezone-ascending', label: 'Timezone, A-Z' },
+		{ value: 'timezone-descending', label: 'Timezone, Z-A' }
+	];
 	const boldUserPlusIcon = {
 		...userPlusIcon,
 		body: userPlusIcon.body.replace('stroke-width="2"', 'stroke-width="2.25"')
@@ -84,10 +77,6 @@
 	);
 
 	onMount(async () => {
-		const localTimezones = getLocalTimezones();
-		timezone = localTimezones.current;
-		timezones = localTimezones.options;
-
 		try {
 			const [session, response] = await Promise.all([
 				getSession(),
@@ -101,29 +90,6 @@
 			loading = false;
 		}
 	});
-
-	async function createUser(event: SubmitEvent) {
-		event.preventDefault();
-		saving = true;
-		error = '';
-		try {
-			const avatar = await avatarSelector?.exportImage();
-			const response = await callApi<{ user: ManagedUser }>('/api/users', {
-				method: 'POST',
-				body: JSON.stringify({ email, fullName, password, timezone, avatar })
-			});
-			users = [...users, response.user].sort((a, b) => a.email.localeCompare(b.email));
-			email = '';
-			fullName = '';
-			password = '';
-			timezone = getLocalTimezones().current;
-			showForm = false;
-		} catch (cause) {
-			error = cause instanceof Error ? cause.message : 'Unable to create user';
-		} finally {
-			saving = false;
-		}
-	}
 
 	function editUser(emailToEdit: string) {
 		void goto(appPath(`/users/${encodeURIComponent(emailToEdit)}`));
@@ -182,7 +148,7 @@
 
 <PageTitle title="Users" />
 
-<section aria-labelledby="users-title" class="flex flex-col gap-6">
+<section aria-labelledby="users-title" class="users-page flex flex-col gap-6">
 	<div class="mb-2">
 		<PageHeader
 			id="users-title"
@@ -190,82 +156,17 @@
 			description="Manage who can sign in and host events."
 			icon={usersIcon}
 		>
-			{#if !showForm}
-				<Button
-					rounded
-					style="font-weight: 500 !important; padding-right: 1rem !important; padding-bottom: 0.5rem !important;"
-					class="add-user-button self-start"
-					onclick={() => (showForm = true)}
-				>
-					<span class="flex items-center gap-2">
-						<Icon icon={boldUserPlusIcon} width="18" height="18" class="shrink-0" />
-						Add user
-					</span>
-				</Button>
-			{/if}
+			<Button rounded class="primary-action-button self-start" onclick={() => void goto(appPath('/users/new'))}>
+				<span class="flex items-center gap-2">
+					<Icon icon={boldUserPlusIcon} width="20" height="20" class="shrink-0" />
+					Add user
+				</span>
+			</Button>
 		</PageHeader>
 	</div>
 
-	{#if showForm}
-		<div class="mb-2 overflow-hidden rounded-[0.625rem]" style={newUserContainerStyle}>
-			<form
-				class="ml-1 flex flex-col rounded-md rounded-l-lg"
-				style="background: rgb(var(--color-background));"
-				onsubmit={createUser}
-			>
-				<div
-					class="flex min-w-0 items-center gap-2 rounded-t-md p-3 sm:p-4"
-					style="background: linear-gradient(110deg, rgb(var(--color-primary) / 0.12), rgb(var(--color-background)) 42%); box-shadow: inset 0 -1px 0 var(--color-border);"
-				>
-					<span class="grid size-8 shrink-0 place-items-center" style="color: rgb(var(--color-primary));">
-						<Icon icon={userPlusIcon} width="26" height="26" />
-					</span>
-					<h2 class="text-xl font-semibold" style="color: rgb(var(--color-primary));">New user</h2>
-				</div>
-				<div class="grid gap-5 p-4 sm:p-5 lg:grid-cols-2">
-					<Input id="new-email" label="Email" type="email" bind:value={email} required autocomplete="off" />
-					<SearchableSelect
-						id="new-timezone"
-						emptyText="No matching timezones"
-						label="Timezone"
-						icon={worldIcon}
-						options={timezones}
-						bind:value={timezone}
-						required
-					/>
-					<Input id="new-full-name" label="Full name (optional)" bind:value={fullName} autocomplete="name" />
-					<Input
-						id="new-password"
-						label="Temporary password (optional)"
-						type="password"
-						bind:value={password}
-						minlength={12}
-						autocomplete="new-password"
-					/>
-					<div class="lg:col-span-2">
-						<ImageSelector id="new-avatar" legend="Avatar (optional)" bind:this={avatarSelector} />
-					</div>
-					<div class="flex items-end justify-end gap-3 lg:col-span-2">
-						<Button variant="primary-outline" class="outlined-action-button" onclick={() => (showForm = false)}>
-							<span class="flex items-center gap-2">
-								<Icon icon={xIcon} width="20" height="20" />
-								Cancel
-							</span>
-						</Button>
-						<Button type="submit" rounded class="primary-action-button" disabled={saving}>
-							<span class="flex items-center gap-2">
-								<Icon icon={checkIcon} width="20" height="20" />
-								{saving ? 'Creating…' : 'Create'}
-							</span>
-						</Button>
-					</div>
-				</div>
-			</form>
-		</div>
-	{/if}
-
-	<div class="overflow-hidden rounded-lg" style={tableBlockStyle}>
-		<div class="flex flex-wrap items-end justify-between gap-4 border-b p-3 sm:p-4" style="border-color: var(--color-border);">
+	<div class="users-panel">
+		<div class="users-toolbar flex flex-wrap items-end justify-between gap-4 p-3 sm:p-4">
 			<div>
 				<h2 class="font-semibold" style="color: rgb(var(--color-text));">People</h2>
 				<p class="mt-1 text-sm" style="color: rgb(var(--color-text) / 0.65);">
@@ -283,6 +184,9 @@
 			<div class="min-w-[220px] flex-1 lg:w-72 lg:flex-none">
 				<Input id="user-search" label="Search users" type="search" bind:value={search} />
 			</div>
+			<div class="users-sort w-full">
+				<SearchableSelect id="user-sort" label="Sort by" icon={sortIcon} options={sortOptions} bind:value={sort} clearable={false} required />
+			</div>
 		</div>
 
 		{#if error}
@@ -291,7 +195,7 @@
 		{#if loading}
 			<p class="p-8 text-sm" style="color: rgb(var(--color-text) / 0.65);">Loading users…</p>
 		{:else}
-			<UserTable users={filteredUsers} {currentEmail} {checkingEmail} {deletingEmail} onedit={editUser} ondelete={prepareDelete} />
+			<UserTable users={filteredUsers} bind:sort {currentEmail} {checkingEmail} {deletingEmail} onedit={editUser} ondelete={prepareDelete} />
 		{/if}
 	</div>
 </section>
@@ -320,9 +224,47 @@
 {/if}
 
 <style>
-	:global(.add-user-button) {
-		min-height: 4rem !important;
-		border-radius: 9999px !important;
-		font-size: 1.25rem !important;
+	.users-page {
+		container: users / inline-size;
+	}
+
+	.users-panel {
+		overflow: hidden;
+		border-radius: 0.5rem;
+		background: rgb(var(--color-background));
+		box-shadow: 0 0 0 1px var(--color-border);
+	}
+
+	.users-toolbar {
+		border-bottom: 1px solid var(--color-border);
+		background: linear-gradient(to bottom, transparent 75%, color-mix(in srgb, var(--color-border) 30%, transparent));
+	}
+
+	.users-sort {
+		display: none;
+	}
+
+	/* Matches UserTable: below 42rem the toolbar and every user become separate cards. */
+	@container users (max-width: 42rem) {
+		.users-panel {
+			display: grid;
+			gap: 1.25rem;
+			overflow: visible;
+			background: none;
+			box-shadow: none;
+		}
+
+		.users-toolbar {
+			border-bottom: 0;
+			border-radius: 0.5rem;
+			background:
+				linear-gradient(to bottom, transparent 75%, color-mix(in srgb, var(--color-border) 30%, transparent)),
+				rgb(var(--color-background));
+			box-shadow: 0 0 0 1px var(--color-border);
+		}
+
+		.users-sort {
+			display: block;
+		}
 	}
 </style>

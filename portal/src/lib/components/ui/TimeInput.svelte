@@ -7,25 +7,30 @@
 		label,
 		value = $bindable(''),
 		disabled = false,
+		invalid = false,
+		step,
 		onchange
 	}: {
 		id: string;
 		label: string;
 		value?: string;
 		disabled?: boolean;
+		invalid?: boolean;
+		step: number;
 		onchange?: (value: string) => void;
 	} = $props();
 </script>
 
 <div class="field">
-	<div class="input-group">
+	<div class="input-group" class:has-error={invalid}>
 		<input
 			{id}
 			type="time"
 			bind:value
 			oninput={(event) => onchange?.(event.currentTarget.value)}
 			{disabled}
-			step="900"
+			aria-invalid={invalid ? 'true' : undefined}
+			{step}
 			class="input"
 		/>
 		<label class="float-label" for={id}>{label}</label>
@@ -98,6 +103,17 @@
 		box-shadow:
 			0 0 0 1px rgb(var(--color-primary)),
 			0 0 0 3px rgb(var(--color-primary) / 0.25);
+	}
+
+	.has-error .input {
+		box-shadow:
+			0 0 0 1px rgb(var(--error)),
+			0 0 0 3px rgb(var(--error) / 0.15);
+	}
+
+	.has-error .float-label,
+	.has-error .lead-icon {
+		color: rgb(var(--error));
 	}
 
 	.input:disabled {

@@ -6,10 +6,11 @@
 	import calendarPlusIcon from '@iconify-icons/tabler/calendar-plus';
 	import editIcon from '@iconify-icons/mdi/edit';
 	import externalLinkIcon from '@iconify-icons/charm/link-external';
-	import listDetailsIcon from '@iconify-icons/tabler/list-details';
+	import durationIcon from '@iconify-icons/cuida/clock-outline';
+	import calendarEventIcon from '@iconify-icons/tabler/calendar-event';
 	import trashIcon from '@iconify-icons/tabler/trash';
 	import { appPath, callApi } from '$lib/api';
-	import EventTypeEditor from '$lib/components/EventTypeEditor.svelte';
+	import { availabilityRanges, formatWallTime } from '$lib/schedule';
 	import HostBadges from '$lib/components/HostBadges.svelte';
 	import ConfirmationDialog from '$lib/components/ui/ConfirmationDialog.svelte';
 	import IconButton from '$lib/components/ui/IconButton.svelte';
@@ -22,7 +23,6 @@
 	let eventTypes = $state<EventType[]>([]);
 	let users = $state<ManagedUser[]>([]);
 	let loading = $state(true);
-	let showForm = $state(false);
 	let deletingSlug = $state('');
 	let eventTypeToDelete = $state<EventType | null>(null);
 
@@ -55,11 +55,6 @@
 		];
 	}
 
-	function addEventType(eventType: EventType) {
-		eventTypes = [...eventTypes, eventType].sort((a, b) => a.eventSlug.localeCompare(b.eventSlug));
-		showForm = false;
-	}
-
 	async function deleteEventType() {
 		const eventType = eventTypeToDelete!;
 		deletingSlug = eventType.eventSlug;
@@ -82,55 +77,50 @@
 		<PageHeader
 			id="scheduling-title"
 			title="Scheduling"
-			description="Manage shared event types and their booking availability."
+			description="Manage shared event types and their booking availability"
 			icon={calendarCogIcon}
+			count={eventTypes.length}
 		>
-			{#if !showForm}
-				<Button rounded style="font-weight: 500 !important; padding-right: 1rem !important; padding-bottom: 0.5rem !important;" class="add-event-type-button self-start" onclick={() => (showForm = true)}>
-					<span class="flex items-center gap-2">
-						<Icon icon={boldCalendarPlusIcon} width="18" height="18" class="shrink-0" />
-						Add event type
-					</span>
-				</Button>
-			{/if}
+			<Button rounded class="primary-action-button self-start" onclick={() => void goto(appPath('/scheduling/new'))}>
+				<span class="flex items-center gap-2">
+					<Icon icon={boldCalendarPlusIcon} width="20" height="20" class="shrink-0" />
+					Add event type
+				</span>
+			</Button>
 		</PageHeader>
 	</div>
 
-	{#if showForm}
-		<EventTypeEditor embedded oncancel={() => (showForm = false)} oncreate={addEventType} />
-	{/if}
-
-	<div class="overflow-hidden rounded-lg" style={blockStyle}>
-		<div
-			class="flex items-center gap-2 border-b px-4 py-3"
-			style="border-color: var(--color-border); background: rgb(var(--color-text) / 0.06); color: rgb(var(--color-text));"
-		>
-			<Icon icon={listDetailsIcon} width="18" height="18" />
-			<h2 class="text-sm font-medium">
-				Event types
-				{#if eventTypes.length > 0}
-					<span style="color: rgb(var(--color-text) / 0.65);">· {eventTypes.length}</span>
-				{/if}
-			</h2>
-		</div>
-
-		{#if loading}
-			<p class="p-8 text-sm" style="color: rgb(var(--color-text) / 0.65);">Loading event types…</p>
-		{:else}
-			<div class="event-type-list">
-				{#each eventTypes as eventType (eventType.eventSlug)}
-					<article data-timed-actions-row class="event-type-row grid gap-4 p-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-start sm:p-5">
-						<div class="min-w-0">
-							<div class="flex flex-wrap items-center gap-2">
-								<h3 class="truncate font-semibold" style="color: rgb(var(--color-text));">{eventType.name}</h3>
-								<span class="duration-chip">{eventType.durationMinutes} minutes</span>
-							</div>
-							<p class="mt-0.5 truncate text-xs" style="color: rgb(var(--color-text) / 0.65);">/{eventType.eventSlug}</p>
-							<div class="mt-3">
-								<HostBadges hosts={hosts(eventType)} {users} />
-							</div>
+	{#if loading}
+		<p class="p-8 text-sm" style="color: rgb(var(--color-text) / 0.65);">Loading event types…</p>
+	{:else}
+		<div class="grid gap-5">
+			{#each eventTypes as eventType (eventType.eventSlug)}
+				<article data-timed-actions-row class="relative grid gap-4 rounded-lg p-4 sm:p-5" style={blockStyle}>
+					<div class="min-w-0">
+						<div class="sm:pr-36">
+							<p class="truncate text-xs leading-none" style="color: rgb(var(--color-text));">/{eventType.eventSlug}</p>
+							<h3 class="text-xl leading-tight break-words" style="color: rgb(var(--color-text));">{eventType.name}</h3>
 						</div>
-						<TimedActions label={`Show actions for ${eventType.name}`} controlsId={`event-actions-${eventType.eventSlug}`}>
+						<div class="mt-3">
+							<HostBadges hosts={hosts(eventType)} {users} />
+						</div>
+						<div class="mt-3 flex flex-wrap items-center gap-3">
+							<span class="event-meta"><Icon icon={durationIcon} width="16" height="16" />{eventType.durationMinutes}:00</span>
+							<span class="event-meta"><Icon icon={calendarEventIcon} width="16" height="16" />{eventType.bookingWindowDays} days ahead</span>
+						</div>
+						<div class="day-list mt-3">
+							{#each eventType.schedule.filter((day) => day.enabled) as day (day.day)}
+								<div>
+									<span class="capitalize">{day.day.slice(0, 3)}</span>
+									{#each availabilityRanges(day) as range, index (index)}
+										<span class="day-time">{formatWallTime(range.start)} - {formatWallTime(range.end)}</span>
+									{/each}
+								</div>
+							{/each}
+						</div>
+					</div>
+					<div class="sm:absolute sm:right-5 sm:top-4">
+						<TimedActions label={`Show actions for ${eventType.name}`} controlsId={`event-actions-${eventType.eventSlug}`} actionsVisibleOnSmallScreens>
 							<div class="event-actions">
 								<a
 									class="event-icon-link"
@@ -154,13 +144,13 @@
 								</IconButton>
 							</div>
 						</TimedActions>
-					</article>
-				{:else}
-					<p class="empty-state">No event types yet</p>
-				{/each}
-			</div>
-		{/if}
-	</div>
+					</div>
+				</article>
+			{:else}
+				<p class="empty-state rounded-lg" style={blockStyle}>No event types yet</p>
+			{/each}
+		</div>
+	{/if}
 </section>
 
 {#if eventTypeToDelete}
@@ -177,33 +167,37 @@
 {/if}
 
 <style>
-	:global(.add-event-type-button) {
-		min-height: 4rem !important;
-		border-radius: 9999px !important;
-		font-size: 1.25rem !important;
+	.event-meta {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.25rem;
+		color: rgb(var(--color-text));
+		font-size: 0.875rem;
+		font-weight: 500;
+		white-space: nowrap;
 	}
 
-	.event-type-row {
-		border-bottom: 1px solid var(--color-border);
-		transition: background 0.15s ease;
-	}
-
-	.event-type-row:last-child {
-		border-bottom: 0;
-	}
-
-	.event-type-row:hover {
-		background: color-mix(in srgb, var(--color-border) 10%, transparent);
-	}
-
-	.duration-chip {
-		border: 1px solid var(--color-border);
-		border-radius: 999px;
-		padding: 0.2rem 0.5rem;
-		background: rgb(var(--color-text) / 0.06);
-		color: rgb(var(--color-text) / 0.65);
+	.day-list {
+		display: grid;
+		grid-template-columns: repeat(auto-fill, minmax(8.5rem, 1fr));
+		grid-auto-rows: 1fr;
+		gap: 0.5rem;
 		font-size: 0.75rem;
-		font-weight: 600;
+	}
+
+	.day-list div {
+		display: flex;
+		flex-direction: column;
+		gap: 2px;
+		border-radius: 8px;
+		padding: 0.375rem 0.625rem;
+		box-shadow: 0 0 0 1px var(--color-border);
+		color: rgb(var(--color-text));
+	}
+
+	.day-time {
+		color: rgb(var(--color-text) / 0.65);
+		font-variant-numeric: tabular-nums;
 		white-space: nowrap;
 	}
 
@@ -245,9 +239,4 @@
 		stroke-width: 3;
 	}
 
-	@media (prefers-reduced-motion: reduce) {
-		.event-type-row {
-			transition: none;
-		}
-	}
 </style>

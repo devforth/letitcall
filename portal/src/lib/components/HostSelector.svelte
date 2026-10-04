@@ -7,16 +7,12 @@
 		required = $bindable([]),
 		optional = $bindable([]),
 		error = '',
-		embedded = false,
-		flush = false,
 		onchange
 	}: {
 		users: ManagedUser[];
 		required?: string[];
 		optional?: string[];
 		error?: string;
-		embedded?: boolean;
-		flush?: boolean;
 		onchange?: () => void;
 	} = $props();
 
@@ -41,18 +37,15 @@
 	id="hosts"
 	tabindex="-1"
 	aria-describedby={error ? 'hosts-error' : 'hosts-description'}
-	class={`pb-4 pt-0 outline-none sm:pb-5 sm:pt-0 ${flush ? '' : 'px-4 sm:px-5'} ${embedded ? '' : 'rounded-lg border-2'}`}
-	style={embedded
-		? undefined
-		: 'background: rgb(var(--color-background)); border-color: var(--color-border);'}
+	class="pb-4 pt-0 outline-none sm:pb-5 sm:pt-0"
 >
-	<legend class={`text-sm font-semibold ${embedded ? '' : 'px-2'}`} style="color: rgb(var(--color-text));">Hosts</legend>
-	<p id="hosts-description" class="mt-2 mb-4 text-sm" style="color: rgb(var(--color-text) / 0.65);">Required hosts determine availability; optional hosts receive the booking without blocking a time</p>
+	<legend class="text-sm font-semibold" style="color: rgb(var(--color-text));">Hosts</legend>
+	<p id="hosts-description" class="mt-1 mb-4 text-sm" style="color: rgb(var(--color-text) / 0.65);">Required hosts determine availability, optional hosts receive the booking without blocking a time</p>
 	<div class="grid gap-2">
 		{#each users as user (user.email)}
 			<div
 				class="grid min-h-14 gap-3 rounded-lg border p-3 sm:grid-cols-[1fr_auto] sm:items-center"
-				style={`border-color: var(--color-border); ${embedded ? '' : 'background: rgb(var(--color-text) / 0.035);'}`}
+				style={`border-color: var(--color-border);`}
 			>
 				<div class="flex min-w-0 items-center gap-3">
 					<Avatar name={user.fullName} email={user.email} avatarPath={user.avatarPath} size={36} />

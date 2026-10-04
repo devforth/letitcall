@@ -49,10 +49,10 @@
 <div class="grid gap-5">
 	{#each bookings as booking (booking.id)}
 		<article
-			class="booking-row grid grid-cols-[minmax(0,1fr)_2.5rem] items-start gap-x-4 gap-y-2 rounded-lg p-4 sm:gap-y-4 sm:grid-cols-[8.75rem_minmax(0,1fr)_2.5rem] sm:px-5 sm:pb-5 sm:pt-4"
+			class="booking-row grid items-start gap-x-4 gap-y-2 rounded-lg p-4 sm:gap-y-4 sm:grid-cols-[8.75rem_minmax(0,1fr)_2.5rem] sm:px-5 sm:pb-5 sm:pt-4"
 			data-timed-actions-row
 		>
-			<div class="col-span-2 -mx-4 -mt-4 sm:col-span-1 sm:m-0">
+			<div class="-mx-4 -mt-4 sm:m-0">
 				<time class="booking-date-card" datetime={booking.time}>
 					<span class="booking-date-main">
 						{#if new Date(booking.time).getFullYear() !== now.getFullYear()}
@@ -93,7 +93,7 @@
 			</div>
 
 			{#if booking.manageURL}
-				<div class="-mr-1 mt-1 justify-self-end sm:mr-0 sm:mt-0">
+				<div class="justify-self-end">
 					<TimedActions
 						label={`Show actions for ${booking.title}`}
 						controlsId={`booking-actions-${booking.id}`}

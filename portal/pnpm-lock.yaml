@@ -14,6 +14,9 @@ importers:
       '@iconify-icons/charm':
         specifier: ^2.0.1
         version: 2.0.1
+      '@iconify-icons/cuida':
+        specifier: ^2.0.0
+        version: 2.0.0
       '@iconify-icons/griddy-icons':
         specifier: ^2.0.0
         version: 2.0.0
@@ -134,6 +137,9 @@ packages:
 
   '@iconify-icons/charm@2.0.1':
     resolution: {integrity: sha512-BU/p1OZSy4aatRWn4cmH78u6ouJh1qSb/oqr9H8BrAFrPal5a2KxmGVOR3qn9nVyjEAVYMDEGmeqyQ8SRuzMBg==}
+
+  '@iconify-icons/cuida@2.0.0':
+    resolution: {integrity: sha512-g2Hi6FBxHDi0/ke8mpggIPF7pDU0gjWU33wczubiIBaE9DSN4nnjBHvE+BoTf6OnGZ1CQZFvncIt4GoojG7eiA==}
 
   '@iconify-icons/griddy-icons@2.0.0':
     resolution: {integrity: sha512-8hk0xVd8uw74DlFwqU+13dGHG0nmwE33oYMnsYxSPNzWTRhy8oKnzM56nlcmal5Zx/8dighpYYrmBkoTLSVFBA==}
@@ -843,6 +849,10 @@ snapshots:
       '@iconify/types': 2.0.0
 
   '@iconify-icons/charm@2.0.1':
+    dependencies:
+      '@iconify/types': 2.0.0
+
+  '@iconify-icons/cuida@2.0.0':
     dependencies:
       '@iconify/types': 2.0.0
 
