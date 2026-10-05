@@ -44,6 +44,22 @@
 	} = $props();
 
 	let open = $state(false);
+	let field: HTMLDivElement;
+	let list = $state<HTMLDivElement>();
+	let opensAbove = $state(false);
+
+	// A 'top' list flips below the field when there is not enough room above it, inside
+	// whichever scrolling container would otherwise clip it (or the window).
+	$effect(() => {
+		if (list) opensAbove = placement === 'top' && field.getBoundingClientRect().top - clipTop() > list.offsetHeight + 8;
+	});
+
+	function clipTop() {
+		for (let node = field.parentElement; node; node = node.parentElement) {
+			if (getComputedStyle(node).overflowY !== 'visible') return Math.max(0, node.getBoundingClientRect().top);
+		}
+		return 0;
+	}
 	// null while the field is showing its selection, a string once the user types. That
 	// distinction is what lets focus show the current label against the *whole* list
 	// instead of filtering the list down to the thing already chosen.
@@ -95,7 +111,7 @@
 	}
 </script>
 
-<div class="field" onfocusout={closeOptions}>
+<div bind:this={field} class="field" onfocusout={closeOptions}>
 	<div class="input-group" class:filled={!!text} class:has-icon={!!icon} class:has-clear={clearable && !!value}>
 		<input
 			{id}
@@ -150,9 +166,10 @@
 		</div>
 		{#if open}
 			<div
+				bind:this={list}
 				id={`${id}-options`}
 				class="options"
-				class:above={placement === 'top'}
+				class:above={opensAbove}
 				role="listbox"
 				aria-label={`${label} options`}
 			>

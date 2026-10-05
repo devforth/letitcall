@@ -63,7 +63,7 @@
 	{/each}
 {/snippet}
 
-<aside class="relative flex flex-col p-6 pb-10 sm:pb-6 sm:rounded-b-2xl lg:rounded-bl-none lg:rounded-tr-2xl lg:rounded-br-2xl lg:p-8" style={asideStyle}>
+<aside class="custom__panel relative flex flex-col p-6 pb-10 sm:pb-6 sm:rounded-b-2xl lg:rounded-bl-none lg:rounded-tr-2xl lg:rounded-br-2xl lg:p-8" style={asideStyle}>
 	<h1 class="text-3xl font-semibold tracking-tight">{eventType.name}</h1>
 	<div class="mt-8 flex items-end -space-x-4">
 		{#each hosts as host (host.email)}
@@ -137,7 +137,7 @@
 	</div>
 	{#if branding.name !== productName}
 		<p
-			class="absolute bottom-3 right-5 whitespace-nowrap text-xs font-normal sm:left-1/2 sm:right-auto sm:-translate-x-1/2"
+			class="custom__powered-by absolute bottom-3 right-5 whitespace-nowrap text-xs font-normal sm:left-1/2 sm:right-auto sm:-translate-x-1/2"
 			style="color: rgb(var(--color-background) / 0.72);"
 		>
 			Powered by <span class="font-medium" style="color: rgb(var(--color-background));">{productName}</span>

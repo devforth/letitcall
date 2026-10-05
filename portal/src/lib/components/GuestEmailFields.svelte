@@ -65,7 +65,7 @@
 		{/if}
 		{#if canAdd}
 			<div>
-				<Button class="guest-add-button gap-2" onclick={addGuest}>
+				<Button variant="primary-outline" class="custom__button-secondary outlined-action-button gap-2" onclick={addGuest}>
 					<Icon icon={boldPlusIcon} width="20" height="20" />
 					{addLabel}
 				</Button>

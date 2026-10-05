@@ -48,14 +48,15 @@
 		letter-spacing: -0.012em;
 	}
 
-	.button-primary.booking-next,
-	.button-primary.guest-add-button {
-		min-height: 44px !important;
+	/* Same size as primary-action-button; padding is mirrored because the icon sits after the label. */
+	.button-primary.booking-next {
+		min-height: 2.5rem !important;
 		border-radius: 9999px !important;
+		padding: 0.375rem 0.75rem 0.4375rem 1.25rem !important;
 	}
 
 	.button-primary.booking-confirm {
-		padding-right: 1.25rem !important;
+		padding: 0.375rem 1.25rem 0.4375rem 0.75rem !important;
 	}
 
 	.button-primary-outline {

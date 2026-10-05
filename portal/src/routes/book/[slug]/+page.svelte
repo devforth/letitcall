@@ -4,6 +4,7 @@
 	import Icon from '@iconify/svelte';
 	import userEditIcon from '@iconify-icons/griddy-icons/user-edit';
 	import bookingConfirmIcon from '@iconify-icons/iconmind/booking-confirm-outline-thin';
+	import arrowLeftIcon from '@iconify-icons/tabler/arrow-left';
 	import arrowRightIcon from '@iconify-icons/tabler/arrow-right';
 	import calendarOffIcon from '@iconify-icons/tabler/calendar-off';
 	import calendarTimeIcon from '@iconify-icons/tabler/calendar-time';
@@ -75,11 +76,12 @@
 			selectedMonth === month ? slotsByDate : generateBookingSlots(eventType, timezone, selectedMonth, now);
 		return map[selectedDate] ?? [];
 	});
-	// Below xl the times panel wraps under the calendar and runs full width, where the
-	// two-up grid of cells pushes the Next button off screen — so the same slots go into
-	// one field there, the same component the timezone below it uses. Busy slots stay
-	// listed but disabled, which is the dropdown's version of a locked cell; the words
-	// carry what the lock icon carries in the grid.
+	const slotColumns = $derived(selectedSlots.length > 10 ? 3 : 2);
+	// Beside the calendar, more than this many cells get too long to scan, so the same slots
+	// go into one field instead. Stacked (mobile) layouts always keep the cells. Busy slots stay
+	// listed but disabled, which is the dropdown's version of a locked cell; the words carry
+	// what the lock icon carries in the grid.
+	const slotsAsDropdown = $derived(selectedSlots.length > 33);
 	const slotOptions = $derived(
 		selectedSlots.map((slot) => ({
 			value: slot.time,
@@ -302,11 +304,10 @@
 		return `${active}${index < furthestStep ? 'is-done' : 'is-upcoming'}`;
 	}
 
-	function scrollFades(node: HTMLElement) {
+	function trackMoreBelow(node: HTMLElement) {
 		const shell = node.parentElement!;
 		const update = () => {
-			shell.classList.toggle('show-fade-top', node.scrollTop > 1);
-			shell.classList.toggle('show-fade-bottom', node.scrollTop + node.clientHeight < node.scrollHeight - 1);
+			shell.classList.toggle('has-more-below', node.scrollTop + node.clientHeight < node.scrollHeight - 1);
 		};
 		const resizeObserver = new ResizeObserver(update);
 		const mutationObserver = new MutationObserver(update);
@@ -351,13 +352,13 @@
 	</main>
 {:else}
 	<main class="min-h-screen sm:p-8 lg:p-10">
-		<div class="mx-auto grid min-h-screen max-w-7xl overflow-hidden sm:min-h-[calc(100vh-5rem)] sm:rounded-2xl lg:h-[calc(100vh-5rem)] lg:min-h-0 lg:grid-cols-[21rem_1fr]" style={blockStyle}>
+		<div class="custom__general-container mx-auto grid min-h-screen max-w-7xl overflow-hidden sm:min-h-[calc(100vh-5rem)] sm:rounded-2xl lg:h-[calc(100vh-5rem)] lg:min-h-0 lg:grid-cols-[21rem_1fr]" style={blockStyle}>
 			<EventTypeAside {eventType} />
 
-			<section class="flex min-h-0 flex-col overflow-hidden p-6 lg:p-10" aria-label="Book a meeting">
-				<div class="bk-stepper">
+			<section class="flex min-h-0 flex-col overflow-hidden px-4 sm:px-6 lg:px-[4%]" aria-label="Book a meeting">
+				<div class="bk-stepper mt-4 lg:mt-6">
 					{#if !booking}
-						<div class="bk-progress" class:bk-progress-with-heading={currentStep > 0}>
+						<div class="bk-progress">
 							<div class="bk-progress-summary">
 								<div class="bk-progress-icon-desktop" aria-hidden="true">
 									<Icon icon={bookingSteps[currentStep].icon} width="46" height="46" />
@@ -395,8 +396,9 @@
 					<div class="bk-content" class:bk-content-without-stepper={!!booking}>
 						{#if currentStep === 0}
 							<div class="flex h-full min-h-0 flex-col">
-								<div class="booking-step-scroll-shell">
-									<div class="booking-step-scroll grid content-start gap-10 xl:grid-cols-[minmax(20rem,1fr)_minmax(15rem,0.7fr)]" use:scrollFades>
+								<!-- Calendar and times sit side by side from lg up, whenever this panel fits both columns. -->
+								<div class="booking-step-scroll-shell @container">
+									<div class="booking-step-scroll grid content-start gap-6 lg:@min-[35rem]:gap-4 lg:@min-[35rem]:grid-cols-[minmax(17rem,1fr)_minmax(15rem,0.7fr)]" use:trackMoreBelow>
 									<div class="max-w-[500px]">
 										<MonthCalendar bind:month bind:selected={selectedDate} {availableDates} {minimumMonth} today={timezoneDateKey(now, timezone)} />
 									</div>
@@ -422,9 +424,9 @@
 												</div>
 											</div>
 										{:else}
-											<table class="mt-3 hidden w-full xl:table" style="border-collapse: separate; border-spacing: 8px; margin-left: -8px; margin-right: -8px; width: calc(100% + 16px); table-layout: fixed;">
+											<table class="mt-1 w-full {slotsAsDropdown ? 'lg:@min-[35rem]:hidden' : ''}" style="border-collapse: separate; border-spacing: 8px; margin-left: -8px; margin-right: -8px; width: calc(100% + 16px); table-layout: fixed;">
 												<tbody>
-																						{#each rows(selectedSlots, 2) as row}
+													{#each rows(selectedSlots, slotColumns) as row}
 														<tr>
 															{#each row as slot (slot.time)}
 																{@const selected = slot.time === selectedTime}
@@ -432,7 +434,11 @@
 																	role="button"
 																	tabindex={slot.busy ? -1 : 0}
 																	aria-disabled={slot.busy}
-																	class="slot-cell px-4 text-center text-sm font-bold transition"
+																	class="slot-cell px-1 text-center font-semibold transition"
+																	class:text-sm={slotColumns === 2}
+																	class:text-xs={slotColumns === 3}
+																	class:compact-slot={selectedSlots.length > 21}
+																	class:dense-slot={selectedSlots.length > 27}
 																	class:is-busy={slot.busy}
 																	class:is-selected={selected}
 																	class:cursor-pointer={!slot.busy}
@@ -446,9 +452,9 @@
 																		}
 																	}}
 																>
-																	<span class="inline-flex items-center gap-1 whitespace-nowrap" class:opacity-40={slot.busy}>
-																		{#if slot.busy}<Icon icon={lockIcon} width="14" height="14" />{/if}
-																		<span>{slot.label}</span>
+																	<span class="inline-flex items-center gap-0.5 whitespace-nowrap" class:opacity-40={slot.busy}>
+																		{#if slot.busy}<Icon icon={lockIcon} width="12" height="12" />{/if}
+																		{slot.label}
 																	</span>
 																</td>
 															{/each}
@@ -457,17 +463,10 @@
 												</tbody>
 											</table>
 										{/if}
-										<!-- One row of fields under the times. Below xl the grid of cells is
-										     hidden and Time joins Timezone here; at xl the cells are back and
-										     Timezone has the row to itself. Stacked under sm, where two
-										     comboboxes side by side leave no room for their own controls. -->
-										<div
-											class="mt-5 grid gap-5 xl:mt-8 xl:grid-cols-1 {selectedSlots.length > 0
-												? 'sm:grid-cols-2'
-												: ''}"
-										>
-											{#if selectedSlots.length > 0}
-												<div class="xl:hidden">
+										<!-- Fields under the times: Timezone, plus Time when the slots are a dropdown. -->
+										<div class="mt-5 grid gap-5 lg:@min-[35rem]:mt-4">
+											{#if slotsAsDropdown}
+												<div class="hidden lg:@min-[35rem]:block">
 													<SearchableSelect
 														id="booking-time"
 														label="Time"
@@ -486,11 +485,11 @@
 										</div>
 									</div>
 								</div>
-								<div class="booking-step-actions mt-auto flex items-center justify-end gap-4 pt-8">
+								<div class="booking-step-actions mt-auto flex items-center justify-end gap-4 pt-8 pb-5 sm:pt-6 lg:pt-4 lg:pb-6">
 									{#if scheduleError}
 										{#key scheduleAttempts}{@render stepError([scheduleError])}{/key}
 									{/if}
-									<Button class="booking-next gap-2" onclick={confirmDateAndTime}>
+									<Button class="custom__button-primary booking-next gap-2" onclick={confirmDateAndTime}>
 										Next
 										<Icon icon={boldArrowRightIcon} width="18" height="18" />
 									</Button>
@@ -499,7 +498,7 @@
 							{:else if currentStep === 1}
 								<form class="flex h-full min-h-0 flex-col" autocomplete="off" novalidate onsubmit={confirmContactInformation}>
 									<div class="booking-step-scroll-shell">
-										<div class="booking-step-scroll grid content-start gap-8" use:scrollFades>
+										<div class="booking-step-scroll grid content-start gap-8" use:trackMoreBelow>
 										<section class="grid content-start gap-3 md:w-1/2">
 											<h3 class="text-lg font-medium">
 												Personal details
@@ -532,14 +531,20 @@
 										</section>
 										</div>
 									</div>
-									<div class="booking-step-actions mt-auto flex items-center justify-end gap-4 pt-8">
+									<div class="booking-step-actions mt-auto flex items-center justify-end gap-4 pt-8 pb-5 sm:pt-6 lg:pt-4 lg:pb-6">
 										{#if contactErrors.length > 0}
 											{#key contactAttempts}{@render stepError(contactErrors)}{/key}
 										{/if}
-										<Button type="submit" class="booking-next gap-2">
-											Next
-											<Icon icon={boldArrowRightIcon} width="18" height="18" />
-										</Button>
+										<div class="booking-step-buttons">
+											<Button variant="primary-outline" class="custom__button-secondary outlined-action-button gap-2" onclick={() => goToStep(0)}>
+												<Icon icon={arrowLeftIcon} width="18" height="18" />
+												Back
+											</Button>
+											<Button type="submit" class="custom__button-primary booking-next gap-2">
+												Next
+												<Icon icon={boldArrowRightIcon} width="18" height="18" />
+											</Button>
+										</div>
 									</div>
 								</form>
 								{:else if saving}
@@ -551,7 +556,7 @@
 								{:else}
 									<form class="flex h-full min-h-0 flex-col" onsubmit={createBooking}>
 										<div class="booking-step-scroll-shell">
-											<div class="booking-step-scroll" use:scrollFades>
+											<div class="booking-step-scroll" use:trackMoreBelow>
 												<section class="review-details-section" aria-labelledby="review-details-title">
 													<h2 id="review-details-title" class="review-details-title">Review your booking</h2>
 													<BookingDetailsCard
@@ -569,8 +574,8 @@
 												</section>
 											</div>
 										</div>
-										<div class="review-confirm mt-auto flex justify-end pt-8">
-											<Button type="submit" class="booking-next booking-confirm gap-2">
+										<div class="review-confirm mt-auto flex justify-end pt-8 pb-5 sm:pt-6 lg:pt-4 lg:pb-6">
+											<Button type="submit" class="custom__button-primary booking-next booking-confirm gap-2">
 												<Icon icon={boldCheckIcon} width="20" height="20" />
 												Confirm booking
 											</Button>
@@ -614,6 +619,23 @@
 		margin: 0;
 		padding-left: 1rem;
 		list-style: disc;
+	}
+
+	/* A rule above the buttons while the step content above can still scroll further down. */
+	.booking-step-actions,
+	.review-confirm {
+		border-top: 1px solid transparent;
+		transition: border-color 0.2s ease;
+	}
+
+	.booking-step-scroll-shell.has-more-below + .booking-step-actions,
+	.booking-step-scroll-shell.has-more-below + .review-confirm {
+		border-top-color: var(--color-border);
+	}
+
+	.booking-step-buttons {
+		display: flex;
+		gap: 0.75rem;
 	}
 
 	.booking-step-actions {
@@ -682,6 +704,32 @@
 		background: rgb(var(--color-text) / 0.05);
 		color: rgb(var(--color-text));
 	}
+	.slot-cell.compact-slot {
+		height: 2.5rem;
+	}
+
+	.slot-cell.dense-slot {
+		height: 2rem;
+	}
+
+	/* Stacked under the calendar: one comfortable tap height whatever the count. Stacked means
+	   below lg (the info panel moves on top) or a panel too narrow for both columns. */
+	@media (max-width: 63.999rem) {
+		.slot-cell,
+		.slot-cell.compact-slot,
+		.slot-cell.dense-slot {
+			height: 3rem;
+		}
+	}
+
+	@container (max-width: 34.999rem) {
+		.slot-cell,
+		.slot-cell.compact-slot,
+		.slot-cell.dense-slot {
+			height: 3rem;
+		}
+	}
+
 	.slot-cell::before {
 		content: '';
 		position: absolute;
@@ -724,55 +772,35 @@
 		flex-direction: column;
 	}
 
+	/* Extends into the right gutter so the step's scrollbar can sit outside the content. */
 	.bk-content {
+		--scroll-gutter: 1rem;
 		flex: 1;
 		min-height: 0;
 		overflow: hidden;
+		margin-top: -0.7rem;
+		margin-right: calc(-1 * var(--scroll-gutter));
+		padding-right: var(--scroll-gutter);
 	}
 
 	.bk-content-without-stepper {
 		margin-top: 0;
 	}
 
+	/* The scrollbar sits in the panel's side gutter, outside the content. */
 	.booking-step-scroll-shell {
 		position: relative;
 		flex: 1;
 		min-height: 0;
-	}
-
-	.booking-step-scroll-shell::before,
-	.booking-step-scroll-shell::after {
-		content: '';
-		position: absolute;
-		right: 0.75rem;
-		left: 0;
-		height: 3.5rem;
-		z-index: 1;
-		opacity: 0;
-		pointer-events: none;
-		transition: opacity 160ms ease;
-	}
-
-	.booking-step-scroll-shell::before {
-		top: 0;
-		background: linear-gradient(to bottom, rgb(var(--color-background)), transparent);
-	}
-
-	.booking-step-scroll-shell::after {
-		bottom: 0;
-		background: linear-gradient(to bottom, transparent, rgb(var(--color-background)));
-	}
-
-	.booking-step-scroll-shell.show-fade-top::before,
-	.booking-step-scroll-shell.show-fade-bottom::after {
-		opacity: 1;
+		margin-right: calc(-1 * var(--scroll-gutter));
 	}
 
 	.booking-step-scroll {
 		height: 100%;
 		overflow-x: hidden;
 		overflow-y: auto;
-		padding-bottom: 2.5rem;
+		padding-top: 1.25rem;
+		padding-right: var(--scroll-gutter);
 		scrollbar-color: rgb(var(--color-text) / 0.28) transparent;
 		scrollbar-width: thin;
 	}
@@ -795,12 +823,6 @@
 		background: rgb(var(--color-text) / 0.45);
 	}
 
-	@media (prefers-reduced-motion: reduce) {
-		.booking-step-scroll-shell::before,
-		.booking-step-scroll-shell::after {
-			transition: none;
-		}
-	}
 	/* Too narrow for three labels side by side — the rail carries the progress and
 	   only the step you are on names itself. */
 	@media (max-width: 640px) {
@@ -815,29 +837,19 @@
 
 		.review-confirm {
 			justify-content: stretch;
-			padding-top: 1.5rem;
 		}
 
 		.review-confirm :global(button) {
 			width: 100%;
 			justify-content: center;
 		}
-
-		.bk-content {
-			margin-top: 1.5rem;
-		}
 	}
 
 	/* Compact booking progress */
 	.bk-progress {
 		flex-shrink: 0;
-		margin-bottom: 2rem;
 		border-radius: 1rem;
 		background: rgb(var(--color-background));
-	}
-
-	.bk-progress-with-heading {
-		margin-bottom: 1.25rem;
 	}
 
 	.bk-progress-summary {
@@ -964,12 +976,6 @@
 	@media (prefers-reduced-motion: reduce) {
 		.bk-head::after {
 			transition: none;
-		}
-	}
-
-	@media (max-width: 640px) {
-		.bk-progress {
-			margin-bottom: 1.5rem;
 		}
 	}
 

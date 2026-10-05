@@ -2,14 +2,12 @@
 	import xIcon from '@iconify-icons/tabler/x';
 	import alertTriangleIcon from '@iconify-icons/tabler/alert-triangle';
 	import checkIcon from '@iconify-icons/tabler/check';
-	import infoIcon from '@iconify-icons/tabler/info-small';
 	import Icon from '@iconify/svelte';
 	import { dismissNotification, notificationDurationMs, notifications } from '$lib/notifications';
 
 	const variantIcons = {
 		success: checkIcon,
-		error: alertTriangleIcon,
-		info: infoIcon
+		error: alertTriangleIcon
 	};
 </script>
 
@@ -20,34 +18,13 @@
 	{#each $notifications as notification (notification.id)}
 		<div
 			class="notification pointer-events-auto"
-			class:notification-info={notification.variant === 'info'}
 			class:notification-error={notification.variant === 'error'}
 			class:notification-success={notification.variant === 'success'}
 		>
 			<span class="notification-badge">
 				<Icon icon={variantIcons[notification.variant]} width="20" height="20" aria-hidden="true" />
 			</span>
-			<div class="grid min-w-0 flex-1 gap-0.5">
-				<p class="notification-title">{notification.message}</p>
-				{#if notification.subtitle}
-					<p class="notification-subtitle">{notification.subtitle}</p>
-				{/if}
-				{#if notification.progress !== undefined}
-					<div class="mt-2 flex items-center justify-between gap-3 text-xs">
-						<div class="h-1.5 flex-1 overflow-hidden rounded bg-border">
-							<div
-								class="h-full bg-current transition-all"
-								style={`width: ${notification.progress}%`}
-								aria-valuenow={notification.progress}
-								aria-valuemin={0}
-								aria-valuemax={100}
-								role="progressbar"
-							></div>
-						</div>
-						<span class="whitespace-nowrap font-medium">{notification.progress}%</span>
-					</div>
-				{/if}
-			</div>
+			<p class="notification-title">{notification.message}</p>
 			<button
 				type="button"
 				class="notification-close"
@@ -65,21 +42,16 @@
 	.notification {
 		position: relative;
 		display: flex;
-		align-items: flex-start;
+		align-items: center;
 		gap: 0.75rem;
 		overflow: hidden;
 		border-radius: 10px;
 		padding: 0.875rem 0.75rem 1rem 0.875rem;
-		--notification-color: rgb(var(--color-primary));
 		background: rgb(var(--color-background));
 		box-shadow:
 			0 0 0 1px var(--color-border),
 			0 8px 24px rgb(0 0 0 / 0.1);
 		color: rgb(var(--color-text));
-	}
-
-	.notification-info {
-		--notification-color: rgb(var(--warning));
 	}
 
 	.notification-error {
@@ -102,16 +74,12 @@
 	}
 
 	.notification-title {
+		flex: 1;
+		min-width: 0;
 		margin: 0;
 		font-size: 0.9375rem;
 		font-weight: 600;
 		line-height: 1.35;
-	}
-
-	.notification-subtitle {
-		margin: 0;
-		color: rgb(var(--color-text));
-		font-size: 0.8125rem;
 	}
 
 	.notification-close {

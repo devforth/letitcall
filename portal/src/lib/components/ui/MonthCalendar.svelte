@@ -45,15 +45,15 @@
 	function cellClass(date: string): string {
 		// Segmented-tray look: the grid sits in an inset panel; bookable days are
 		// raised "chips", the selection fills primary, unavailable days recede.
-		const base = 'relative isolate aspect-square w-full overflow-hidden rounded-[10px] text-sm font-bold transition duration-150';
+		const base = 'relative isolate aspect-square w-full overflow-hidden rounded-[10px] text-sm font-semibold transition duration-150';
 		if (selected === date)
-			return `${base} calendar-selected z-10 bg-[rgb(var(--color-background))] font-bold text-[rgb(var(--color-background))]`;
+			return `${base} calendar-selected z-10 bg-[rgb(var(--color-background))] font-semibold text-[rgb(var(--color-background))]`;
 		if (date === today)
 			// Today stands out with a bold primary number (plus the dot marker).
 			// Only give it a chip background when it actually has bookable times.
 			return available.has(date)
-				? `${base} day-cell cursor-pointer bg-[rgb(var(--color-background))] font-bold text-[rgb(var(--color-primary))]`
-				: `${base} font-bold text-[rgb(var(--color-primary))] cursor-not-allowed`;
+				? `${base} day-cell cursor-pointer bg-[rgb(var(--color-background))] font-semibold text-[rgb(var(--color-primary))]`
+				: `${base} font-semibold text-[rgb(var(--color-primary))] cursor-not-allowed`;
 		if (available.has(date))
 			return `${base} day-cell cursor-pointer bg-[rgb(var(--color-background))] text-[rgb(var(--color-text))]`;
 		return `${base} text-[rgb(var(--color-text)/0.35)]`;
@@ -62,7 +62,7 @@
 
 <div class="calendar-shell w-full overflow-hidden rounded-xl" aria-label={monthLabel}>
 	<div class="calendar-header rounded-t-xl border border-[var(--color-border)] bg-[rgb(var(--color-background))]">
-		<div class="flex items-center justify-between gap-3 px-4 pt-2 pb-0">
+		<div class="calendar-head flex flex-wrap items-center justify-between gap-x-3 gap-y-1 px-4 pt-2 pb-0">
 			{#key month}
 				<h2
 					class="calendar-label text-lg font-semibold text-[rgb(var(--color-text))]"
@@ -88,7 +88,7 @@
 
 		<div class="-mb-3 grid grid-cols-7 px-1.5 pb-5 text-center text-sm font-medium text-[rgb(var(--color-text))]" aria-hidden="true">
 			{#each ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] as weekday}
-				<span class="py-2">{weekday}</span>
+				<span class="py-2"><span class="weekday-long">{weekday}</span><span class="weekday-short">{weekday[0]}</span></span>
 			{/each}
 		</div>
 	</div>
@@ -97,7 +97,7 @@
 			<div
 				class:calendar-month-next={monthDirection > 0}
 				class:calendar-month-previous={monthDirection < 0}
-				class="calendar-month grid grid-cols-7 gap-0.5 sm:gap-1"
+				class="calendar-month grid grid-cols-7 gap-0.5"
 			>
 				{#each Array(leadingDays) as _}
 					<span></span>
@@ -128,14 +128,43 @@
 <style>
 	.calendar-dates {
 		border-radius: 0.75rem;
-		padding: 0.75rem;
+		padding: 0.5rem;
 		border: 1px solid var(--color-border);
 		background: color-mix(in srgb, rgb(var(--color-text)) 5%, rgb(var(--color-background)));
 	}
 
-	@media (min-width: 640px) {
+	.calendar-shell {
+		container-type: inline-size;
+	}
+
+	.weekday-short {
+		display: none;
+	}
+
+	/* Narrow calendars: one-letter weekdays, tighter padding and smaller numbers so nothing overflows. */
+	@container (max-width: 20rem) {
+		.calendar-head {
+			padding-inline: 0.5rem;
+		}
+
+		.calendar-label {
+			font-size: 1rem;
+		}
+
+		.weekday-long {
+			display: none;
+		}
+
+		.weekday-short {
+			display: inline;
+		}
+
 		.calendar-dates {
-			padding: 1rem;
+			padding: 0.375rem;
+		}
+
+		.calendar-month :global(button) {
+			font-size: 0.75rem;
 		}
 	}
 

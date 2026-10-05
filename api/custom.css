@@ -12,8 +12,173 @@
 */
 
 @layer custom {
+	/* The page background, captured before .custom__panel repoints --color-background. */
+	:root {
+		--page-background: var(--color-background) !important;
+	}
+
 	.button-primary {
 		/* background: linear-gradient(135deg, #7c3aed, #db2777) !important; */
 		/* border-color: transparent !important; */
+	}
+
+	/* Booking page card: 2px violet → blue → light-blue gradient border. The page fill is
+	   painted on the padding box and the gradient on the border box behind it. */
+	.custom__general-container {
+		border: 2px solid transparent !important;
+		background:
+			linear-gradient(rgb(var(--color-background)), rgb(var(--color-background))) padding-box,
+			linear-gradient(135deg, rgb(119 42 190 / 0.6) 10%, rgb(4 138 191 / 0.6), rgb(72 197 255 / 0.6)) border-box !important;
+
+		/* On phones the card runs edge to edge, so the frame is dropped there. */
+		@media (max-width: 39.999rem) {
+			border: 0 !important;
+		}
+	}
+
+	/* Event info panel (booking and event pages): deep navy sky over three darker ground bands
+	   whose edges tilt against each other, after devforth.io's illustrated hero. Drawn as a
+	   stretched SVG (viewBox 0–100 on both axes) so the slopes keep their place at any size. */
+	.custom__panel {
+		background: #06295e url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'%3E%3Cpolygon fill='%2305224d' points='0,75 100,69.6 100,100 0,100'/%3E%3Cpolygon fill='%23041a38' points='0,75.9 100,77.6 100,100 0,100'/%3E%3C/svg%3E") center / 100% 100% no-repeat !important;
+		/* The panel draws its text, rules and avatar ring in --color-background, so pointing it at
+		   Devforth's slate text keeps everything light on the navy in both themes. */
+		--color-background: 226 232 240 !important;
+		color: rgb(226 232 240) !important;
+		isolation: isolate !important;
+
+		/* The lowest band is the page background, so the panel flows into the booking steps.
+		   Drawn under the panel's content (negative z-index inside its own stacking context). */
+		&::after {
+			content: '' !important;
+			position: absolute !important;
+			inset: 0 !important;
+			z-index: -1 !important;
+			border-radius: inherit !important;
+			clip-path: polygon(0 85%, 100% 78%, 100% 100%, 0 100%) !important;
+			background: rgb(var(--page-background)) !important;
+			pointer-events: none !important;
+		}
+
+		/* The panel's outline is an inline box-shadow ring; on phones it runs edge to edge without
+		   one, and a taller bottom band leads into the booking steps below it. */
+		@media (max-width: 39.999rem) {
+			--panel-padding-bottom: 9rem;
+			padding-bottom: var(--panel-padding-bottom) !important;
+			margin-bottom: -3rem !important;
+			box-shadow: none !important;
+
+			/* The booking steps overlap the panel's bottom band; the panel is positioned, so lift the
+			   steps above it or the band covers their title. */
+			& ~ section {
+				position: relative !important;
+				z-index: 1 !important;
+			}
+
+			/* "Powered by" sits at 45% of that bottom padding, measured from the bottom edge. */
+			& .custom__powered-by {
+				bottom: calc(var(--panel-padding-bottom) * 0.45) !important;
+			}
+		}
+	}
+
+	/* Booking page primary buttons (Next, Confirm booking), after devforth.io's .gradient-btn:
+	   violet → light-blue gradient, 18px corners, soft shadow, and a blurred gradient glow on hover. */
+	.custom__button-primary {
+		--df-gradient: linear-gradient(-45deg, #772abe, #48c5ff);
+		position: relative !important;
+		isolation: isolate !important;
+		border-color: transparent !important;
+		border-radius: 18px !important;
+		background: var(--df-gradient) !important;
+		/* The portal's 2px border is transparent here; without this the gradient tiles into it and
+		   shows the wrong colors along the edges. */
+		background-origin: border-box !important;
+		color: #fff !important;
+		font-weight: 600 !important;
+		letter-spacing: 0.01em !important;
+		box-shadow: 0 0 18px 1px rgb(1 6 12 / 0.2) !important;
+		transition:
+			transform 0.14s cubic-bezier(0.4, 0, 0.2, 1),
+			filter 0.18s cubic-bezier(0.4, 0, 0.2, 1),
+			box-shadow 0.18s cubic-bezier(0.4, 0, 0.2, 1) !important;
+
+		&:hover:not(:disabled),
+		&:active:not(:disabled) {
+			border-color: transparent !important;
+			background: var(--df-gradient) !important;
+			background-origin: border-box !important;
+		}
+
+		/* Glow sits behind the label: negative z-index inside the button's own stacking context. */
+		&:hover:not(:active):not(:disabled)::after {
+			content: '' !important;
+			position: absolute !important;
+			inset: 0 !important;
+			z-index: -1 !important;
+			border-radius: 50% !important;
+			background: var(--df-gradient) !important;
+			opacity: 0.6 !important;
+			filter: blur(12px) !important;
+		}
+
+		&:active:not(:disabled) {
+			transform: scale(0.995) !important;
+		}
+	}
+
+	/* Booking page secondary button (Back), after devforth.io's .gradient-border-btn: a 2px
+	   violet → blue → light-blue gradient outline, a faint tint, and a softer glow on hover. */
+	.custom__button-secondary {
+		position: relative !important;
+		isolation: isolate !important;
+		border-radius: 18px !important;
+		background: rgb(1 6 12 / 0.1) !important;
+		color: rgb(var(--color-text)) !important;
+		font-weight: 600 !important;
+		letter-spacing: 0.01em !important;
+		box-shadow: 0 0 24px rgb(1 6 12 / 0.4) !important;
+		transition:
+			transform 0.14s cubic-bezier(0.4, 0, 0.2, 1),
+			box-shadow 0.18s cubic-bezier(0.4, 0, 0.2, 1) !important;
+
+		&::before {
+			content: '' !important;
+			position: absolute !important;
+			inset: 0 !important;
+			border-radius: inherit !important;
+			padding: 2px !important;
+			background: linear-gradient(135deg, #772abe 10%, #048abf, #48c5ff) !important;
+			/* Shows the gradient only in the 2px padding ring. */
+			-webkit-mask:
+				linear-gradient(#fff 0 0) content-box,
+				linear-gradient(#fff 0 0) !important;
+			-webkit-mask-composite: xor !important;
+			mask:
+				linear-gradient(#fff 0 0) content-box exclude,
+				linear-gradient(#fff 0 0) !important;
+			pointer-events: none !important;
+		}
+
+		&:hover:not(:disabled),
+		&:active:not(:disabled) {
+			background: rgb(1 6 12 / 0.1) !important;
+			color: rgb(var(--color-text)) !important;
+		}
+
+		&:hover:not(:active):not(:disabled)::after {
+			content: '' !important;
+			position: absolute !important;
+			inset: 0 !important;
+			z-index: -1 !important;
+			border-radius: 50% !important;
+			background: linear-gradient(-45deg, #772abe, #48c5ff) !important;
+			opacity: 0.4 !important;
+			filter: blur(12px) !important;
+		}
+
+		&:active:not(:disabled) {
+			transform: scale(0.995) !important;
+		}
 	}
 }
