@@ -6,13 +6,13 @@
 	import moonIcon from '@iconify-icons/tabler/moon';
 	import sunIcon from '@iconify-icons/tabler/sun-high';
 	import worldIcon from '@iconify-icons/tabler/world';
-	import type { BrandingTheme } from '$lib/types';
+	import type { Branding, BrandingTheme } from '$lib/types';
 	import Button from '$lib/components/ui/Button.svelte';
 	import MonthCalendar from '$lib/components/ui/MonthCalendar.svelte';
 	import SearchableSelect from '$lib/components/ui/SearchableSelect.svelte';
 	import SegmentedControl from '$lib/components/ui/SegmentedControl.svelte';
 
-	let { theme }: { theme: BrandingTheme } = $props();
+	let { theme, publicTheme }: { theme: BrandingTheme; publicTheme: Branding['publicTheme'] } = $props();
 
 	const previewModes = [
 		{ value: 'light', label: 'Light', icon: sunIcon },
@@ -31,11 +31,12 @@
 	const times = ['9:00 AM', '10:30 AM', '1:00 PM', '2:30 PM'];
 
 	let mode = $state<'light' | 'dark'>('light');
+	const previewMode = $derived(publicTheme === 'both' ? mode : publicTheme);
 	let month = $state('2026-10');
 	let selectedDate = $state('2026-10-15');
 	let selectedTime = $state('10:30 AM');
 	let previewVisible = $state(false);
-	const colors = $derived(theme[mode]);
+	const colors = $derived(theme[previewMode]);
 	const displayName = 'Your Brand';
 	const selectedDateLabel = $derived(
 		new Intl.DateTimeFormat(undefined, {
@@ -58,8 +59,8 @@
 		'--color-primary: ' + channels(colors.primary) + '; ' +
 		'--color-text: ' + channels(colors.text) + '; ' +
 		'--color-background: ' + channels(colors.background) + '; ' +
-		'--color-border: color-mix(in srgb, rgb(var(--color-text)) ' + (mode === 'dark' ? 14 : 26) + '%, rgb(var(--color-background))); ' +
-		'--shadow-small: 0 8px 24px rgb(0 0 0 / 0.12); color-scheme: ' + mode + ';'
+		'--color-border: color-mix(in srgb, rgb(var(--color-text)) ' + (previewMode === 'dark' ? 14 : 26) + '%, rgb(var(--color-background))); ' +
+		'--shadow-small: 0 8px 24px rgb(0 0 0 / 0.12); color-scheme: ' + previewMode + ';'
 	);
 
 	function selectMode(value: string) {
@@ -80,7 +81,7 @@
 					id="booking-preview-title"
 					class="preview-title text-lg font-semibold leading-none"
 				>Booking page preview</h3>
-				{#if previewVisible}
+				{#if previewVisible && publicTheme === 'both'}
 					<div class="preview-theme-switch">
 						<SegmentedControl
 							options={previewModes}

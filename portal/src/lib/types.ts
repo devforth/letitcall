@@ -51,6 +51,7 @@ export type Branding = {
 	logoPath?: string;
 	logoSource?: ImageSource;
 	theme: BrandingTheme;
+	publicTheme: 'both' | 'light' | 'dark';
 	preset?: string;
 };
 

@@ -65,7 +65,7 @@
 		<p class="mb-5 border border-black p-3 text-sm" role="alert">{error}</p>
 	{/if}
 
-	<form class="grid gap-5 lg:grid-cols-2" onsubmit={createUser}>
+	<form class="grid grid-cols-1 gap-5 lg:grid-cols-2" onsubmit={createUser}>
 		<Input id="new-email" label="Email" type="email" bind:value={email} required autocomplete="off" />
 		<SearchableSelect
 			id="new-timezone"

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
 	import Icon, { type IconifyIcon } from '@iconify/svelte';
 	import chevronDownIcon from '@iconify-icons/tabler/chevron-down';
 	import xIcon from '@iconify-icons/tabler/x';
@@ -44,9 +45,18 @@
 	} = $props();
 
 	let open = $state(false);
+	let mobile = $state(false);
 	let field: HTMLDivElement;
 	let list = $state<HTMLDivElement>();
 	let opensAbove = $state(false);
+
+	onMount(() => {
+		const media = window.matchMedia('(max-width: 39.999rem)');
+		const updateMobile = () => (mobile = media.matches);
+		updateMobile();
+		media.addEventListener('change', updateMobile);
+		return () => media.removeEventListener('change', updateMobile);
+	});
 
 	// A 'top' list flips below the field when there is not enough room above it, inside
 	// whichever scrolling container would otherwise clip it (or the window).
@@ -111,60 +121,80 @@
 	}
 </script>
 
-<div bind:this={field} class="field" onfocusout={closeOptions}>
-	<div class="input-group" class:filled={!!text} class:has-icon={!!icon} class:has-clear={clearable && !!value}>
-		<input
-			{id}
-			type="search"
-			value={text}
-			{placeholder}
-			{required}
-			{disabled}
-			autocomplete="off"
-			role="combobox"
-			aria-autocomplete="list"
-			aria-controls={`${id}-options`}
-			aria-expanded={open}
-			onfocus={openOptions}
-			oninput={filterOptions}
-			onkeydown={(event) => {
-				if (event.key !== 'Escape') return;
-				open = false;
-				query = null;
-			}}
-			class="input"
-		/>
+<div bind:this={field} class="field" class:expanded={open && !mobile} onfocusout={closeOptions}>
+	<div class="input-group" class:filled={mobile || !!text} class:has-icon={!!icon} class:has-clear={!mobile && clearable && !!value}>
+		{#if mobile}
+			<select
+				{id}
+				bind:value
+				{required}
+				{disabled}
+				class="input native-select"
+				onchange={(event) => onchange?.(event.currentTarget.value)}
+			>
+				<option value="" disabled={!clearable}>Select {label.toLowerCase()}</option>
+				{#each normalized as option (option.value)}
+					<option value={option.value} disabled={option.disabled}>{option.label}</option>
+				{/each}
+			</select>
+		{:else}
+			<input
+				{id}
+				type="search"
+				value={text}
+				{placeholder}
+				{required}
+				{disabled}
+				autocomplete="off"
+				role="combobox"
+				aria-autocomplete="list"
+				aria-controls={`${id}-options`}
+				aria-expanded={open}
+				onfocus={openOptions}
+				oninput={filterOptions}
+				onkeydown={(event) => {
+					if (event.key !== 'Escape') return;
+					open = false;
+					query = null;
+				}}
+				class="input"
+			/>
+		{/if}
 		<label class="float-label" for={id}>{label}</label>
 		{#if icon}
 			<span class="lead-icon"><Icon {icon} width="18" height="18" /></span>
 		{/if}
-		<div class="actions">
-			{#if clearable && value}
+		{#if mobile}
+			<span class="native-chevron" aria-hidden="true"><Icon icon={chevronDownIcon} width="18" height="18" /></span>
+		{:else}
+			<div class="actions">
+				{#if clearable && value}
+					<button
+						type="button"
+						class="clear-button"
+						aria-label={`Clear ${label.toLowerCase()}`}
+						{disabled}
+						onclick={clearValue}
+					>
+						<Icon icon={xIcon} width="16" height="16" class="clear-icon" />
+					</button>
+				{/if}
 				<button
 					type="button"
-					class="clear-button"
-					aria-label={`Clear ${label.toLowerCase()}`}
-					{disabled}
-					onclick={clearValue}
+					class="select-toggle"
+					aria-label={`Show ${label.toLowerCase()} options`}
+					aria-expanded={open}
+					disabled={disabled}
+					onclick={() => {
+						open = !open;
+						query = null;
+					}}
 				>
-					<Icon icon={xIcon} width="16" height="16" class="clear-icon" />
+					<Icon icon={chevronDownIcon} width="18" height="18" class={open ? 'open' : ''} />
 				</button>
-			{/if}
-			<button
-				type="button"
-				class="select-toggle"
-				aria-label={`Show ${label.toLowerCase()} options`}
-				aria-expanded={open}
-				disabled={disabled}
-				onclick={() => {
-					open = !open;
-					query = null;
-				}}
-			>
-				<Icon icon={chevronDownIcon} width="18" height="18" class={open ? 'open' : ''} />
-			</button>
-		</div>
-		{#if open}
+			</div>
+		{/if}
+		{#if open && !mobile}
 			<div
 				bind:this={list}
 				id={`${id}-options`}
@@ -200,6 +230,11 @@
 		font-size: 0.875rem;
 	}
 
+	.field.expanded {
+		position: relative;
+		z-index: 11;
+	}
+
 	.input-group {
 		position: relative;
 		align-self: start;
@@ -227,6 +262,21 @@
 
 	.has-clear .input {
 		padding-right: 5rem;
+	}
+
+	.native-select {
+		appearance: none;
+		padding-right: 3rem;
+		cursor: pointer;
+	}
+
+	.native-chevron {
+		position: absolute;
+		top: 50%;
+		right: 0.875rem;
+		transform: translateY(-50%);
+		pointer-events: none;
+		color: rgb(var(--color-text) / 0.65);
 	}
 
 	.lead-icon {

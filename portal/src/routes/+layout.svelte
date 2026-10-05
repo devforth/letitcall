@@ -4,6 +4,8 @@
 	import NotificationStack from '$lib/components/NotificationStack.svelte';
 	import { theme } from '$lib/stores/theme';
 	import { branding, loadBranding } from '$lib/stores/branding.svelte';
+	import { pageTheme } from '$lib/public-theme';
+	import { page } from '$app/state';
 	import { logoURL } from '$lib/api';
 	import PageTitle from '$lib/components/PageTitle.svelte';
 	import { onMount } from 'svelte';
@@ -11,18 +13,15 @@
 	let { children } = $props();
 	let favicon = $derived(branding.logoPath ? logoURL(branding.logoPath) : defaultFavicon);
 
-	onMount(() => {
-		// Apply theme to DOM on mount
-		const unsubscribe = theme.subscribe((currentTheme) => {
-			if (currentTheme === 'dark') {
-				document.documentElement.classList.add('dark');
-			} else {
-				document.documentElement.classList.remove('dark');
-			}
-		});
-		void loadBranding(false).catch(() => {});
+	$effect(() => {
+		document.documentElement.classList.toggle(
+			'dark',
+			pageTheme(page.url.pathname, $theme, branding.publicTheme) === 'dark'
+		);
+	});
 
-		return unsubscribe;
+	onMount(() => {
+		void loadBranding(false).catch(() => {});
 	});
 </script>
 

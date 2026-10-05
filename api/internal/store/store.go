@@ -121,7 +121,7 @@ func Open(root string) (*Store, error) {
 		return nil, fmt.Errorf("inspect branding table: %w", err)
 	}
 	if !exists {
-		if err := putJSON(branding, brandingKey, model.Branding{Name: model.DefaultBrandName, Theme: model.DefaultBrandingTheme()}); err != nil {
+		if err := putJSON(branding, brandingKey, model.Branding{Name: model.DefaultBrandName, Theme: model.DefaultBrandingTheme(), PublicTheme: "both"}); err != nil {
 			closeAll(opened)
 			return nil, fmt.Errorf("seed branding table: %w", err)
 		}
@@ -165,6 +165,9 @@ func (s *Store) GetBranding() (model.Branding, error) {
 		if branding.Theme.Dark.Background == "" {
 			branding.Theme.Dark.Background = defaults.Dark.Background
 		}
+	}
+	if branding.PublicTheme == "" {
+		branding.PublicTheme = "both"
 	}
 	return branding, nil
 }

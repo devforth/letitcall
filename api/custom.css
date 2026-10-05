@@ -28,7 +28,7 @@
 		border: 2px solid transparent !important;
 		background:
 			linear-gradient(rgb(var(--color-background)), rgb(var(--color-background))) padding-box,
-			linear-gradient(135deg, rgb(119 42 190 / 0.6) 10%, rgb(4 138 191 / 0.6), rgb(72 197 255 / 0.6)) border-box !important;
+			linear-gradient(135deg, rgb(119 42 190 / 0.6) 10%, rgb(4 138 191 / 0.6), rgb(72 197 255 / 0.3)) border-box !important;
 
 		/* On phones the card runs edge to edge, so the frame is dropped there. */
 		@media (max-width: 39.999rem) {

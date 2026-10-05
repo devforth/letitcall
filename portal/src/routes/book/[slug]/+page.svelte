@@ -26,7 +26,7 @@
 	import Textarea from '$lib/components/ui/Textarea.svelte';
 	import { isValidEmail } from '$lib/validation';
 	import BookingDetailsCard from '$lib/components/BookingDetailsCard.svelte';
-	import EventTypeAside from '$lib/components/EventTypeAside.svelte';
+	import PublicBookingShell from '$lib/components/PublicBookingShell.svelte';
 
 	const blockStyle =
 		'background: rgb(var(--color-background)); border: 1px solid var(--color-border); box-shadow: 0 0 3vw var(--color-border);';
@@ -351,10 +351,7 @@
 		</section>
 	</main>
 {:else}
-	<main class="min-h-screen sm:p-8 lg:p-10">
-		<div class="custom__general-container mx-auto grid min-h-screen max-w-7xl overflow-hidden sm:min-h-[calc(100vh-5rem)] sm:rounded-2xl lg:h-[calc(100vh-5rem)] lg:min-h-0 lg:grid-cols-[21rem_1fr]" style={blockStyle}>
-			<EventTypeAside {eventType} />
-
+	<PublicBookingShell {eventType}>
 			<section class="flex min-h-0 flex-col overflow-hidden px-4 sm:px-6 lg:px-[4%]" aria-label="Book a meeting">
 				<div class="bk-stepper mt-4 lg:mt-6">
 					{#if !booking}
@@ -398,7 +395,10 @@
 							<div class="flex h-full min-h-0 flex-col">
 								<!-- Calendar and times sit side by side from lg up, whenever this panel fits both columns. -->
 								<div class="booking-step-scroll-shell @container">
-									<div class="booking-step-scroll grid content-start gap-6 lg:@min-[35rem]:gap-4 lg:@min-[35rem]:grid-cols-[minmax(17rem,1fr)_minmax(15rem,0.7fr)]" use:trackMoreBelow>
+									<div
+										class="booking-step-scroll grid content-start gap-y-6 lg:@min-[35rem]:gap-y-4 lg:@min-[35rem]:grid-cols-[minmax(17rem,1fr)_minmax(15rem,0.7fr)] {slotColumns === 2 ? 'lg:@min-[35rem]:gap-x-[4%]' : 'lg:@min-[35rem]:gap-x-4'}"
+										use:trackMoreBelow
+									>
 									<div class="max-w-[500px]">
 										<MonthCalendar bind:month bind:selected={selectedDate} {availableDates} {minimumMonth} today={timezoneDateKey(now, timezone)} />
 									</div>
@@ -585,8 +585,7 @@
 					</div>
 				</div>
 			</section>
-		</div>
-	</main>
+	</PublicBookingShell>
 {/if}
 
 <style>

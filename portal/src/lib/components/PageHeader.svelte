@@ -1,6 +1,6 @@
 <script lang="ts">
 	import Icon from '@iconify/svelte';
-	import arrowLeftIcon from '@iconify-icons/at-icons/arrow-left';
+	import BackLink from '$lib/components/BackLink.svelte';
 	import type { IconifyIcon } from '@iconify/svelte';
 	import type { Snippet } from 'svelte';
 
@@ -24,10 +24,7 @@
 </script>
 
 {#if parent}
-	<a class="page-parent" href={parent.href}>
-		<Icon icon={arrowLeftIcon} width="12" height="12" style="margin-top: 0.15rem;" />
-		{parent.label}
-	</a>
+	<div class="page-parent"><BackLink href={parent.href} label={parent.label} /></div>
 {/if}
 <header class="page-header">
 	<div class="page-heading">
@@ -100,32 +97,7 @@
 	}
 
 	.page-parent {
-		display: inline-flex;
-		align-items: center;
-		gap: 0.375rem;
 		margin-bottom: 0.75rem;
-		color: rgb(var(--color-primary));
-		font-size: 1.125rem;
-	}
-
-	.page-parent {
-		transition:
-			opacity 0.2s ease,
-			transform 0.1s ease;
-	}
-
-	.page-parent:hover {
-		opacity: 0.8;
-	}
-
-	.page-parent:active {
-		transform: scale(0.96);
-	}
-
-	@media (prefers-reduced-motion: reduce) {
-		.page-parent {
-			transition: none;
-		}
 	}
 
 	.page-count {

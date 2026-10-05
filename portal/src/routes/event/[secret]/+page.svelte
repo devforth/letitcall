@@ -3,6 +3,7 @@
 	import { replaceState } from '$app/navigation';
 	import { onMount, tick } from 'svelte';
 	import Icon from '@iconify/svelte';
+	import calendarXIcon from '@iconify-icons/tabler/calendar-x';
 	import checkIcon from '@iconify-icons/tabler/check';
 	import { appPath, callApi } from '$lib/api';
 	import type { Booking, PublicEventType } from '$lib/types';
@@ -13,7 +14,7 @@
 	import PageTitle from '$lib/components/PageTitle.svelte';
 	import Textarea from '$lib/components/ui/Textarea.svelte';
 	import BookingConfirmationView from '$lib/components/BookingConfirmationView.svelte';
-	import EventTypeAside from '$lib/components/EventTypeAside.svelte';
+	import PublicBookingShell from '$lib/components/PublicBookingShell.svelte';
 
 	let booking = $state<Booking | null>(null);
 	let eventType = $state<PublicEventType | null>(null);
@@ -168,7 +169,7 @@
 <!-- Shared by the edit and cancel views so both return the same way. -->
 {#snippet backButton()}
 	<div class="event-manage-back">
-		<IconButton tone="primary" label="Back to booking" onclick={showSummary}>
+		<IconButton tone="primary" class="!size-8 !rounded-lg" label="Back to booking" onclick={showSummary}>
 			<!-- mingcute:left-line, drawn on a viewBox cropped to the glyph so the height in
 			     CSS is the arrow itself rather than the icon's own margin. -->
 			<svg class="event-back-chevron" viewBox="7.59 5.34 8.07 13.32" fill="currentColor" aria-hidden="true">
@@ -182,21 +183,18 @@
 	<main class="grid min-h-screen place-items-center p-6"><p class="text-sm">Loading event…</p></main>
 {:else if notFound || !booking || !eventType}
 	<main class="grid min-h-screen place-items-center p-6">
-		<section class="border border-black p-8 text-center">
+		<section class="rounded-2xl p-8 text-center" style={blockStyle}>
 			<h1 class="text-2xl font-semibold">Event not found</h1>
 			<p class="mt-2 text-sm">This event link is not available</p>
 		</section>
 	</main>
 {:else}
-	<main class="min-h-screen sm:p-8 lg:p-10">
-		<div class="mx-auto grid min-h-screen max-w-7xl overflow-hidden sm:min-h-[calc(100vh-5rem)] sm:rounded-2xl lg:grid-cols-[21rem_1fr]" style={blockStyle}>
-			<EventTypeAside
-				{eventType}
-				booking={view === 'edit' || view === 'cancel' ? booking : undefined}
-				bookingDetails={view === 'edit' ? 'fixed' : 'all'}
-			/>
-
-			<section class="event-content p-6 lg:p-10" aria-label="Manage booking">
+	<PublicBookingShell
+		{eventType}
+		booking={view === 'edit' || view === 'cancel' ? booking : undefined}
+		bookingDetails={view === 'edit' ? 'fixed' : 'all'}
+	>
+			<section class="event-content overflow-y-auto px-4 py-6 sm:px-6 lg:px-[4%] lg:py-10" aria-label="Manage booking">
 				{#if booking.canceledAt}
 					<section class="event-status">
 						<p class="event-status-label">Event canceled</p>
@@ -253,7 +251,7 @@
 							</section>
 						</div>
 						<div class="event-form-actions">
-							<Button type="submit" class="booking-next booking-confirm gap-2" disabled={saving}>
+							<Button type="submit" class="custom__button-primary booking-next booking-confirm gap-2" disabled={saving}>
 								<Icon icon={boldCheckIcon} width="20" height="20" />
 								{saving ? 'Saving…' : 'Save changes'}
 							</Button>
@@ -280,7 +278,8 @@
 								<span>This cannot be undone.</span>
 							</p>
 							<div class="event-form-actions event-cancel-actions">
-								<Button class="booking-next event-cancel-button gap-2" disabled={canceling} onclick={() => (showCancelDialog = true)}>
+								<Button class="custom__button-primary booking-next booking-confirm gap-2" disabled={canceling} onclick={() => (showCancelDialog = true)}>
+									<Icon icon={calendarXIcon} width="20" height="20" />
 									Cancel event
 								</Button>
 							</div>
@@ -288,14 +287,14 @@
 					</section>
 				{/if}
 			</section>
-		</div>
-	</main>
+	</PublicBookingShell>
 
 	<ConfirmationDialog
 		open={showCancelDialog}
 		title="Are you sure you want to cancel?"
 		description="This action cannot be undone."
 		confirmLabel="Cancel event"
+		confirmButtonClass="custom__button-primary"
 		cancelLabel="Keep event"
 		confirmingLabel="Canceling…"
 		confirming={canceling}
@@ -336,7 +335,7 @@
 		flex: 1;
 		min-height: 0;
 		flex-direction: column;
-		margin-top: 2rem;
+		margin-top: 1.25rem;
 	}
 
 	.event-form-fields {
@@ -413,7 +412,7 @@
 
 	.event-back-chevron {
 		display: block;
-		height: 1rem;
+		height: 0.875rem;
 		width: auto;
 		margin-left: -3px;
 	}
@@ -427,9 +426,10 @@
 
 	.event-manage-title h2 {
 		margin: 0;
-		font-size: 1.875rem;
-		line-height: 2.25rem;
+		font-size: 1.5rem;
+		line-height: 1.25;
 		font-weight: 600;
+		letter-spacing: -0.025em;
 	}
 
 	.event-cancel-presets {
@@ -471,27 +471,6 @@
 		gap: 1rem;
 		margin-top: auto;
 		padding-top: 1.25rem;
-	}
-
-	.event-cancel :global(.event-cancel-button) {
-		border-color: rgb(var(--error)) !important;
-		background: rgb(var(--error)) !important;
-		color: rgb(var(--color-background)) !important;
-	}
-
-	.event-cancel :global(.event-cancel-button svg) {
-		color: currentColor;
-	}
-
-	.event-cancel :global(.event-cancel-button:hover:not(:disabled)) {
-		border-color: color-mix(in srgb, rgb(var(--error)), white 15%) !important;
-		background: color-mix(in srgb, rgb(var(--error)), white 15%) !important;
-	}
-
-	.event-cancel :global(.event-cancel-button:active:not(:disabled)) {
-		border-color: color-mix(in srgb, rgb(var(--error)), black 15%) !important;
-		background: color-mix(in srgb, rgb(var(--error)), black 8%) !important;
-		box-shadow: none;
 	}
 
 	.event-warning {

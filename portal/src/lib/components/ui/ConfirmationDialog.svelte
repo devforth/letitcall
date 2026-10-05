@@ -7,6 +7,7 @@
 		title,
 		description,
 		confirmLabel,
+		confirmButtonClass = '',
 		cancelLabel = 'Cancel',
 		confirmingLabel = 'Confirming…',
 		confirming = false,
@@ -17,6 +18,7 @@
 		title: string;
 		description: string;
 		confirmLabel: string;
+		confirmButtonClass?: string;
 		cancelLabel?: string;
 		confirmingLabel?: string;
 		confirming?: boolean;
@@ -40,7 +42,7 @@
 				<Button rounded variant="primary-outline" class="modal-action-button" disabled={confirming} onclick={cancel}>
 					{cancelLabel}
 				</Button>
-				<Button rounded class="modal-action-button" disabled={confirming} onclick={onconfirm}>
+				<Button rounded={!confirmButtonClass} class={`modal-action-button ${confirmButtonClass}`} disabled={confirming} onclick={onconfirm}>
 					{confirming ? confirmingLabel : confirmLabel}
 				</Button>
 			</div>

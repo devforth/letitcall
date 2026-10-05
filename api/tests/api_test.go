@@ -198,6 +198,7 @@ func TestBrandingAPIsStoreAndServeLogo(t *testing.T) {
 		!strings.Contains(string(initial), `"background":"#FFFFFF"`) ||
 		!strings.Contains(string(initial), `"dark":{"primary":"#0284C7","text":"#FFFFFF"`) ||
 		!strings.Contains(string(initial), `"background":"#646464"`) ||
+		!strings.Contains(string(initial), `"publicTheme":"both"`) ||
 		strings.Contains(string(initial), `"secondary"`) ||
 		strings.Contains(string(initial), `"shadow"`) ||
 		strings.Contains(string(initial), `"border"`) ||
@@ -211,11 +212,11 @@ func TestBrandingAPIsStoreAndServeLogo(t *testing.T) {
 	theme.Light.Primary = "#123abc"
 	logoEditor := testImageEditor(24)
 	updated := expectStatus(t, f.request(http.MethodPut, "/api/branding", map[string]any{
-		"name": "DevForth", "logo": imageUpload(t, 512, 512, 900, 600, logoEditor), "preset": "ocean", "theme": theme,
+		"name": "DevForth", "logo": imageUpload(t, 512, 512, 900, 600, logoEditor), "preset": "ocean", "theme": theme, "publicTheme": "dark",
 	}), http.StatusOK)
 	logoFilename := logoFilenameFromResponse(t, updated)
 	branding, err := f.store.GetBranding()
-	if err != nil || branding.Name != "DevForth" || branding.LogoPath != logoFilename || branding.LogoSource == nil || branding.LogoSource.Editor != logoEditor || branding.Preset != "ocean" || branding.Theme.Light.Primary != "#123ABC" {
+	if err != nil || branding.Name != "DevForth" || branding.LogoPath != logoFilename || branding.LogoSource == nil || branding.LogoSource.Editor != logoEditor || branding.Preset != "ocean" || branding.Theme.Light.Primary != "#123ABC" || branding.PublicTheme != "dark" {
 		t.Fatalf("branding was not stored: branding=%#v err=%v", branding, err)
 	}
 	logoSourceFilename := branding.LogoSource.Path
@@ -240,7 +241,7 @@ func TestBrandingAPIsStoreAndServeLogo(t *testing.T) {
 		t.Fatalf("public config did not include stored branding: %s", publicConfig)
 	}
 	publicBranding := expectStatus(t, f.request(http.MethodGet, "/api/branding", nil), http.StatusOK)
-	if !strings.Contains(string(publicBranding), `"primary":"#123ABC"`) || !strings.Contains(string(publicBranding), `"preset":"ocean"`) {
+	if !strings.Contains(string(publicBranding), `"primary":"#123ABC"`) || !strings.Contains(string(publicBranding), `"preset":"ocean"`) || !strings.Contains(string(publicBranding), `"publicTheme":"dark"`) {
 		t.Fatalf("public branding did not include stored theme: %s", publicBranding)
 	}
 
@@ -256,7 +257,7 @@ func TestBrandingAPIsStoreAndServeLogo(t *testing.T) {
 		t.Fatalf("previous logo was not removed: %v", err)
 	}
 	branding, err = f.store.GetBranding()
-	if err != nil || branding.LogoSource == nil || branding.LogoSource.Path != logoSourceFilename || branding.LogoSource.Editor != editedLogoEditor {
+	if err != nil || branding.LogoSource == nil || branding.LogoSource.Path != logoSourceFilename || branding.LogoSource.Editor != editedLogoEditor || branding.PublicTheme != "dark" {
 		t.Fatalf("logo source and editor were not preserved on edit: branding=%#v err=%v", branding, err)
 	}
 	if _, err := os.Stat(filepath.Join(f.dataPath, "content", "logos", logoSourceFilename)); err != nil {
@@ -277,7 +278,7 @@ func TestBrandingFillsMissingBackgrounds(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if stored.Theme.Light.Background != "#FFFFFF" || stored.Theme.Dark.Background != "#646464" {
+	if stored.Theme.Light.Background != "#FFFFFF" || stored.Theme.Dark.Background != "#646464" || stored.PublicTheme != "both" {
 		t.Fatalf("legacy backgrounds were not defaulted: %#v", stored.Theme)
 	}
 }
@@ -297,9 +298,23 @@ func TestBrandingAPIValidatesNameAndLogo(t *testing.T) {
 	if string(invalidColor) != "{\"error\":\"dark text must be a six-digit hex color\"}\n" {
 		t.Fatalf("unexpected invalid color response: %s", invalidColor)
 	}
+	invalidPublicTheme := expectStatus(t, f.request(http.MethodPut, "/api/branding", map[string]string{
+		"name": "DevForth", "publicTheme": "system",
+	}), http.StatusBadRequest)
+	if string(invalidPublicTheme) != "{\"error\":\"publicTheme must be both, light, or dark\"}\n" {
+		t.Fatalf("unexpected invalid public theme response: %s", invalidPublicTheme)
+	}
 	branding, err := f.store.GetBranding()
 	if err != nil || branding.Name != model.DefaultBrandName || branding.LogoPath != "" {
 		t.Fatalf("invalid branding update was stored: branding=%#v err=%v", branding, err)
+	}
+	for _, publicTheme := range []string{"light", "both"} {
+		updated := expectStatus(t, f.request(http.MethodPut, "/api/branding", map[string]string{
+			"name": "DevForth", "publicTheme": publicTheme,
+		}), http.StatusOK)
+		if !strings.Contains(string(updated), `"publicTheme":"`+publicTheme+`"`) {
+			t.Fatalf("public theme %q was not returned: %s", publicTheme, updated)
+		}
 	}
 }
 

@@ -48,11 +48,12 @@ func DefaultBrandingTheme() BrandingTheme {
 }
 
 type Branding struct {
-	Name       string        `json:"name"`
-	LogoPath   string        `json:"logoPath,omitempty"`
-	LogoSource *ImageSource  `json:"logoSource,omitempty"`
-	Theme      BrandingTheme `json:"theme"`
-	Preset     string        `json:"preset,omitempty"`
+	Name        string        `json:"name"`
+	LogoPath    string        `json:"logoPath,omitempty"`
+	LogoSource  *ImageSource  `json:"logoSource,omitempty"`
+	Theme       BrandingTheme `json:"theme"`
+	PublicTheme string        `json:"publicTheme"`
+	Preset      string        `json:"preset,omitempty"`
 }
 
 type User struct {

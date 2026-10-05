@@ -20,10 +20,11 @@ func (s *Server) getBranding(w http.ResponseWriter, _ *http.Request) {
 }
 
 type updateBrandingRequest struct {
-	Name   string               `json:"name"`
-	Logo   *imageUploadRequest  `json:"logo"`
-	Theme  *model.BrandingTheme `json:"theme"`
-	Preset *string              `json:"preset"`
+	Name        string               `json:"name"`
+	Logo        *imageUploadRequest  `json:"logo"`
+	Theme       *model.BrandingTheme `json:"theme"`
+	PublicTheme *string              `json:"publicTheme"`
+	Preset      *string              `json:"preset"`
 }
 
 func (s *Server) updateBranding(w http.ResponseWriter, r *http.Request) {
@@ -53,6 +54,13 @@ func (s *Server) updateBranding(w http.ResponseWriter, r *http.Request) {
 	}
 	if request.Preset != nil {
 		branding.Preset = *request.Preset
+	}
+	if request.PublicTheme != nil {
+		if *request.PublicTheme != "both" && *request.PublicTheme != "light" && *request.PublicTheme != "dark" {
+			writeError(w, http.StatusBadRequest, "publicTheme must be both, light, or dark")
+			return
+		}
+		branding.PublicTheme = *request.PublicTheme
 	}
 	var logo preparedImage
 	if request.Logo != nil {

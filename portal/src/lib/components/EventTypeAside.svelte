@@ -131,9 +131,11 @@
 	     foot of the aside where the "Powered by" line sits beneath it. -->
 	<div class="order-first flex items-center justify-between gap-4 pb-1 sm:order-none sm:mt-auto sm:pb-4 sm:pt-12">
 		<p class="text-xl font-semibold">{branding.name}</p>
-		<div class="theme-toggle-contrast shrink-0">
-			<ThemeToggle />
-		</div>
+		{#if branding.publicTheme === 'both'}
+			<div class="theme-toggle-contrast shrink-0">
+				<ThemeToggle />
+			</div>
+		{/if}
 	</div>
 	{#if branding.name !== productName}
 		<p

@@ -20,6 +20,7 @@ export const branding = $state<Branding>({
 	name: 'Let It Call',
 	logoPath: '',
 	theme: structuredClone(defaultBrandingTheme),
+	publicTheme: 'both',
 	preset: 'custom'
 });
 
@@ -48,6 +49,7 @@ export function applyBranding(value: Branding) {
 	branding.name = value.name;
 	branding.logoPath = value.logoPath ?? '';
 	branding.theme = value.theme;
+	branding.publicTheme = value.publicTheme ?? 'both';
 	branding.preset = value.preset ?? 'custom';
 	localStorage.setItem(cacheKey, JSON.stringify(value));
 	applyTheme(value.theme);

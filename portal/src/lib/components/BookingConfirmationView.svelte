@@ -5,6 +5,7 @@
 	import BookingDetailsCard from '$lib/components/BookingDetailsCard.svelte';
 	import BookingStatusHeading from '$lib/components/BookingStatusHeading.svelte';
 	import BookingSubtitle from '$lib/components/BookingSubtitle.svelte';
+	import BackLink from '$lib/components/BackLink.svelte';
 
 	let {
 		title,
@@ -42,8 +43,6 @@
 		reloadNewBooking?: boolean;
 	} = $props();
 
-	const bookingEventActionStyle =
-		'height: 2.75rem !important; min-height: 2.75rem !important; border-radius: 9999px !important;';
 </script>
 
 <section class="booking-confirmed" aria-labelledby="booking-confirmed-title">
@@ -75,23 +74,19 @@
 	<div class="booking-confirmed-actions">
 		<div class="booking-event-actions">
 			<a
-				class="booking-event-action button-primary-outline outlined-action-button"
-				style={`${bookingEventActionStyle} border: 2px solid rgb(var(--color-primary)) !important; box-shadow: none !important;`}
+				class="booking-event-action button-primary-outline outlined-action-button custom__button-secondary"
 				href={cancelHref}
 				onclick={oncancel}
 			><Icon icon={xIcon} width="22" height="22" />Cancel event</a>
 			<a
-				class="booking-event-action button-primary primary-action-button"
-				style={bookingEventActionStyle}
+				class="booking-event-action button-primary primary-action-button custom__button-primary"
 				href={editHref}
 				onclick={onedit}
 			><Icon icon={pencilIcon} width="22" height="22" />Edit event</a>
 		</div>
-		{#if reloadNewBooking}
-			<a class="booking-new-link" href={newBookingHref} data-sveltekit-reload>Make another booking</a>
-		{:else}
-			<a class="booking-new-link" href={newBookingHref}>Make another booking</a>
-		{/if}
+		<div class="booking-new-link">
+			<BackLink href={newBookingHref} label="Make another booking" reload={reloadNewBooking} showIcon={false} />
+		</div>
 	</div>
 </section>
 
@@ -193,14 +188,6 @@
 
 	.booking-new-link {
 		order: 1;
-		font-size: 1rem;
-		font-weight: 500;
-		color: rgb(var(--color-primary));
-	}
-
-	.booking-new-link:hover {
-		text-decoration: underline;
-		text-underline-offset: 0.25rem;
 	}
 
 	@media (prefers-reduced-motion: reduce) {

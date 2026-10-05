@@ -89,6 +89,7 @@
 	let logoPath = $state('');
 	let logoSource = $state<ImageSource>();
 	let brandingTheme = $state<BrandingTheme>(structuredClone(defaultBrandingTheme));
+	let publicTheme = $state<Branding['publicTheme']>('both');
 	let selectedThemePreset = $state('custom');
 	let themeSource = $state('custom');
 	let imageSelector = $state<ImageSelector | null>(null);
@@ -97,7 +98,7 @@
 	let savedBranding: Branding;
 	let savedForm = $state('');
 	let logoChanged = $state(false);
-	let formState = $derived(JSON.stringify({ name, logoPath, theme: brandingTheme, preset: selectedThemePreset }));
+	let formState = $derived(JSON.stringify({ name, logoPath, theme: brandingTheme, publicTheme, preset: selectedThemePreset }));
 	let hasUnsavedChanges = $derived(logoChanged || formState !== savedForm);
 	let contrastFailures = $derived.by(() => {
 		return (['light', 'dark'] as const).flatMap((mode) => {
@@ -117,10 +118,11 @@
 		logoPath = loaded.logoPath ?? '';
 		logoSource = loaded.logoSource;
 		brandingTheme = structuredClone(loaded.theme);
+		publicTheme = loaded.publicTheme;
 		selectedThemePreset = loaded.preset && themePresets[loaded.preset] ? loaded.preset : 'custom';
 		themeSource = 'custom';
 		logoChanged = false;
-		savedForm = JSON.stringify({ name, logoPath, theme: brandingTheme, preset: selectedThemePreset });
+		savedForm = JSON.stringify({ name, logoPath, theme: brandingTheme, publicTheme, preset: selectedThemePreset });
 	}
 
 	function revertChanges() {
@@ -168,10 +170,10 @@
 		event.preventDefault();
 		saving = true;
 		try {
-			const logo = await imageSelector?.exportImage();
+		const logo = await imageSelector?.exportImage();
 		await callApi<{ branding: Branding }>('/api/branding', {
-				method: 'PUT',
-				body: JSON.stringify({ name, theme: brandingTheme, preset: selectedThemePreset, ...(logo ? { logo } : {}) })
+			method: 'PUT',
+			body: JSON.stringify({ name, theme: brandingTheme, publicTheme, preset: selectedThemePreset, ...(logo ? { logo } : {}) })
 			});
 			setForm(await loadBranding());
 			imageSelector?.showCurrent();
@@ -333,7 +335,16 @@
 				{/if}
 
 				<div class="booking-preview-wrap">
-					<BookingPagePreview theme={brandingTheme} />
+					<div class="public-theme-control">
+						<p>Theme used for Booking pages:</p>
+						<SegmentedControl
+							options={[{ value: 'both', label: 'Both' }, { value: 'light', label: 'Light' }, { value: 'dark', label: 'Dark' }]}
+							value={publicTheme}
+							label="Theme used for Booking pages"
+							onchange={(value) => (publicTheme = value as Branding['publicTheme'])}
+						/>
+					</div>
+					<BookingPagePreview theme={brandingTheme} {publicTheme} />
 				</div>
 			</fieldset>
 
@@ -360,6 +371,7 @@
 
 	.branding-form {
 		display: grid;
+		grid-template-columns: minmax(0, 1fr);
 		gap: 2rem;
 	}
 
@@ -373,6 +385,18 @@
 		padding: 0;
 		font-size: 1.25rem;
 		font-weight: 600;
+	}
+
+	.public-theme-control {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 1rem;
+	}
+
+	.public-theme-control p {
+		margin: 0;
+		font-size: 0.875rem;
 	}
 
 	.identity-fields {
@@ -414,6 +438,8 @@
 	}
 
 	.booking-preview-wrap {
+		display: grid;
+		gap: 1rem;
 		margin-top: 1.625rem;
 	}
 
