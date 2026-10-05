@@ -16,6 +16,7 @@
 	import { appPath, callApi } from '$lib/api';
 	import { firstAvailableDate, generateBookingSlots, timezoneDateKey } from '$lib/booking';
 	import type { Booking, PublicEventType } from '$lib/types';
+	import { browserTimeFormatter } from '$lib/time-format';
 	import { getLocalTimezones } from '$lib/timezones';
 	import Button from '$lib/components/ui/Button.svelte';
 	import GuestEmailFields from '$lib/components/GuestEmailFields.svelte';
@@ -151,7 +152,7 @@
 		if (!selectedTime || !eventType) return '';
 		const start = new Date(selectedTime);
 		const end = new Date(start.getTime() + eventType.durationMinutes * 60_000);
-		const times = new Intl.DateTimeFormat(undefined, {
+		const times = browserTimeFormatter({
 			timeZone: timezone,
 			hour: 'numeric',
 			minute: '2-digit'

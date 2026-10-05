@@ -1,6 +1,7 @@
 <script lang="ts">
 	import Icon from '@iconify/svelte';
 	import clockIcon from '@iconify-icons/tabler/clock';
+	import { browserLanguage } from '$lib/time-format';
 
 	let {
 		id,
@@ -26,6 +27,7 @@
 		<input
 			{id}
 			type="time"
+			lang={browserLanguage()}
 			bind:value
 			oninput={(event) => onchange?.(event.currentTarget.value)}
 			{disabled}

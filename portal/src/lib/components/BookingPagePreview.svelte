@@ -7,6 +7,7 @@
 	import sunIcon from '@iconify-icons/tabler/sun-high';
 	import worldIcon from '@iconify-icons/tabler/world';
 	import type { Branding, BrandingTheme } from '$lib/types';
+	import { formatWallTime } from '$lib/schedule';
 	import Button from '$lib/components/ui/Button.svelte';
 	import MonthCalendar from '$lib/components/ui/MonthCalendar.svelte';
 	import SearchableSelect from '$lib/components/ui/SearchableSelect.svelte';
@@ -28,13 +29,13 @@
 		'2026-10-19', '2026-10-21', '2026-10-22', '2026-10-23', '2026-10-26',
 		'2026-10-28', '2026-10-29', '2026-10-30'
 	];
-	const times = ['9:00 AM', '10:30 AM', '1:00 PM', '2:30 PM'];
+	const times = ['09:00', '10:30', '13:00', '14:30'];
 
 	let mode = $state<'light' | 'dark'>('light');
 	const previewMode = $derived(publicTheme === 'both' ? mode : publicTheme);
 	let month = $state('2026-10');
 	let selectedDate = $state('2026-10-15');
-	let selectedTime = $state('10:30 AM');
+	let selectedTime = $state('10:30');
 	let previewVisible = $state(false);
 	const colors = $derived(theme[previewMode]);
 	const displayName = 'Your Brand';
@@ -162,7 +163,7 @@
 									class:selected={selectedTime === time}
 									aria-pressed={selectedTime === time}
 									onclick={() => (selectedTime = time)}
-								>{time}</button>
+								>{formatWallTime(time)}</button>
 							{/each}
 						</div>
 						<div class="mt-4">

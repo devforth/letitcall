@@ -19,6 +19,7 @@
 	import StickyActions from '$lib/components/StickyActions.svelte';
 	import HostSelector from '$lib/components/HostSelector.svelte';
 	import type { EventType, ManagedUser, ScheduleDay } from '$lib/types';
+	import { browserTimeFormatter } from '$lib/time-format';
 
 	let {
 		slug = ''
@@ -113,7 +114,7 @@
 	}
 
 	function updateCurrentTime() {
-		currentTime = new Intl.DateTimeFormat(undefined, {
+		currentTime = browserTimeFormatter({
 			timeZone: timezone,
 			dateStyle: 'medium',
 			timeStyle: 'medium'

@@ -1,4 +1,5 @@
 import type { PublicEventType, ScheduleDay } from '$lib/types';
+import { browserTimeFormatter } from '$lib/time-format';
 
 export type BookingSlot = {
 	time: string;
@@ -118,7 +119,7 @@ export function generateBookingSlots(
 	const firstBookable = dateKey(today);
 	const lastBookable = dateKey(addDays(today, eventType.bookingWindowDays));
 	const slots: Record<string, BookingSlot[]> = {};
-	const timeFormatter = new Intl.DateTimeFormat(undefined, {
+	const timeFormatter = browserTimeFormatter({
 		timeZone: timezone,
 		hour: 'numeric',
 		minute: '2-digit'

@@ -74,6 +74,10 @@
 		letter-spacing: normal;
 	}
 
+	.button-primary-outline:hover:not(:disabled) {
+		background: color-mix(in srgb, rgb(var(--color-text)) 12%, rgb(var(--color-background))) !important;
+	}
+
 	.button-primary-outline.outlined-action-button,
 	.button-primary.primary-action-button {
 		min-height: 2.5rem !important;

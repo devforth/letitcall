@@ -7,6 +7,7 @@
 	import checkIcon from '@iconify-icons/tabler/check';
 	import { appPath, callApi } from '$lib/api';
 	import type { Booking, PublicEventType } from '$lib/types';
+	import { browserTimeFormatter } from '$lib/time-format';
 	import Button from '$lib/components/ui/Button.svelte';
 	import ConfirmationDialog from '$lib/components/ui/ConfirmationDialog.svelte';
 	import GuestEmailFields from '$lib/components/GuestEmailFields.svelte';
@@ -56,7 +57,7 @@
 	);
 	const eventTimeLabel = $derived.by(() => {
 		if (!booking) return '';
-		const formatter = new Intl.DateTimeFormat(undefined, {
+		const formatter = browserTimeFormatter({
 			timeZone: booking.attendeeTimezone,
 			hour: 'numeric',
 			minute: '2-digit'
@@ -91,7 +92,7 @@
 	});
 
 	function localDate(value: string): string {
-		return new Intl.DateTimeFormat(undefined, {
+		return browserTimeFormatter({
 			dateStyle: 'full',
 			timeStyle: 'short',
 			timeZone: booking?.attendeeTimezone

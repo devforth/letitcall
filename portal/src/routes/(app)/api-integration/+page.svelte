@@ -14,6 +14,7 @@
 	import { callApi } from '$lib/api';
 	import { nextSort } from '$lib/sort';
 	import type { APIIntegration, APITokenSummary } from '$lib/types';
+	import { browserTimeFormatter } from '$lib/time-format';
 	import PageHeader from '$lib/components/PageHeader.svelte';
 	import PageTitle from '$lib/components/PageTitle.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
@@ -44,7 +45,7 @@
 	let creating = $state(false);
 	let revoking = $state(false);
 	let tokenToRevoke = $state<APITokenSummary | null>(null);
-	const dateTimeFormat = new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' });
+	const dateTimeFormat = browserTimeFormatter({ dateStyle: 'medium', timeStyle: 'short' });
 	const sortedTokens = $derived([...(integration?.tokens ?? [])].sort(compareTokens));
 
 	onMount(async () => {

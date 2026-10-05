@@ -1,4 +1,5 @@
 import type { ScheduleDay, TimeRange } from '$lib/types';
+import { browserTimeFormatter } from '$lib/time-format';
 
 export function availabilityRanges(day: ScheduleDay): TimeRange[] {
 	if (!day.enabled) return [];
@@ -12,9 +13,9 @@ export function availabilityRanges(day: ScheduleDay): TimeRange[] {
 	return ranges;
 }
 
-const wallTimeFormat = new Intl.DateTimeFormat('en-US', { hour: '2-digit', minute: '2-digit', timeZone: 'UTC' });
-
 export function formatWallTime(value: string): string {
 	const [hours, minutes] = value.split(':').map(Number);
-	return wallTimeFormat.format(Date.UTC(1970, 0, 1, hours, minutes));
+	return browserTimeFormatter({ hour: 'numeric', minute: '2-digit', timeZone: 'UTC' }).format(
+		Date.UTC(1970, 0, 1, hours, minutes)
+	);
 }

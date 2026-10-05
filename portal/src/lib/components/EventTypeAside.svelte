@@ -4,6 +4,7 @@
 	import notesIcon from '@iconify-icons/tabler/align-left';
 	import usersIcon from '@iconify-icons/tabler/users';
 	import type { Booking, PublicEventType } from '$lib/types';
+	import { browserTimeFormatter } from '$lib/time-format';
 	import Avatar from '$lib/components/ui/Avatar.svelte';
 	import ThemeToggle from '$lib/components/ThemeToggle.svelte';
 	import { branding } from '$lib/stores/branding.svelte';
@@ -37,7 +38,7 @@
 	}
 
 	function bookingTimeRange(): string {
-		const formatter = new Intl.DateTimeFormat(undefined, {
+		const formatter = browserTimeFormatter({
 			hour: 'numeric',
 			minute: '2-digit',
 			timeZone: booking?.attendeeTimezone

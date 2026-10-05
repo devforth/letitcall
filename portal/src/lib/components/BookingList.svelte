@@ -4,6 +4,7 @@
 	import HostBadges from '$lib/components/HostBadges.svelte';
 	import TimedActions from '$lib/components/ui/TimedActions.svelte';
 	import type { Booking, EventType, ManagedUser } from '$lib/types';
+	import { browserTimeFormatter } from '$lib/time-format';
 
 	let {
 		bookings,
@@ -18,7 +19,7 @@
 	} = $props();
 
 	function localTime(value: string): string {
-		return new Intl.DateTimeFormat(undefined, { timeStyle: 'short' }).format(new Date(value));
+		return browserTimeFormatter({ timeStyle: 'short' }).format(new Date(value));
 	}
 
 	function localYear(value: string): string {

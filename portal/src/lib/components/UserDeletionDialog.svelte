@@ -3,6 +3,7 @@
 	import Dialog from '$lib/components/ui/Dialog.svelte';
 	import Select from '$lib/components/ui/Select.svelte';
 	import type { ManagedUser, UserDeletionImpact } from '$lib/types';
+	import { browserTimeFormatter } from '$lib/time-format';
 
 	let {
 		open,
@@ -35,7 +36,7 @@
 	});
 
 	function localDate(value: string) {
-		return new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(value));
+		return browserTimeFormatter({ dateStyle: 'medium', timeStyle: 'short' }).format(new Date(value));
 	}
 
 	function cancel() {

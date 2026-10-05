@@ -2,6 +2,7 @@
 	import sortIcon from '@iconify-icons/tabler/arrows-sort';
 	import { nextSort } from '$lib/sort';
 	import type { AuditLog } from '$lib/types';
+	import { browserTimeFormatter } from '$lib/time-format';
 	import AuditPayload from '$lib/components/AuditPayload.svelte';
 	import Avatar from '$lib/components/ui/Avatar.svelte';
 	import SearchableSelect from '$lib/components/ui/SearchableSelect.svelte';
@@ -71,7 +72,7 @@
 	}
 
 	function localTime(value: string): string {
-		return new Intl.DateTimeFormat(undefined, { timeStyle: 'medium' }).format(new Date(value));
+		return browserTimeFormatter({ timeStyle: 'medium' }).format(new Date(value));
 	}
 </script>
 
