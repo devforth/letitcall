@@ -4,7 +4,8 @@
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
 		<meta name="text-scale" content="scale" />
-		<link rel="stylesheet" href="%sveltekit.assets%/custom.css" />
+		<!-- Served by Go at runtime; exclude it from SvelteKit prerendering. -->
+		<link rel="stylesheet external" href="%sveltekit.assets%/custom.css" />
 		%sveltekit.head%
 	</head>
 	<body data-sveltekit-preload-data="hover">
