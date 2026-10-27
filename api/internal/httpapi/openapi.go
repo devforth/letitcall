@@ -24,7 +24,7 @@ func (s *Server) openAPISpecification(w http.ResponseWriter, _ *http.Request) {
 func (s *Server) swaggerHandler() http.Handler {
 	externalPath := s.cfg.HTTP.BasePath() + compatibilityAPIPath + "/swagger"
 	return swagger.NewHandlerWithConfig(swgui.Config{
-		Title:            "Let It Call Lead Generation API",
+		Title:            "Lead Generation API",
 		SwaggerJSON:      s.compatibilityBaseURL() + "/openapi.json",
 		BasePath:         externalPath,
 		InternalBasePath: compatibilityAPIPath + "/swagger",

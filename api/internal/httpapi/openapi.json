@@ -1,7 +1,7 @@
 {
   "openapi": "3.0.3",
   "info": {
-    "title": "Let It Call Lead Generation API",
+    "title": "Lead Generation API",
     "version": "1.0.0",
     "description": "A compatibility API for reading users, event types, availability, scheduled events, invitees, and installing webhooks. All instants use UTC RFC3339 second precision. Webhook delivery is at least once and unordered. Receivers should deduplicate with <event>:<resource URI>:<updated_at>. Signed deliveries use Webhook-Signature: t=<unix>,v1=<HMAC-SHA256(timestamp + '.' + raw body)> and receivers should enforce a 180 second replay tolerance. Routing form subscriptions are accepted, but routing form events are not emitted until routing forms are implemented."
   },

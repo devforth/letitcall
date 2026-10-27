@@ -719,6 +719,14 @@ func TestBookingDeliveryUsesMailgunAndConnectedGoogleCalendar(t *testing.T) {
 	mockGoogleProvider(t, adminEmail, "", "", nil)
 	expectStatus(t, googleCallback(f), http.StatusOK)
 	calendarRequests, calendarUpdates, mailgunRequests := mockBookingDelivery(t)
+	branding, err := f.store.GetBranding()
+	if err != nil {
+		t.Fatal(err)
+	}
+	branding.Name = "DevForth Talks"
+	if err := f.store.PutBranding(branding); err != nil {
+		t.Fatal(err)
+	}
 	expectStatus(t, f.request(http.MethodPost, "/api/event-types", eventTypeBody("Delivery test", []string{adminEmail}, 3)), http.StatusCreated)
 	candidate := time.Now().UTC().AddDate(0, 0, 2)
 	bookingTime := time.Date(candidate.Year(), candidate.Month(), candidate.Day(), 12, 0, 0, 0, time.UTC).Format(time.RFC3339)
@@ -1312,7 +1320,7 @@ func mockBookingDelivery(t *testing.T) (*int, *int, *int) {
 		case request.Method == http.MethodPost && request.URL.Path == "/calendar/v3/calendars/primary/events":
 			calendarRequests++
 			body, _ := io.ReadAll(request.Body)
-			if request.URL.Query().Get("sendUpdates") != "all" || !strings.Contains(string(body), "Scheduled through LetItCall.") || !strings.Contains(string(body), "Open LetItCall to view or manage this booking:") || !strings.Contains(string(body), "/event/") || strings.Contains(string(body), "#event-details") || strings.Contains(string(body), "#cancel-event") || !strings.Contains(string(body), `"email":"guest@example.com"`) || !strings.Contains(string(body), `"email":"friend@example.com"`) {
+			if request.URL.Query().Get("sendUpdates") != "all" || !strings.Contains(string(body), "Scheduled through DevForth Talks.") || !strings.Contains(string(body), "Open DevForth Talks to view or manage this booking:") || !strings.Contains(string(body), "/event/") || strings.Contains(string(body), "#event-details") || strings.Contains(string(body), "#cancel-event") || !strings.Contains(string(body), `"email":"guest@example.com"`) || !strings.Contains(string(body), `"email":"friend@example.com"`) {
 				t.Errorf("Google event did not include the safe description and attendee invitations: url=%s body=%s", request.URL, body)
 			}
 		case request.Method == http.MethodPatch && request.URL.Path == "/calendar/v3/calendars/primary/events/accepted":
@@ -1322,7 +1330,7 @@ func mockBookingDelivery(t *testing.T) (*int, *int, *int) {
 				t.Errorf("Google event update did not send attendee updates: url=%s body=%s", request.URL, body)
 			} else if calendarUpdates == 1 && (!strings.Contains(string(body), `"summary":"Delivery test"`) || !strings.Contains(string(body), `"email":"second-friend@example.com"`)) {
 				t.Errorf("Google guest update was not correct: %s", body)
-			} else if calendarUpdates == 2 && (!strings.Contains(string(body), `"summary":"Canceled: Delivery test"`) || !strings.Contains(string(body), "Scheduled through LetItCall.")) {
+			} else if calendarUpdates == 2 && (!strings.Contains(string(body), `"summary":"Canceled: Delivery test"`) || !strings.Contains(string(body), "Scheduled through DevForth Talks.")) {
 				t.Errorf("Google cancellation event was not updated correctly: %s", body)
 			}
 		case request.URL.String() == "https://api.eu.mailgun.net/v3/mail.example.com/messages":

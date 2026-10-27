@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -17,14 +18,20 @@ import (
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
-const mcpInstructions = `Scheduling admin panel of Let It Call at %s. Tools act as %s with the permissions of that user.
+const mcpInstructions = `Scheduling admin panel of %s at %s. Tools act as %s with the permissions of that user.
 Instants are UTC RFC3339 with second precision, for example 2026-10-28T14:00:00Z: convert local times to UTC first.
 A one-time event type (oneTime true) accepts a single booking: its link closes once booked and reopens if that booking is canceled.
 Busy times of a user block bookings of event types where that user is a required host.`
 
 func (s *Server) mcpHandler() http.Handler {
 	return mcp.NewStreamableHTTPHandler(func(r *http.Request) *mcp.Server {
-		return s.mcpServer(userFromRequest(r))
+		branding, err := s.store.GetBranding()
+		if err != nil {
+			// The SDK answers a missing server with 400.
+			slog.Error("load branding for MCP", "error", err)
+			return nil
+		}
+		return s.mcpServer(branding.Name, userFromRequest(r))
 	}, &mcp.StreamableHTTPOptions{
 		Stateless:    true,
 		JSONResponse: true,
@@ -84,9 +91,9 @@ type mcpUpdateEventTypeInput struct {
 }
 
 // mcpServer exposes portal API handlers as tools run as the user, so tools follow the same API contract.
-func (s *Server) mcpServer(user model.User) *mcp.Server {
-	server := mcp.NewServer(&mcp.Implementation{Name: "letitcall", Version: "1.0.0"}, &mcp.ServerOptions{
-		Instructions: fmt.Sprintf(mcpInstructions, s.cfg.HTTP.BaseURL, user.Email),
+func (s *Server) mcpServer(brandName string, user model.User) *mcp.Server {
+	server := mcp.NewServer(&mcp.Implementation{Name: "letitcall", Title: brandName, Version: "1.0.0"}, &mcp.ServerOptions{
+		Instructions: fmt.Sprintf(mcpInstructions, brandName, s.cfg.HTTP.BaseURL, user.Email),
 	})
 	call := func(ctx context.Context, handler http.HandlerFunc, method string, body any, pathValues ...string) (*mcp.CallToolResult, any, error) {
 		return callAPIHandler(ctx, user, handler, method, body, pathValues...)

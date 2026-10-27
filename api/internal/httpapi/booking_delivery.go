@@ -59,6 +59,10 @@ func (s *Server) bookingRecipients(emails []string) ([]model.User, error) {
 }
 
 func (s *Server) addToCalendars(ctx context.Context, recipients []model.User, booking model.Booking, manageURL string) error {
+	branding, err := s.store.GetBranding()
+	if err != nil {
+		return err
+	}
 	eventIDs := make(map[string]string)
 	var results []error
 	for _, user := range recipients {
@@ -72,7 +76,7 @@ func (s *Server) addToCalendars(ctx context.Context, recipients []model.User, bo
 		}
 		eventID, err := calendar.AddGoogleEvent(ctx, client, calendar.Event{
 			Name:           booking.Title,
-			Description:    bookingCalendarDescription(booking, manageURL),
+			Description:    bookingCalendarDescription(branding.Name, manageURL),
 			AttendeeEmails: bookingAttendeeEmails(booking),
 			Start:          booking.Time,
 			End:            booking.EndTime,
@@ -96,6 +100,10 @@ func (s *Server) addToCalendars(ctx context.Context, recipients []model.User, bo
 }
 
 func (s *Server) updateCalendarEvents(ctx context.Context, booking model.Booking, manageURL string) error {
+	branding, err := s.store.GetBranding()
+	if err != nil {
+		return err
+	}
 	var results []error
 	for email, eventID := range booking.GoogleEventIDs {
 		user, err := s.store.GetUser(email)
@@ -114,7 +122,7 @@ func (s *Server) updateCalendarEvents(ctx context.Context, booking model.Booking
 		}
 		if err := calendar.UpdateGoogleEvent(ctx, client, eventID, calendar.Event{
 			Name:           name,
-			Description:    bookingCalendarDescription(booking, manageURL),
+			Description:    bookingCalendarDescription(branding.Name, manageURL),
 			AttendeeEmails: bookingAttendeeEmails(booking),
 		}); err != nil {
 			results = append(results, fmt.Errorf("update Google event for %s: %w", email, err))
@@ -139,8 +147,8 @@ func (s *Server) googleClient(ctx context.Context, user model.User) (*http.Clien
 	return s.oauth.Client(ctx, &token), nil
 }
 
-func bookingCalendarDescription(booking model.Booking, manageURL string) string {
-	return "Scheduled through LetItCall.\n\nOpen LetItCall to view or manage this booking:\n" + manageURL
+func bookingCalendarDescription(brandName, manageURL string) string {
+	return "Scheduled through " + brandName + ".\n\nOpen " + brandName + " to view or manage this booking:\n" + manageURL
 }
 
 func (s *Server) sendBookingEmail(ctx context.Context, recipients []model.User, booking model.Booking, manageURL string) error {

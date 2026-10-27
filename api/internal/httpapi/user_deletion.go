@@ -118,6 +118,11 @@ func (s *Server) reassignUserBookings(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	branding, err := s.store.GetBranding()
+	if err != nil {
+		internalError(w, err, "load branding for host reassignment")
+		return
+	}
 	for _, booking := range bookings {
 		updated := booking
 		updated.RecipientEmails = replaceEmail(updated.RecipientEmails, oldEmail, newEmail)
@@ -130,7 +135,7 @@ func (s *Server) reassignUserBookings(w http.ResponseWriter, r *http.Request) {
 			}
 			eventID, err := calendar.AddGoogleEvent(r.Context(), newCalendar, calendar.Event{
 				Name:           booking.Title,
-				Description:    bookingCalendarDescription(booking, s.bookingManageURL(secret)),
+				Description:    bookingCalendarDescription(branding.Name, s.bookingManageURL(secret)),
 				AttendeeEmails: bookingAttendeeEmails(booking),
 				Start:          booking.Time,
 				End:            booking.EndTime,
