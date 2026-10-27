@@ -80,13 +80,13 @@ func TestMCPOAuthConnectsAgentThatUsesTools(t *testing.T) {
 	}
 	start := time.Now().UTC().AddDate(0, 0, 1).Truncate(time.Hour).Format(time.RFC3339)
 	result, err := session.CallTool(context.Background(), &mcp.CallToolParams{Name: "create_busy_time", Arguments: map[string]any{
-		"userEmail": adminEmail, "start": start, "durationMinutes": 45, "comment": "Focus time",
+		"start": start, "durationMinutes": 45, "comment": "Focus time",
 	}})
 	if err != nil || result.IsError {
 		t.Fatalf("create_busy_time failed: %v %+v", err, result)
 	}
 	busyTimes := expectStatus(t, f.request(http.MethodGet, "/api/busy-times", nil), http.StatusOK)
-	if !strings.Contains(string(busyTimes), `"comment":"Focus time"`) {
+	if !strings.Contains(string(busyTimes), `"userEmail":"`+adminEmail+`","start":"`+start+`","durationMinutes":45,"comment":"Focus time"`) {
 		t.Fatalf("MCP busy time was not stored: %s", busyTimes)
 	}
 	eventType := eventTypeBody("Agent Call", []string{adminEmail}, 1)

@@ -1,14 +1,11 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
 	import Icon from '@iconify/svelte';
 	import checkIcon from '@iconify-icons/tabler/check';
 	import clockIcon from '@iconify-icons/tabler/clock';
 	import clockPlusIcon from '@iconify-icons/tabler/clock-plus';
-	import userIcon from '@iconify-icons/tabler/user';
 	import xIcon from '@iconify-icons/tabler/x';
 	import { appPath, callApi } from '$lib/api';
 	import { timezoneDateKey } from '$lib/booking';
-	import type { ManagedUser } from '$lib/types';
 	import LeaveGuard from '$lib/components/LeaveGuard.svelte';
 	import PageHeader from '$lib/components/PageHeader.svelte';
 	import PageTitle from '$lib/components/PageTitle.svelte';
@@ -16,20 +13,17 @@
 	import Button from '$lib/components/ui/Button.svelte';
 	import MonthCalendar from '$lib/components/ui/MonthCalendar.svelte';
 	import NumberInput from '$lib/components/ui/NumberInput.svelte';
-	import SearchableSelect from '$lib/components/ui/SearchableSelect.svelte';
 	import Textarea from '$lib/components/ui/Textarea.svelte';
 	import TimeInput from '$lib/components/ui/TimeInput.svelte';
 
 	const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 	const today = timezoneDateKey(new Date(), timezone);
-	let users = $state<ManagedUser[]>([]);
-	let userEmail = $state('');
+	const defaults = { date: today, time: '09:00', durationMinutes: '60', comment: '' };
 	let month = $state(today.slice(0, 7));
-	let date = $state(today);
-	let time = $state('09:00');
-	let durationMinutes = $state('60');
-	let comment = $state('');
-	let savedBody = $state('');
+	let date = $state(defaults.date);
+	let time = $state(defaults.time);
+	let durationMinutes = $state(defaults.durationMinutes);
+	let comment = $state(defaults.comment);
 	let saving = $state(false);
 	let leaveGuard: LeaveGuard;
 
@@ -39,22 +33,7 @@
 			(_, index) => `${month}-${String(index + 1).padStart(2, '0')}`
 		).filter((candidate) => candidate >= today)
 	);
-	const fields = $derived({ userEmail, date, time, durationMinutes, comment });
-	const changed = $derived(JSON.stringify(fields) !== savedBody);
-
-	onMount(async () => {
-		try {
-			const [usersResponse, sessionResponse] = await Promise.all([
-				callApi<{ users: ManagedUser[] }>('/api/users'),
-				callApi<{ user: ManagedUser }>('/api/auth/session')
-			]);
-			users = usersResponse.users;
-			userEmail = sessionResponse.user.email;
-			savedBody = JSON.stringify(fields);
-		} catch {
-			// callApi reports the error globally.
-		}
-	});
+	const changed = $derived(JSON.stringify({ date, time, durationMinutes, comment }) !== JSON.stringify(defaults));
 
 	async function create(event: SubmitEvent) {
 		event.preventDefault();
@@ -63,7 +42,6 @@
 			await callApi('/api/busy-times', {
 				method: 'POST',
 				body: JSON.stringify({
-					userEmail,
 					// Wall time in the browser timezone, sent as a UTC instant with second precision.
 					start: new Date(`${date}T${time}`).toISOString().replace('.000Z', 'Z'),
 					durationMinutes: Number(durationMinutes),
@@ -86,25 +64,16 @@
 		<PageHeader
 			id="new-busy-time-title"
 			title="New busy time"
-			description={`Block a member's bookings. Times use your timezone, ${timezone}.`}
+			description={`Block your bookings for a while. Times use your timezone, ${timezone}.`}
 			icon={clockPlusIcon}
 			parent={{ href: appPath('/busy-times'), label: 'Busy times' }}
 		/>
 	</div>
 
 	<form class="grid grid-cols-1 gap-5 lg:grid-cols-2" onsubmit={create}>
-		<div class="max-w-[500px] lg:row-span-4">
+		<div class="max-w-[500px] lg:row-span-3">
 			<MonthCalendar bind:month bind:selected={date} {availableDates} minimumMonth={today.slice(0, 7)} {today} />
 		</div>
-		<SearchableSelect
-			id="busy-time-user"
-			label="Member"
-			icon={userIcon}
-			options={users.map((user) => ({ value: user.email, label: user.fullName ? `${user.fullName} · ${user.email}` : user.email }))}
-			bind:value={userEmail}
-			clearable={false}
-			required
-		/>
 		<TimeInput id="busy-time-start" label="Start time" bind:value={time} step={60} required />
 		<NumberInput id="busy-time-duration" label="Duration in minutes" bind:value={durationMinutes} icon={clockIcon} required />
 		<Textarea id="busy-time-comment" label="Comment (optional)" bind:value={comment} maxlength={2000} rows={3} />

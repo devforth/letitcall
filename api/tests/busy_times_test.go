@@ -18,8 +18,8 @@ func TestBusyTimeAPIsBlockRequiredHostBookings(t *testing.T) {
 
 	candidate := time.Now().UTC().AddDate(0, 0, 2)
 	start := time.Date(candidate.Year(), candidate.Month(), candidate.Day(), 12, 0, 0, 0, time.UTC)
-	busyTime := map[string]any{"userEmail": adminEmail, "start": start.Format(time.RFC3339), "durationMinutes": 60, "comment": " Dentist "}
-	for field, value := range map[string]any{"userEmail": "missing@example.com", "start": "2026-10-28T12:00:00+02:00", "durationMinutes": 0} {
+	busyTime := map[string]any{"start": start.Format(time.RFC3339), "durationMinutes": 60, "comment": " Dentist "}
+	for field, value := range map[string]any{"start": "2026-10-28T12:00:00+02:00", "durationMinutes": 0} {
 		invalid := map[string]any{}
 		for key, original := range busyTime {
 			invalid[key] = original
@@ -34,7 +34,7 @@ func TestBusyTimeAPIsBlockRequiredHostBookings(t *testing.T) {
 	if err := json.Unmarshal(created, &creation); err != nil {
 		t.Fatal(err)
 	}
-	if creation.BusyTime.Comment != "Dentist" || creation.BusyTime.DurationMinutes != 60 || !creation.BusyTime.Start.Equal(start) {
+	if creation.BusyTime.UserEmail != adminEmail || creation.BusyTime.Comment != "Dentist" || creation.BusyTime.DurationMinutes != 60 || !creation.BusyTime.Start.Equal(start) {
 		t.Fatalf("unexpected busy time: %s", created)
 	}
 	listed := expectStatus(t, f.request(http.MethodGet, "/api/busy-times", nil), http.StatusOK)
@@ -67,16 +67,22 @@ func TestBusyTimeAPIsBlockRequiredHostBookings(t *testing.T) {
 func TestBusyTimeIgnoresOptionalHostsAndIsDeletedWithUser(t *testing.T) {
 	f := newFixture(t, false)
 	expectStatus(t, f.login(adminEmail, adminPassword), http.StatusOK)
-	expectStatus(t, f.request(http.MethodPost, "/api/users", map[string]string{"email": "member@example.com", "timezone": "UTC"}), http.StatusCreated)
+	expectStatus(t, f.request(http.MethodPost, "/api/users", map[string]string{"email": "member@example.com", "password": "MemberPassword123!", "timezone": "UTC"}), http.StatusCreated)
 	eventType := eventTypeBody("Optional Call", []string{adminEmail}, 1)
 	eventType["optionalHostEmails"] = []string{"member@example.com"}
 	expectStatus(t, f.request(http.MethodPost, "/api/event-types", eventType), http.StatusCreated)
 
 	candidate := time.Now().UTC().AddDate(0, 0, 2)
 	start := time.Date(candidate.Year(), candidate.Month(), candidate.Day(), 9, 0, 0, 0, time.UTC).Format(time.RFC3339)
+	expectStatus(t, f.login("member@example.com", "MemberPassword123!"), http.StatusOK)
+	created := expectStatus(t, f.request(http.MethodPost, "/api/busy-times", map[string]any{"start": start, "durationMinutes": 30, "comment": ""}), http.StatusCreated)
+	if !strings.Contains(string(created), `"userEmail":"member@example.com"`) {
+		t.Fatalf("busy time was not created for the signed-in member: %s", created)
+	}
 	expectStatus(t, f.request(http.MethodPost, "/api/busy-times", map[string]any{
-		"userEmail": "MEMBER@example.com", "start": start, "durationMinutes": 30, "comment": "",
-	}), http.StatusCreated)
+		"userEmail": adminEmail, "start": start, "durationMinutes": 30, "comment": "",
+	}), http.StatusBadRequest)
+	expectStatus(t, f.login(adminEmail, adminPassword), http.StatusOK)
 	expectStatus(t, f.request(http.MethodPost, "/api/bookings", map[string]any{
 		"eventSlug": "optional-call", "time": start, "attendeeName": "Guest", "attendeeEmail": "guest@example.com", "attendeeTimezone": "UTC",
 	}), http.StatusCreated)

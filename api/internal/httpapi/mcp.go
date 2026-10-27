@@ -125,7 +125,7 @@ func (s *Server) mcpServer(user model.User) *mcp.Server {
 		})
 	mcp.AddTool(server, &mcp.Tool{
 		Name:        "create_busy_time",
-		Description: "Mark a user busy from start (UTC) for durationMinutes, with an optional comment. It is not added to Google Calendar.",
+		Description: "Mark yourself busy from start (UTC) for durationMinutes, with an optional comment. It is not added to Google Calendar.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, input busyTimeRequest) (*mcp.CallToolResult, any, error) {
 		return call(ctx, s.createBusyTime, http.MethodPost, input)
 	})

@@ -2,7 +2,6 @@ package httpapi
 
 import (
 	"errors"
-	"fmt"
 	"net/http"
 	"strings"
 	"time"
@@ -12,8 +11,8 @@ import (
 	"github.com/letitcall/letitcall/api/internal/store"
 )
 
+// busyTimeRequest always marks the authenticated user busy.
 type busyTimeRequest struct {
-	UserEmail       string `json:"userEmail"`
 	Start           string `json:"start"`
 	DurationMinutes int    `json:"durationMinutes"`
 	Comment         string `json:"comment"`
@@ -31,18 +30,6 @@ func (s *Server) listBusyTimes(w http.ResponseWriter, _ *http.Request) {
 func (s *Server) createBusyTime(w http.ResponseWriter, r *http.Request) {
 	var request busyTimeRequest
 	if err := decodeJSON(w, r, &request); err != nil {
-		return
-	}
-	email, err := security.NormalizeEmail(request.UserEmail)
-	if err != nil {
-		writeError(w, http.StatusBadRequest, "userEmail must be a valid user email")
-		return
-	}
-	if _, err := s.store.GetUser(email); errors.Is(err, store.ErrNotFound) {
-		writeError(w, http.StatusBadRequest, fmt.Sprintf("user %q does not exist", email))
-		return
-	} else if err != nil {
-		internalError(w, err, "load busy time user")
 		return
 	}
 	start, err := parseCompatibilityInstant(request.Start, "start")
@@ -66,7 +53,7 @@ func (s *Server) createBusyTime(w http.ResponseWriter, r *http.Request) {
 	}
 	busyTime := model.BusyTime{
 		ID:              id,
-		UserEmail:       email,
+		UserEmail:       userFromRequest(r).Email,
 		Start:           start,
 		DurationMinutes: request.DurationMinutes,
 		Comment:         comment,
