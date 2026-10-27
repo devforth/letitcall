@@ -3,6 +3,8 @@
 	import Icon from '@iconify/svelte';
 	import calendarEventIcon from '@iconify-icons/tabler/calendar-event';
 	import calendarPlusIcon from '@iconify-icons/tabler/calendar-plus';
+	import calendarDueIcon from '@iconify-icons/tabler/calendar-due';
+	import calendarRepeatIcon from '@iconify-icons/tabler/calendar-repeat';
 	import checkIcon from '@iconify-icons/tabler/check';
 	import clockIcon from '@iconify-icons/tabler/clock';
 	import usersIcon from '@iconify-icons/tabler/users';
@@ -15,6 +17,7 @@
 	import Input from '$lib/components/ui/Input.svelte';
 	import NumberInput from '$lib/components/ui/NumberInput.svelte';
 	import SearchableSelect from '$lib/components/ui/SearchableSelect.svelte';
+	import SegmentedControl from '$lib/components/ui/SegmentedControl.svelte';
 	import ScheduleEditor from '$lib/components/ScheduleEditor.svelte';
 	import StickyActions from '$lib/components/StickyActions.svelte';
 	import HostSelector from '$lib/components/HostSelector.svelte';
@@ -29,6 +32,7 @@
 
 	let users = $state<ManagedUser[]>([]);
 	let name = $state('');
+	let oneTime = $state(false);
 	let durationChoice = $state('30');
 	let customDuration = $state('30');
 	let bookingWindowDays = $state('60');
@@ -43,8 +47,13 @@
 	let saving = $state(false);
 
 	const eventSlug = $derived(slug || slugify(name));
+	const meetingTypes = [
+		{ value: 'regular', label: 'Regular', icon: calendarRepeatIcon },
+		{ value: 'one-time', label: 'One-time', icon: calendarDueIcon }
+	];
 	const requestBody = $derived({
 		name,
+		oneTime,
 		durationMinutes: Number(durationChoice === 'custom' ? customDuration : durationChoice),
 		bookingWindowDays: Number(bookingWindowDays),
 		inviteeLimit: inviteeLimit === '' ? null : Number(inviteeLimit),
@@ -96,6 +105,7 @@
 
 	function applyEventType(eventType: EventType) {
 		name = eventType.name;
+		oneTime = eventType.oneTime;
 		durationChoice = [15, 30, 45, 60].includes(eventType.durationMinutes)
 			? String(eventType.durationMinutes)
 			: 'custom';
@@ -197,6 +207,20 @@
 						<h2 id="event-details-title" class="font-semibold" style="color: rgb(var(--color-text));">Event details</h2>
 						<p class="mt-1 text-sm" style="color: rgb(var(--color-text) / 0.65);">Set the booking length, availability window and schedule timezone</p>
 					</div>
+				</div>
+
+				<div class="flex flex-wrap items-center gap-3 sm:col-span-2">
+					<SegmentedControl
+						options={meetingTypes}
+						value={oneTime ? 'one-time' : 'regular'}
+						label="Meeting type"
+						onchange={(value) => (oneTime = value === 'one-time')}
+					/>
+					<p class="text-sm" style="color: rgb(var(--color-text) / 0.65);">
+						{oneTime
+							? 'Accepts a single booking. The link reopens if that booking is canceled.'
+							: 'Invitees can book any free time.'}
+					</p>
 				</div>
 
 				<Input id="event-name" label="Event Name" bind:value={name} required />

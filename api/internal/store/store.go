@@ -22,6 +22,7 @@ var (
 	ErrBusy             = errors.New("busy")
 	ErrCanceled         = errors.New("booking is canceled")
 	ErrLastRequiredHost = errors.New("user is the final required event type host")
+	ErrBooked           = errors.New("one-time event type is already booked")
 )
 
 type Store struct {
@@ -37,6 +38,9 @@ type Store struct {
 	webhookSubscriptions *leveldb.DB
 	webhookDeliveries    *leveldb.DB
 	auditLogs            *leveldb.DB
+	busyTimes            *leveldb.DB
+	mcpAuthorizations    *leveldb.DB
+	mcpConnections       *leveldb.DB
 	mu                   sync.Mutex
 }
 
@@ -45,7 +49,7 @@ func Open(root string) (*Store, error) {
 		return nil, fmt.Errorf("create LevelDB root: %w", err)
 	}
 
-	opened := make([]*leveldb.DB, 0, 12)
+	opened := make([]*leveldb.DB, 0, 15)
 	openTable := func(name string) (*leveldb.DB, error) {
 		db, err := leveldb.OpenFile(filepath.Join(root, name+".leveldb"), nil)
 		if err != nil {
@@ -114,6 +118,21 @@ func Open(root string) (*Store, error) {
 		closeAll(opened)
 		return nil, err
 	}
+	busyTimes, err := openTable("busy_times")
+	if err != nil {
+		closeAll(opened)
+		return nil, err
+	}
+	mcpAuthorizations, err := openTable("mcp_authorizations")
+	if err != nil {
+		closeAll(opened)
+		return nil, err
+	}
+	mcpConnections, err := openTable("mcp_connections")
+	if err != nil {
+		closeAll(opened)
+		return nil, err
+	}
 	brandingKey := []byte("current")
 	exists, err := branding.Has(brandingKey, nil)
 	if err != nil {
@@ -131,7 +150,7 @@ func Open(root string) (*Store, error) {
 		users: users, eventTypes: eventTypes, bookings: bookings, secretLinks: secretLinks,
 		sessions: sessions, oauthStates: oauthStates, googleBusy: googleBusy, branding: branding,
 		apiTokens: apiTokens, webhookSubscriptions: webhookSubscriptions, webhookDeliveries: webhookDeliveries,
-		auditLogs: auditLogs,
+		auditLogs: auditLogs, busyTimes: busyTimes, mcpAuthorizations: mcpAuthorizations, mcpConnections: mcpConnections,
 	}, nil
 }
 
@@ -140,7 +159,7 @@ func (s *Store) Close() error {
 		s.users.Close(), s.eventTypes.Close(), s.bookings.Close(), s.secretLinks.Close(),
 		s.sessions.Close(), s.oauthStates.Close(), s.googleBusy.Close(), s.branding.Close(),
 		s.apiTokens.Close(), s.webhookSubscriptions.Close(), s.webhookDeliveries.Close(),
-		s.auditLogs.Close(),
+		s.auditLogs.Close(), s.busyTimes.Close(), s.mcpAuthorizations.Close(), s.mcpConnections.Close(),
 	)
 }
 
@@ -453,21 +472,21 @@ func (s *Store) ReassignSoleRequiredHost(oldEmail, newEmail string, updatedAt ti
 }
 
 func (s *Store) CreateBooking(slotKey string, booking model.Booking, requiredHostEmails []string, inviteeLimit *int) error {
-	return s.createBooking(slotKey, booking, requiredHostEmails, inviteeLimit, "")
+	return s.createBooking(slotKey, booking, requiredHostEmails, inviteeLimit, false, "")
 }
 
-func (s *Store) CreateBookingWithSecret(slotKey string, booking model.Booking, requiredHostEmails []string, inviteeLimit *int, secretToken string) error {
-	return s.createBooking(slotKey, booking, requiredHostEmails, inviteeLimit, secretToken)
+func (s *Store) CreateBookingWithSecret(slotKey string, booking model.Booking, eventType model.EventType, secretToken string) error {
+	return s.createBooking(slotKey, booking, eventType.RequiredHostEmails, eventType.InviteeLimit, eventType.OneTime, secretToken)
 }
 
 type secretLink struct {
 	BookingID string `json:"bookingId"`
 }
 
-func (s *Store) createBooking(slotKey string, booking model.Booking, requiredHostEmails []string, inviteeLimit *int, secretToken string) error {
+func (s *Store) createBooking(slotKey string, booking model.Booking, requiredHostEmails []string, inviteeLimit *int, oneTime bool, secretToken string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	if err := s.checkBookingConflicts(booking, requiredHostEmails); err != nil {
+	if err := s.checkBookingConflicts(booking, requiredHostEmails, oneTime); err != nil {
 		return err
 	}
 	key := []byte(slotKey)
@@ -523,10 +542,19 @@ func (s *Store) createBooking(slotKey string, booking model.Booking, requiredHos
 	return nil
 }
 
-func (s *Store) checkBookingConflicts(booking model.Booking, requiredHostEmails []string) error {
+func (s *Store) checkBookingConflicts(booking model.Booking, requiredHostEmails []string, oneTime bool) error {
 	required := make(map[string]bool, len(requiredHostEmails))
 	for _, email := range requiredHostEmails {
 		required[normalizeEmail(email)] = true
+	}
+	busyTimes, err := s.ListBusyTimes()
+	if err != nil {
+		return err
+	}
+	for _, busyTime := range busyTimes {
+		if required[busyTime.UserEmail] && booking.Time.Before(busyTime.End()) && booking.EndTime.After(busyTime.Start) {
+			return ErrBusy
+		}
 	}
 	iterator := s.bookings.NewIterator(nil, nil)
 	defer iterator.Release()
@@ -536,7 +564,13 @@ func (s *Store) checkBookingConflicts(booking model.Booking, requiredHostEmails 
 			return err
 		}
 		for _, existing := range bookings {
-			if existing.CanceledAt != nil || !booking.Time.Before(existing.EndTime) || !booking.EndTime.After(existing.Time) {
+			if existing.CanceledAt != nil {
+				continue
+			}
+			if oneTime && existing.EventSlug == booking.EventSlug {
+				return ErrBooked
+			}
+			if !booking.Time.Before(existing.EndTime) || !booking.EndTime.After(existing.Time) {
 				continue
 			}
 			if existing.EventSlug == booking.EventSlug && existing.Time.Equal(booking.Time) && existing.EndTime.Equal(booking.EndTime) {

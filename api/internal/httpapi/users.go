@@ -230,6 +230,10 @@ func (s *Server) deleteUser(w http.ResponseWriter, r *http.Request) {
 		internalError(w, err, "delete user sessions")
 		return
 	}
+	if err := s.store.DeleteBusyTimesForUser(email); err != nil {
+		internalError(w, err, "delete user busy times")
+		return
+	}
 	if err := s.recordAuditLog(r, "deleted", "user", email, user.Public()); err != nil {
 		internalError(w, err, "record user deletion audit log")
 		return

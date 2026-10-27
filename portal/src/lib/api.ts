@@ -1,3 +1,4 @@
+import { goto } from '$app/navigation';
 import { base } from '$app/paths';
 import type { ApiError, PublicConfig, SessionUser } from '$lib/types';
 import { showError } from '$lib/notifications';
@@ -47,6 +48,20 @@ export async function callApi<T>(path: string, init?: RequestInit, reportError =
 
 	if (response.status === 204) return undefined as T;
 	return (await response.json()) as T;
+}
+
+const loginReturnKey = 'letitcall-login-return';
+
+/** Signs in and comes back to the current page, whichever way the visitor signs in. */
+export function signInAndReturn(): Promise<void> {
+	sessionStorage.setItem(loginReturnKey, location.pathname + location.search);
+	return goto(appPath('/auth/login'));
+}
+
+export function afterLoginPath(): string {
+	const path = sessionStorage.getItem(loginReturnKey) ?? appPath('/');
+	sessionStorage.removeItem(loginReturnKey);
+	return path;
 }
 
 export function getSession(reportError = true): Promise<{ user: SessionUser }> {

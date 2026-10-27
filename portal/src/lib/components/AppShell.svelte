@@ -5,10 +5,13 @@
 	import Icon from '@iconify/svelte';
 	import calendarCogIcon from '@iconify-icons/tabler/calendar-cog';
 	import calendarIcon from '@iconify-icons/tabler/calendar-event';
+	import clockPauseIcon from '@iconify-icons/tabler/clock-pause';
 	import codeIcon from '@iconify-icons/tabler/code';
 	import colorSwatchIcon from '@iconify-icons/tabler/color-swatch';
+	import editIcon from '@iconify-icons/tabler/edit';
 	import historyIcon from '@iconify-icons/tabler/history';
 	import moonIcon from '@iconify-icons/tabler/moon';
+	import robotIcon from '@iconify-icons/tabler/robot';
 	import usersIcon from '@iconify-icons/tabler/users';
 	import xIcon from '@iconify-icons/tabler/x';
 	import { callApi, appPath } from '$lib/api';
@@ -49,11 +52,17 @@
 	const navItems = [
 		{ label: 'Bookings', href: '/', exact: true, icon: calendarIcon },
 		{ label: 'Scheduling', href: '/scheduling', exact: false, icon: calendarCogIcon },
+		{ label: 'Busy times', href: '/busy-times', exact: false, icon: clockPauseIcon },
 		{ label: 'Users', href: '/users', exact: false, icon: usersIcon },
 		{ label: 'Branding', href: '/branding', exact: false, icon: colorSwatchIcon },
 		{ label: 'API Integration', href: '/api-integration', exact: false, icon: codeIcon },
 		{ label: 'Audit log', href: '/audit-log', exact: false, icon: historyIcon }
 	];
+
+	const accountLinks = $derived([
+		{ label: 'Edit profile', href: `/users/${encodeURIComponent(user.email)}`, icon: editIcon },
+		{ label: 'Connect AI', href: '/connect-ai', icon: robotIcon }
+	]);
 
 	function isActive(item: { href: string; exact: boolean }) {
 		const target = appPath(item.href);
@@ -65,6 +74,9 @@
 		page.url.pathname === appPath('/') ||
 		page.url.pathname === appPath('/scheduling') ||
 		page.url.pathname.startsWith(`${appPath('/scheduling')}/`) ||
+		page.url.pathname === appPath('/busy-times') ||
+		page.url.pathname.startsWith(`${appPath('/busy-times')}/`) ||
+		page.url.pathname === appPath('/connect-ai') ||
 		page.url.pathname === appPath('/users') ||
 		page.url.pathname.startsWith(`${appPath('/users')}/`) ||
 		page.url.pathname === appPath('/branding') ||
@@ -222,18 +234,20 @@
 
 							<div class="my-1 h-px" style="background: var(--color-border);"></div>
 
-							<a
-								class="flex w-full items-center gap-3 rounded-lg px-2 py-2 text-sm font-medium transition-colors"
-								style="color: rgb(var(--color-text)); background: transparent;"
-								role="menuitem"
-								href={appPath(`/users/${encodeURIComponent(user.email)}`)}
-								onclick={closeMenu}
-								onmouseenter={(e) => (e.currentTarget.style.background = 'rgb(var(--color-primary) / 0.1)')}
-								onmouseleave={(e) => (e.currentTarget.style.background = 'transparent')}
-							>
-								<svg class="size-4 shrink-0" style="color: rgb(var(--color-text) / 0.65);" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H5a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2h13a2 2 0 0 0 2-2v-6" /><path d="M18.5 2.5a2.1 2.1 0 0 1 3 3L12 15l-4 1 1-4z" /></svg>
-								Edit profile
-							</a>
+							{#each accountLinks as link (link.href)}
+								<a
+									class="flex w-full items-center gap-3 rounded-lg px-2 py-2 text-sm font-medium transition-colors"
+									style="color: rgb(var(--color-text)); background: transparent;"
+									role="menuitem"
+									href={appPath(link.href)}
+									onclick={closeMenu}
+									onmouseenter={(e) => (e.currentTarget.style.background = 'rgb(var(--color-primary) / 0.1)')}
+									onmouseleave={(e) => (e.currentTarget.style.background = 'transparent')}
+								>
+									<Icon icon={link.icon} width="16" height="16" class="shrink-0" style="color: rgb(var(--color-text) / 0.65);" />
+									{link.label}
+								</a>
+							{/each}
 
 							<div class="my-1 h-px" style="background: var(--color-border);"></div>
 

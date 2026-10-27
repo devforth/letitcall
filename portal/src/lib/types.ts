@@ -100,6 +100,7 @@ export type AuditLog = {
 export type EventType = {
 	eventSlug: string;
 	name: string;
+	oneTime: boolean;
 	durationMinutes: number;
 	bookingWindowDays: number;
 	inviteeLimit: number | null;
@@ -139,6 +140,30 @@ export type PublicEventType = Pick<
 	optionalHosts: { email: string; fullName: string; avatarPath?: string }[];
 	busyRanges: { start: string; end: string }[];
 	remainingInvitees: Record<string, number>;
+	booked: boolean;
+};
+
+export type BusyTime = {
+	id: string;
+	userEmail: string;
+	start: string;
+	durationMinutes: number;
+	comment: string;
+	createdAt: string;
+};
+
+export type MCPConnection = {
+	id: string;
+	clientId: string;
+	clientName: string;
+	createdAt: string;
+};
+
+export type MCPAuthorization = {
+	clientName: string;
+	clientHost: string;
+	redirectHost: string;
+	loopbackRedirect: boolean;
 };
 
 export type Booking = {

@@ -8,6 +8,7 @@
 		label,
 		value = $bindable(''),
 		disabled = false,
+		required = false,
 		invalid = false,
 		step,
 		onchange
@@ -16,6 +17,7 @@
 		label: string;
 		value?: string;
 		disabled?: boolean;
+		required?: boolean;
 		invalid?: boolean;
 		step: number;
 		onchange?: (value: string) => void;
@@ -31,6 +33,7 @@
 			bind:value
 			oninput={(event) => onchange?.(event.currentTarget.value)}
 			{disabled}
+			{required}
 			aria-invalid={invalid ? 'true' : undefined}
 			{step}
 			class="input"

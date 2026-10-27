@@ -59,15 +59,18 @@ func (s *Server) compatibilitySlots(eventType model.EventType, start, end time.T
 	if err != nil {
 		return nil, err
 	}
-	busyRanges, remaining, err := s.publicAvailability(eventType)
+	busyRanges, remaining, booked, err := s.publicAvailability(eventType)
 	if err != nil {
 		return nil, err
+	}
+	collection := make([]compatibilityAvailableTime, 0)
+	if booked {
+		return collection, nil
 	}
 	now := s.now().UTC()
 	today := localDate(now.In(location), location)
 	firstDate := localDate(start.In(location), location)
 	lastDate := localDate(end.In(location), location)
-	collection := make([]compatibilityAvailableTime, 0)
 	for date := firstDate; !date.After(lastDate); date = date.AddDate(0, 0, 1) {
 		if date.Before(today) || date.After(today.AddDate(0, 0, eventType.BookingWindowDays)) {
 			continue

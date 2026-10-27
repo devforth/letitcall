@@ -163,6 +163,19 @@ func (s *Server) Handler() http.Handler {
 	mux.Handle("PUT /api/event-types/{slug}", s.requireAuth(http.HandlerFunc(s.updateEventType)))
 	mux.Handle("DELETE /api/event-types/{slug}", s.requireAuth(http.HandlerFunc(s.deleteEventType)))
 	mux.HandleFunc("GET /api/public/event-types/{slug}", s.getPublicEventType)
+	mux.Handle("GET /api/busy-times", s.requireAuth(http.HandlerFunc(s.listBusyTimes)))
+	mux.Handle("POST /api/busy-times", s.requireAuth(http.HandlerFunc(s.createBusyTime)))
+	mux.Handle("DELETE /api/busy-times/{id}", s.requireAuth(http.HandlerFunc(s.deleteBusyTime)))
+	mux.Handle(mcpPath, s.requireMCPToken(s.mcpHandler()))
+	mux.HandleFunc("GET "+mcpProtectedResourceMetadata, s.mcpProtectedResourceMetadata)
+	mux.HandleFunc("GET "+mcpAuthorizationServerMetadata, s.mcpAuthorizationServerMetadata)
+	mux.HandleFunc("GET "+mcpJWKSPath, s.mcpJWKS)
+	mux.HandleFunc("GET "+mcpAuthorizePath, s.mcpAuthorize)
+	mux.HandleFunc("POST "+mcpTokenPath, s.mcpToken)
+	mux.Handle("GET "+mcpPath+"/oauth/authorization", s.requireAuth(http.HandlerFunc(s.describeMCPAuthorization)))
+	mux.Handle("POST "+mcpPath+"/oauth/authorization", s.requireAuth(http.HandlerFunc(s.resolveMCPAuthorization)))
+	mux.Handle("GET "+mcpPath+"/connections", s.requireAuth(http.HandlerFunc(s.listMCPConnections)))
+	mux.Handle("DELETE "+mcpPath+"/connections/{id}", s.requireAuth(http.HandlerFunc(s.deleteMCPConnection)))
 	mux.HandleFunc("GET /content/avatars/{filename}", s.serveAvatar)
 	mux.HandleFunc("GET /content/logos/{filename}", s.serveLogo)
 	mux.HandleFunc("/content/", http.NotFound)
@@ -170,12 +183,16 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("/", s.servePortal)
 	handler := s.middleware(mux)
 	basePath := s.cfg.HTTP.BasePath()
+	// OAuth clients also look for MCP metadata at the origin root, outside the base path (RFC 9728, RFC 8414).
+	root := http.NewServeMux()
+	root.HandleFunc("GET /.well-known/oauth-protected-resource"+basePath+mcpPath, s.mcpProtectedResourceMetadata)
+	root.HandleFunc("GET /.well-known/oauth-authorization-server"+basePath+mcpPath, s.mcpAuthorizationServerMetadata)
 	if basePath == "" {
-		return handler
+		root.Handle("/", handler)
+	} else {
+		root.Handle(basePath+"/", http.StripPrefix(basePath, handler))
 	}
-	mounted := http.NewServeMux()
-	mounted.Handle(basePath+"/", http.StripPrefix(basePath, handler))
-	return mounted
+	return root
 }
 
 func (s *Server) middleware(next http.Handler) http.Handler {

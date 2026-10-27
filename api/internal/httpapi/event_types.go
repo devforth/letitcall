@@ -18,6 +18,7 @@ var weekdays = []string{"monday", "tuesday", "wednesday", "thursday", "friday", 
 
 type eventTypeRequest struct {
 	Name               string              `json:"name"`
+	OneTime            bool                `json:"oneTime"`
 	DurationMinutes    int                 `json:"durationMinutes"`
 	BookingWindowDays  int                 `json:"bookingWindowDays"`
 	InviteeLimit       *int                `json:"inviteeLimit"`
@@ -175,7 +176,7 @@ func (s *Server) getPublicEventType(w http.ResponseWriter, r *http.Request) {
 		}
 		optionalHosts = append(optionalHosts, host{Email: user.Email, FullName: user.FullName, AvatarPath: user.AvatarPath})
 	}
-	busyRanges, remainingInvitees, err := s.publicAvailability(eventType)
+	busyRanges, remainingInvitees, booked, err := s.publicAvailability(eventType)
 	if err != nil {
 		internalError(w, err, "calculate public event type availability")
 		return
@@ -193,6 +194,7 @@ func (s *Server) getPublicEventType(w http.ResponseWriter, r *http.Request) {
 			"optionalHosts":     optionalHosts,
 			"busyRanges":        busyRanges,
 			"remainingInvitees": remainingInvitees,
+			"booked":            booked,
 		},
 	})
 }
@@ -225,6 +227,7 @@ func (s *Server) eventTypeFromRequest(request eventTypeRequest) (model.EventType
 	}
 	return model.EventType{
 		Name:               name,
+		OneTime:            request.OneTime,
 		DurationMinutes:    request.DurationMinutes,
 		BookingWindowDays:  request.BookingWindowDays,
 		InviteeLimit:       request.InviteeLimit,

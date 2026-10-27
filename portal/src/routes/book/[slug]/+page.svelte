@@ -351,6 +351,13 @@
 			<p class="mt-2 text-sm">This booking link is not available</p>
 		</section>
 	</main>
+{:else if eventType.booked && !booking}
+	<main class="grid min-h-screen place-items-center p-6">
+		<section class="rounded-2xl p-8 text-center" style={blockStyle}>
+			<h1 class="text-2xl font-semibold">Sorry, already booked</h1>
+			<p class="mt-2 text-sm">This one-time meeting has already been booked</p>
+		</section>
+	</main>
 {:else}
 	<PublicBookingShell {eventType}>
 			<section class="flex min-h-0 flex-col overflow-hidden px-4 sm:px-6 lg:px-[4%]" aria-label="Book a meeting">

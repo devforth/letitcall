@@ -8,6 +8,7 @@
 	import externalLinkIcon from '@iconify-icons/charm/link-external';
 	import durationIcon from '@iconify-icons/cuida/clock-outline';
 	import calendarEventIcon from '@iconify-icons/tabler/calendar-event';
+	import calendarDueIcon from '@iconify-icons/tabler/calendar-due';
 	import trashIcon from '@iconify-icons/tabler/trash';
 	import { appPath, callApi } from '$lib/api';
 	import { availabilityRanges, formatWallTime } from '$lib/schedule';
@@ -107,6 +108,9 @@
 						<div class="mt-3 flex flex-wrap items-center gap-3">
 							<span class="event-meta"><Icon icon={durationIcon} width="16" height="16" />{eventType.durationMinutes}:00</span>
 							<span class="event-meta"><Icon icon={calendarEventIcon} width="16" height="16" />{eventType.bookingWindowDays} days ahead</span>
+							{#if eventType.oneTime}
+								<span class="event-meta"><Icon icon={calendarDueIcon} width="16" height="16" />One-time</span>
+							{/if}
 						</div>
 						<div class="day-list mt-3">
 							{#each eventType.schedule.filter((day) => day.enabled) as day (day.day)}

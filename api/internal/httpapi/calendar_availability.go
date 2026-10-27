@@ -161,7 +161,8 @@ func (s *Server) liveGoogleBusy(ctx context.Context, eventType model.EventType, 
 	return false, nil
 }
 
-func (s *Server) publicAvailability(eventType model.EventType) ([]busyRange, map[string]int, error) {
+// publicAvailability also reports whether a one-time event type already has its booking.
+func (s *Server) publicAvailability(eventType model.EventType) ([]busyRange, map[string]int, bool, error) {
 	ranges := make([]busyRange, 0)
 	for _, email := range eventType.RequiredHostEmails {
 		cache, err := s.store.GetGoogleBusy(email)
@@ -169,7 +170,7 @@ func (s *Server) publicAvailability(eventType model.EventType) ([]busyRange, map
 			continue
 		}
 		if err != nil {
-			return nil, nil, err
+			return nil, nil, false, err
 		}
 		for _, period := range cache.Periods {
 			ranges = append(ranges, busyRange{Start: period.Start, End: period.End})
@@ -180,9 +181,18 @@ func (s *Server) publicAvailability(eventType model.EventType) ([]busyRange, map
 	for _, email := range eventType.RequiredHostEmails {
 		required[strings.ToLower(email)] = true
 	}
+	busyTimes, err := s.store.ListBusyTimes()
+	if err != nil {
+		return nil, nil, false, err
+	}
+	for _, busyTime := range busyTimes {
+		if required[busyTime.UserEmail] {
+			ranges = append(ranges, busyRange{Start: busyTime.Start, End: busyTime.End()})
+		}
+	}
 	bookings, err := s.store.ListBookings()
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, false, err
 	}
 	type slot struct {
 		start    time.Time
@@ -221,5 +231,5 @@ func (s *Server) publicAvailability(eventType model.EventType) ([]busyRange, map
 			ranges = append(ranges, busyRange{Start: slot.start, End: slot.end})
 		}
 	}
-	return ranges, remaining, nil
+	return ranges, remaining, eventType.OneTime && len(slots) > 0, nil
 }

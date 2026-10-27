@@ -131,6 +131,7 @@ type BookingActor struct {
 type EventType struct {
 	EventSlug          string        `json:"eventSlug"`
 	Name               string        `json:"name"`
+	OneTime            bool          `json:"oneTime"`
 	DurationMinutes    int           `json:"durationMinutes"`
 	BookingWindowDays  int           `json:"bookingWindowDays"`
 	InviteeLimit       *int          `json:"inviteeLimit"`

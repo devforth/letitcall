@@ -53,6 +53,10 @@ The requested scopes include identity and permission to manage Google Calendar e
 
 When a booking is created, Mailgun delivery and Google Calendar delivery run in parallel. Email is sent to every event-type recipient when Mailgun is configured. A Google Calendar event is added separately to each recipient whose user account is Google-connected; recipients without a Google connection are silently skipped.
 
+## AI agents (MCP)
+
+Open **Connect AI** in the account menu to connect Claude Code, Codex, or another MCP client. The MCP server URL is `{HTTP__BASE__URL}/api/mcp`; agents sign in with OAuth and act as the approving user.
+
 ## Custom styles
 
 Optional. Add `/custom.css` to the container to override portal styles:

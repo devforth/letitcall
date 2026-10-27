@@ -4,7 +4,7 @@
 	import googleIcon from '@iconify-icons/logos/google-icon';
 	import Icon from '@iconify/svelte';
 	import { onMount } from 'svelte';
-	import { appPath, callApi } from '$lib/api';
+	import { afterLoginPath, appPath, callApi } from '$lib/api';
 	import Button from '$lib/components/ui/Button.svelte';
 	import PageTitle from '$lib/components/PageTitle.svelte';
 
@@ -20,7 +20,7 @@
 					error: page.url.searchParams.get('error') ?? ''
 				})
 			});
-			await goto(appPath('/'), { replaceState: true });
+			await goto(afterLoginPath(), { replaceState: true });
 		} catch (cause) {
 			error = cause instanceof Error ? cause.message : 'Unable to complete Google sign-in';
 		}

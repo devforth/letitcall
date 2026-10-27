@@ -3,7 +3,7 @@
 	import googleIcon from '@iconify-icons/logos/google-icon';
 	import Icon from '@iconify/svelte';
 	import { onMount } from 'svelte';
-	import { callApi, appPath, getPublicConfig, getSession } from '$lib/api';
+	import { afterLoginPath, callApi, appPath, getPublicConfig, getSession } from '$lib/api';
 	import Button from '$lib/components/ui/Button.svelte';
 	import Input from '$lib/components/ui/Input.svelte';
 	import ThemeToggle from '$lib/components/ThemeToggle.svelte';
@@ -56,7 +56,7 @@
 				method: 'POST',
 				body: JSON.stringify({ email, password })
 			});
-			await goto(appPath('/'), { replaceState: true });
+			await goto(afterLoginPath(), { replaceState: true });
 		} catch (cause) {
 			error = cause instanceof Error ? cause.message : 'Unable to sign in';
 		} finally {

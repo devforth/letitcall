@@ -133,11 +133,14 @@ func (s *Server) createBooking(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	slotKey := eventType.EventSlug + booking.Time.Format(time.RFC3339) + "-" + booking.EndTime.Format(time.RFC3339)
-	if err := s.store.CreateBookingWithSecret(slotKey, booking, eventType.RequiredHostEmails, eventType.InviteeLimit, secretToken); errors.Is(err, store.ErrCapacity) {
+	if err := s.store.CreateBookingWithSecret(slotKey, booking, eventType, secretToken); errors.Is(err, store.ErrCapacity) {
 		writeError(w, http.StatusConflict, "invitee limit has been reached for this time")
 		return
 	} else if errors.Is(err, store.ErrBusy) {
 		writeError(w, http.StatusConflict, "selected time is no longer available")
+		return
+	} else if errors.Is(err, store.ErrBooked) {
+		writeError(w, http.StatusConflict, "this one-time meeting is already booked")
 		return
 	} else if errors.Is(err, store.ErrExists) {
 		writeError(w, http.StatusConflict, "this invitee already has a booking at this time")
