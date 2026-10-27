@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"net/netip"
 	"net/url"
+	"slices"
 	"syscall"
 	"time"
 )
@@ -81,10 +82,13 @@ func fetchMCPClient(ctx context.Context, clientID string) (mcpClient, error) {
 		ClientName              string   `json:"client_name"`
 		RedirectURIs            []string `json:"redirect_uris"`
 		TokenEndpointAuthMethod string   `json:"token_endpoint_auth_method"`
+		// Clients such as ChatGPT prefer another method in the singular field and list every method they support here.
+		TokenEndpointAuthMethods []string `json:"token_endpoint_auth_methods_supported"`
 	}
-	if err := json.Unmarshal(body, &document); err != nil || document.ClientName == "" || len(document.RedirectURIs) == 0 || document.TokenEndpointAuthMethod != "none" {
+	if err := json.Unmarshal(body, &document); err != nil || document.ClientName == "" || len(document.RedirectURIs) == 0 ||
+		document.TokenEndpointAuthMethod != "none" && !slices.Contains(document.TokenEndpointAuthMethods, "none") {
 		slog.Warn("invalid MCP client metadata document", "error", err, "clientId", clientID, "contentType", response.Header.Get("Content-Type"), "document", string(body))
-		return mcpClient{}, errors.New(`client metadata document must have client_id, client_name, redirect_uris and token_endpoint_auth_method "none"`)
+		return mcpClient{}, errors.New(`client metadata document must have client_id, client_name, redirect_uris and support token_endpoint_auth_method "none"`)
 	}
 	if document.ClientID != clientID {
 		return mcpClient{}, errors.New("client_id in the client metadata document does not match its URL")

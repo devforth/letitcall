@@ -18,9 +18,10 @@ import (
 )
 
 const (
-	mcpClientID    = "https://agent.example/client-metadata.json"
-	mcpRedirectURI = "http://127.0.0.1:5555/callback"
-	mcpVerifier    = "test-code-verifier-with-enough-entropy-0123456789"
+	mcpClientID     = "https://agent.example/client-metadata.json"
+	chatGPTClientID = "https://chatgpt.example/oauth/client.json"
+	mcpRedirectURI  = "http://127.0.0.1:5555/callback"
+	mcpVerifier     = "test-code-verifier-with-enough-entropy-0123456789"
 )
 
 func TestMCPMetadataIsServedInsideAndOutsideBasePath(t *testing.T) {
@@ -51,9 +52,9 @@ func TestMCPMetadataIsServedInsideAndOutsideBasePath(t *testing.T) {
 func TestMCPOAuthConnectsAgentThatUsesTools(t *testing.T) {
 	f := newFixture(t, false)
 	mockMCPClientMetadata(t)
-	expectStatus(t, f.request(http.MethodGet, "/api/mcp/oauth/authorize?"+authorizeQuery("http://evil.example/callback").Encode(), nil), http.StatusBadRequest)
+	expectStatus(t, f.request(http.MethodGet, "/api/mcp/oauth/authorize?"+authorizeQuery(mcpClientID, "http://evil.example/callback").Encode(), nil), http.StatusBadRequest)
 
-	requestID := f.startMCPAuthorization(mcpRedirectURI)
+	requestID := f.startMCPAuthorization(authorizeQuery(mcpClientID, mcpRedirectURI))
 	expectStatus(t, f.request(http.MethodGet, "/api/mcp/oauth/authorization?request="+requestID, nil), http.StatusUnauthorized)
 	expectStatus(t, f.login(adminEmail, adminPassword), http.StatusOK)
 	described := expectStatus(t, f.request(http.MethodGet, "/api/mcp/oauth/authorization?request="+requestID, nil), http.StatusOK)
@@ -134,7 +135,7 @@ func TestMCPOAuthConnectsAgentThatUsesTools(t *testing.T) {
 func TestMCPAuthorizationCanBeDenied(t *testing.T) {
 	f := newFixture(t, false)
 	mockMCPClientMetadata(t)
-	requestID := f.startMCPAuthorization(mcpRedirectURI)
+	requestID := f.startMCPAuthorization(authorizeQuery(mcpClientID, mcpRedirectURI))
 	expectStatus(t, f.login(adminEmail, adminPassword), http.StatusOK)
 	resolved := expectStatus(t, f.request(http.MethodPost, "/api/mcp/oauth/authorization", map[string]any{"request": requestID, "approved": false}), http.StatusOK)
 	if !strings.Contains(string(resolved), "error=access_denied") || !strings.Contains(string(resolved), "state=agent-state") {
@@ -142,10 +143,21 @@ func TestMCPAuthorizationCanBeDenied(t *testing.T) {
 	}
 	expectStatus(t, f.request(http.MethodPost, "/api/mcp/oauth/authorization", map[string]any{"request": requestID, "approved": true}), http.StatusBadRequest)
 
-	unregistered := f.startMCPAuthorization("http://127.0.0.1:5555/other")
+	unregistered := f.startMCPAuthorization(authorizeQuery(mcpClientID, "http://127.0.0.1:5555/other"))
 	described := expectStatus(t, f.request(http.MethodGet, "/api/mcp/oauth/authorization?request="+unregistered, nil), http.StatusBadRequest)
 	if !strings.Contains(string(described), "redirect_uri is not listed in the client metadata document") {
 		t.Fatalf("unexpected unregistered redirect error: %s", described)
+	}
+}
+
+func TestMCPAcceptsClientsSupportingNoneAmongAuthMethods(t *testing.T) {
+	f := newFixture(t, false)
+	mockMCPClientMetadata(t)
+	requestID := f.startMCPAuthorization(authorizeQuery(chatGPTClientID, "https://chatgpt.example/connector_platform_oauth_redirect"))
+	expectStatus(t, f.login(adminEmail, adminPassword), http.StatusOK)
+	described := expectStatus(t, f.request(http.MethodGet, "/api/mcp/oauth/authorization?request="+requestID, nil), http.StatusOK)
+	if !strings.Contains(string(described), `"clientName":"ChatGPT"`) {
+		t.Fatalf("a client listing none among its methods was rejected: %s", described)
 	}
 }
 
@@ -156,17 +168,17 @@ type mcpTokenResponse struct {
 	ExpiresIn    int    `json:"expires_in"`
 }
 
-func authorizeQuery(redirectURI string) url.Values {
+func authorizeQuery(clientID, redirectURI string) url.Values {
 	challenge := sha256.Sum256([]byte(mcpVerifier))
 	return url.Values{
-		"response_type": {"code"}, "client_id": {mcpClientID}, "redirect_uri": {redirectURI}, "state": {"agent-state"},
+		"response_type": {"code"}, "client_id": {clientID}, "redirect_uri": {redirectURI}, "state": {"agent-state"},
 		"code_challenge": {base64.RawURLEncoding.EncodeToString(challenge[:])}, "code_challenge_method": {"S256"},
 	}
 }
 
-func (f *fixture) startMCPAuthorization(redirectURI string) string {
+func (f *fixture) startMCPAuthorization(query url.Values) string {
 	f.t.Helper()
-	response := f.request(http.MethodGet, "/api/mcp/oauth/authorize?"+authorizeQuery(redirectURI).Encode(), nil)
+	response := f.request(http.MethodGet, "/api/mcp/oauth/authorize?"+query.Encode(), nil)
 	expectStatus(f.t, response, http.StatusFound)
 	location, err := url.Parse(response.Header.Get("Location"))
 	if err != nil || location.Path != "/auth/connect-ai" || location.Query().Get("request") == "" {
@@ -252,14 +264,23 @@ func mustRequest(t *testing.T, method, target string, body io.Reader) *http.Requ
 func mockMCPClientMetadata(t *testing.T) {
 	t.Helper()
 	originalTransport := http.DefaultTransport
-	http.DefaultTransport = roundTripFunc(func(request *http.Request) (*http.Response, error) {
-		if request.URL.String() != mcpClientID {
-			return nil, fmt.Errorf("unexpected client metadata request: %s", request.URL)
-		}
-		document, _ := json.Marshal(map[string]any{
+	documents := map[string]map[string]any{
+		mcpClientID: {
 			"client_id": mcpClientID, "client_name": "Test Agent", "redirect_uris": []string{"http://127.0.0.1/callback"},
 			"token_endpoint_auth_method": "none",
-		})
+		},
+		// Shaped as the ChatGPT document: it prefers private_key_jwt but also supports none.
+		chatGPTClientID: {
+			"client_id": chatGPTClientID, "client_name": "ChatGPT", "redirect_uris": []string{"https://chatgpt.example/connector_platform_oauth_redirect"},
+			"token_endpoint_auth_method": "private_key_jwt", "token_endpoint_auth_methods_supported": []string{"none", "private_key_jwt"},
+		},
+	}
+	http.DefaultTransport = roundTripFunc(func(request *http.Request) (*http.Response, error) {
+		value, ok := documents[request.URL.String()]
+		if !ok {
+			return nil, fmt.Errorf("unexpected client metadata request: %s", request.URL)
+		}
+		document, _ := json.Marshal(value)
 		return &http.Response{
 			StatusCode: http.StatusOK,
 			Status:     http.StatusText(http.StatusOK),
