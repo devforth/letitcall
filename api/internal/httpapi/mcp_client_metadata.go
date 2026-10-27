@@ -83,6 +83,7 @@ func fetchMCPClient(ctx context.Context, clientID string) (mcpClient, error) {
 		TokenEndpointAuthMethod string   `json:"token_endpoint_auth_method"`
 	}
 	if err := json.Unmarshal(body, &document); err != nil || document.ClientName == "" || len(document.RedirectURIs) == 0 || document.TokenEndpointAuthMethod != "none" {
+		slog.Warn("invalid MCP client metadata document", "error", err, "clientId", clientID, "contentType", response.Header.Get("Content-Type"), "document", string(body))
 		return mcpClient{}, errors.New(`client metadata document must have client_id, client_name, redirect_uris and token_endpoint_auth_method "none"`)
 	}
 	if document.ClientID != clientID {
