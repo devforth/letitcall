@@ -87,7 +87,7 @@ func (s *Server) compatibilitySlots(eventType model.EventType, start, end time.T
 			}
 			candidate := time.Date(date.Year(), date.Month(), date.Day(), minute/60, minute%60, 0, 0, location).UTC()
 			candidateEnd := candidate.Add(time.Duration(eventType.DurationMinutes) * time.Minute)
-			if candidate.Before(start) || !candidate.Before(end) || !candidate.After(now) || overlapsBusy(candidate, candidateEnd, busyRanges) {
+			if candidate.Before(start) || !candidate.Before(end) || !candidate.After(now.Add(eventType.MinimumNotice())) || overlapsBusy(candidate, candidateEnd, busyRanges) {
 				continue
 			}
 			capacity := 1

@@ -7,6 +7,7 @@
 	import calendarRepeatIcon from '@iconify-icons/tabler/calendar-repeat';
 	import checkIcon from '@iconify-icons/tabler/check';
 	import clockIcon from '@iconify-icons/tabler/clock';
+	import hourglassIcon from '@iconify-icons/tabler/hourglass';
 	import usersIcon from '@iconify-icons/tabler/users';
 	import xIcon from '@iconify-icons/tabler/x';
 	import refreshIcon from '@iconify-icons/tabler/refresh';
@@ -36,6 +37,7 @@
 	let durationChoice = $state('30');
 	let customDuration = $state('30');
 	let bookingWindowDays = $state('60');
+	let minimumNoticeHours = $state('0');
 	let inviteeLimit = $state('');
 	let timezone = $state('UTC');
 	let requiredHostEmails = $state<string[]>([]);
@@ -56,6 +58,7 @@
 		oneTime,
 		durationMinutes: Number(durationChoice === 'custom' ? customDuration : durationChoice),
 		bookingWindowDays: Number(bookingWindowDays),
+		minimumNoticeHours: Number(minimumNoticeHours),
 		inviteeLimit: inviteeLimit === '' ? null : Number(inviteeLimit),
 		timezone,
 		requiredHostEmails,
@@ -111,6 +114,7 @@
 			: 'custom';
 		customDuration = String(eventType.durationMinutes);
 		bookingWindowDays = String(eventType.bookingWindowDays);
+		minimumNoticeHours = String(eventType.minimumNoticeHours);
 		inviteeLimit = eventType.inviteeLimit === null ? '' : String(eventType.inviteeLimit);
 		timezone = eventType.timezone;
 		requiredHostEmails = [...eventType.requiredHostEmails];
@@ -245,6 +249,7 @@
 					<NumberInput id="custom-duration" label="Custom duration in minutes" bind:value={customDuration} max={1440} icon={clockIcon} required />
 				{/if}
 				<NumberInput id="booking-window" label="How many calendar days ahead can invitees book" bind:value={bookingWindowDays} icon={calendarEventIcon} required />
+				<NumberInput id="minimum-notice" label="Minimum notice before a meeting, in hours" bind:value={minimumNoticeHours} min={0} step={0.5} icon={hourglassIcon} required />
 				<NumberInput id="invitee-limit" label="Invitees limit (empty means one booking)" bind:value={inviteeLimit} placeholder="One booking" icon={usersIcon} />
 				<Input id="timezone" label="Schedule timezone (read-only)" value={`${timezone} — ${currentTime}`} readonly />
 			</section>

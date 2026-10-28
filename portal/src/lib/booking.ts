@@ -138,7 +138,7 @@ export function generateBookingSlots(
 			const instant = wallTimeToUTC(candidate, minutes, eventType.timezone);
 			const instantEnd = new Date(instant.getTime() + eventType.durationMinutes * 60_000);
 			const time = instant.toISOString().replace('.000Z', 'Z');
-			if (instant <= now) continue;
+			if (instant.getTime() <= now.getTime() + eventType.minimumNoticeHours * 3_600_000) continue;
 			const viewerDate = timezoneDateKey(instant, timezone);
 			if (!viewerDate.startsWith(month)) continue;
 			(slots[viewerDate] ??= []).push({

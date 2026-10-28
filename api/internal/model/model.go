@@ -134,6 +134,7 @@ type EventType struct {
 	OneTime            bool          `json:"oneTime"`
 	DurationMinutes    int           `json:"durationMinutes"`
 	BookingWindowDays  int           `json:"bookingWindowDays"`
+	MinimumNoticeHours float64       `json:"minimumNoticeHours"`
 	InviteeLimit       *int          `json:"inviteeLimit"`
 	Timezone           string        `json:"timezone"`
 	RequiredHostEmails []string      `json:"requiredHostEmails"`
@@ -142,6 +143,11 @@ type EventType struct {
 	CreatedBy          string        `json:"createdBy"`
 	CreatedAt          time.Time     `json:"createdAt"`
 	UpdatedAt          time.Time     `json:"updatedAt"`
+}
+
+// MinimumNotice is how long before a slot starts it can still be booked.
+func (e EventType) MinimumNotice() time.Duration {
+	return time.Duration(e.MinimumNoticeHours * float64(time.Hour))
 }
 
 func (e EventType) HostEmails() []string {

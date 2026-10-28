@@ -373,8 +373,8 @@ func (s *Server) deleteBooking(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) validateBookingTime(eventType model.EventType, bookingTime time.Time) error {
-	if !bookingTime.After(s.now().UTC()) {
-		return errors.New("booking time must be in the future")
+	if !bookingTime.After(s.now().UTC().Add(eventType.MinimumNotice())) {
+		return errors.New("booking time is too soon")
 	}
 	location, err := time.LoadLocation(eventType.Timezone)
 	if err != nil {

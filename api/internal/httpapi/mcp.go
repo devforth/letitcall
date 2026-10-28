@@ -109,7 +109,8 @@ func (s *Server) mcpServer(brandName string, user model.User) *mcp.Server {
 	mcp.AddTool(server, &mcp.Tool{
 		Name: "create_event_type",
 		Description: "Create an event type booked at {base URL}/book/{eventSlug}. oneTime false is a regular event type. " +
-			"inviteeLimit null allows one booking per time slot. timezone is an IANA timezone of the weekly schedule, " +
+			"inviteeLimit null allows one booking per time slot. minimumNoticeHours (0 for none, fractions like 0.5 allowed) " +
+			"is how many hours before its start a slot can still be booked. timezone is an IANA timezone of the weekly schedule, " +
 			"which lists all seven weekdays (monday..sunday) with HH:MM start and end when enabled.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, input eventTypeRequest) (*mcp.CallToolResult, any, error) {
 		return call(ctx, s.createEventType, http.MethodPost, input)

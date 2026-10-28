@@ -103,6 +103,7 @@ export type EventType = {
 	oneTime: boolean;
 	durationMinutes: number;
 	bookingWindowDays: number;
+	minimumNoticeHours: number;
 	inviteeLimit: number | null;
 	timezone: string;
 	requiredHostEmails: string[];
@@ -132,6 +133,7 @@ export type PublicEventType = Pick<
 	| 'name'
 	| 'durationMinutes'
 	| 'bookingWindowDays'
+	| 'minimumNoticeHours'
 	| 'inviteeLimit'
 	| 'timezone'
 	| 'schedule'

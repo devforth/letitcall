@@ -574,6 +574,33 @@ func TestBookingAPIs(t *testing.T) {
 	expectStatus(t, f.request(http.MethodDelete, "/api/bookings/"+createdResponse.Booking.ID, nil), http.StatusNotFound)
 }
 
+func TestBookingRespectsMinimumNotice(t *testing.T) {
+	f := newFixture(t, false)
+	expectStatus(t, f.login(adminEmail, adminPassword), http.StatusOK)
+	body := eventTypeBody("Notice Call", []string{adminEmail}, 1)
+	body["minimumNoticeHours"] = -0.5
+	expectStatus(t, f.request(http.MethodPost, "/api/event-types", body), http.StatusBadRequest)
+	body["minimumNoticeHours"] = 48
+	expectStatus(t, f.request(http.MethodPost, "/api/event-types", body), http.StatusCreated)
+	publicEventType := expectStatus(t, f.request(http.MethodGet, "/api/public/event-types/notice-call", nil), http.StatusOK)
+	if !strings.Contains(string(publicEventType), `"minimumNoticeHours":48`) {
+		t.Fatalf("public event type did not expose the minimum notice: %s", publicEventType)
+	}
+	book := func(daysAhead int) *http.Response {
+		day := time.Now().UTC().AddDate(0, 0, daysAhead)
+		return f.request(http.MethodPost, "/api/bookings", map[string]string{
+			"eventSlug": "notice-call", "time": time.Date(day.Year(), day.Month(), day.Day(), 12, 0, 0, 0, time.UTC).Format(time.RFC3339),
+			"attendeeName": "Guest Person", "attendeeEmail": "guest@example.com", "attendeeTimezone": "UTC", "notes": "",
+		})
+	}
+	// Tomorrow at noon is 12–36 hours away, inside the notice; three days ahead is at least 60 hours away.
+	tooSoon := expectStatus(t, book(1), http.StatusBadRequest)
+	if !strings.Contains(string(tooSoon), "booking time is too soon") {
+		t.Fatalf("unexpected minimum notice error: %s", tooSoon)
+	}
+	expectStatus(t, book(3), http.StatusCreated)
+}
+
 func TestBookingsUseUTCSlotKey(t *testing.T) {
 	dataPath := t.TempDir()
 	database, err := store.Open(dataPath)

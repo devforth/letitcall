@@ -1,7 +1,7 @@
 #!/usr/bin/env sh
 set -eu
 
-VERSION=1.1.4
+VERSION=1.2.0
 PACKAGE_NAME=devforth/letitcall
 IMAGE=docker.io/$PACKAGE_NAME
 PLATFORMS=${DOCKER_PLATFORMS:-linux/amd64,linux/arm64}

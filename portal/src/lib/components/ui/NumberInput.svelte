@@ -7,6 +7,7 @@
 		value = $bindable(''),
 		min = 1,
 		max,
+		step = 1,
 		placeholder = '',
 		disabled = false,
 		required = false,
@@ -17,6 +18,7 @@
 		value?: string;
 		min?: number;
 		max?: number;
+		step?: number;
 		placeholder?: string;
 		disabled?: boolean;
 		required?: boolean;
@@ -35,7 +37,7 @@
 			{placeholder}
 			{disabled}
 			{required}
-			step="1"
+			{step}
 			class="input"
 			onwheel={(event) => event.currentTarget.blur()}
 		/>

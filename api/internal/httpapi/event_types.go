@@ -21,6 +21,7 @@ type eventTypeRequest struct {
 	OneTime            bool                `json:"oneTime"`
 	DurationMinutes    int                 `json:"durationMinutes"`
 	BookingWindowDays  int                 `json:"bookingWindowDays"`
+	MinimumNoticeHours float64             `json:"minimumNoticeHours,omitempty"`
 	InviteeLimit       *int                `json:"inviteeLimit"`
 	Timezone           string              `json:"timezone"`
 	RequiredHostEmails []string            `json:"requiredHostEmails"`
@@ -183,18 +184,19 @@ func (s *Server) getPublicEventType(w http.ResponseWriter, r *http.Request) {
 	}
 	writeJSON(w, http.StatusOK, map[string]any{
 		"eventType": map[string]any{
-			"eventSlug":         eventType.EventSlug,
-			"name":              eventType.Name,
-			"durationMinutes":   eventType.DurationMinutes,
-			"bookingWindowDays": eventType.BookingWindowDays,
-			"inviteeLimit":      eventType.InviteeLimit,
-			"timezone":          eventType.Timezone,
-			"schedule":          eventType.Schedule,
-			"requiredHosts":     requiredHosts,
-			"optionalHosts":     optionalHosts,
-			"busyRanges":        busyRanges,
-			"remainingInvitees": remainingInvitees,
-			"booked":            booked,
+			"eventSlug":          eventType.EventSlug,
+			"name":               eventType.Name,
+			"durationMinutes":    eventType.DurationMinutes,
+			"bookingWindowDays":  eventType.BookingWindowDays,
+			"minimumNoticeHours": eventType.MinimumNoticeHours,
+			"inviteeLimit":       eventType.InviteeLimit,
+			"timezone":           eventType.Timezone,
+			"schedule":           eventType.Schedule,
+			"requiredHosts":      requiredHosts,
+			"optionalHosts":      optionalHosts,
+			"busyRanges":         busyRanges,
+			"remainingInvitees":  remainingInvitees,
+			"booked":             booked,
 		},
 	})
 }
@@ -209,6 +211,9 @@ func (s *Server) eventTypeFromRequest(request eventTypeRequest) (model.EventType
 	}
 	if request.BookingWindowDays < 1 {
 		return model.EventType{}, errors.New("bookingWindowDays must be a positive integer")
+	}
+	if request.MinimumNoticeHours < 0 {
+		return model.EventType{}, errors.New("minimumNoticeHours must not be negative")
 	}
 	if request.InviteeLimit != nil && *request.InviteeLimit < 1 {
 		return model.EventType{}, errors.New("inviteeLimit must be a positive integer or null")
@@ -230,6 +235,7 @@ func (s *Server) eventTypeFromRequest(request eventTypeRequest) (model.EventType
 		OneTime:            request.OneTime,
 		DurationMinutes:    request.DurationMinutes,
 		BookingWindowDays:  request.BookingWindowDays,
+		MinimumNoticeHours: request.MinimumNoticeHours,
 		InviteeLimit:       request.InviteeLimit,
 		Timezone:           timezone,
 		RequiredHostEmails: requiredHosts,
