@@ -2,6 +2,7 @@ package httpapi
 
 import (
 	"errors"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"strings"
@@ -11,6 +12,22 @@ import (
 	"github.com/letitcall/letitcall/api/internal/security"
 	"github.com/letitcall/letitcall/api/internal/store"
 )
+
+const (
+	maxGuestEmails        = 10
+	bookingMutationLimit  = 20
+	bookingMutationWindow = 10 * time.Minute
+)
+
+func (s *Server) limitBookingMutations(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !s.bookingLimiter.Allow(remoteIP(r), s.now()) {
+			writeError(w, http.StatusTooManyRequests, "too many booking requests; try again later")
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
+}
 
 func (s *Server) listBookings(w http.ResponseWriter, _ *http.Request) {
 	bookings, err := s.store.ListBookings()
@@ -340,6 +357,9 @@ func (s *Server) managedBooking(w http.ResponseWriter, secretToken string) (mode
 }
 
 func normalizeGuestEmails(values []string, attendeeEmail string) ([]string, error) {
+	if len(values) > maxGuestEmails {
+		return nil, fmt.Errorf("guestEmails must not exceed %d addresses", maxGuestEmails)
+	}
 	guests := make([]string, 0, len(values))
 	seen := map[string]bool{attendeeEmail: true}
 	for _, value := range values {

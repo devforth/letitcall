@@ -41,6 +41,7 @@ func init() {
 const (
 	sessionCookieName     = "letitcall_session"
 	portalBasePlaceholder = "/__LETITCALL_BASE_PATH__"
+	clientIPHeader        = "CF-Connecting-IP"
 )
 
 type contextKey string
@@ -48,18 +49,19 @@ type contextKey string
 const userContextKey contextKey = "authenticated-user"
 
 type Server struct {
-	cfg         config.Config
-	store       *store.Store
-	avatars     *content.Avatars
-	logos       *content.Logos
-	oauth       *oauth2.Config
-	tokenCipher *security.TokenCipher
-	limiter     *security.LoginLimiter
-	mailer      mailing.Sender
-	dummyHash   string
-	now         func() time.Time
-	webhookHTTP *http.Client
-	webhookWake chan struct{}
+	cfg            config.Config
+	store          *store.Store
+	avatars        *content.Avatars
+	logos          *content.Logos
+	oauth          *oauth2.Config
+	tokenCipher    *security.TokenCipher
+	limiter        *security.LoginLimiter
+	bookingLimiter *security.RateLimiter
+	mailer         mailing.Sender
+	dummyHash      string
+	now            func() time.Time
+	webhookHTTP    *http.Client
+	webhookWake    chan struct{}
 }
 
 func New(cfg config.Config, database *store.Store) (*Server, error) {
@@ -83,16 +85,17 @@ func New(cfg config.Config, database *store.Store) (*Server, error) {
 		return nil, err
 	}
 	server := &Server{
-		cfg:         cfg,
-		store:       database,
-		avatars:     avatars,
-		logos:       logos,
-		mailer:      mailing.New(cfg.Mailing.Mailgun, renderer),
-		limiter:     security.NewLoginLimiter(cfg.Login.PasswordMaxAttempts, cfg.Login.PasswordLockout),
-		dummyHash:   dummyHash,
-		now:         time.Now,
-		webhookHTTP: &http.Client{Timeout: 10 * time.Second},
-		webhookWake: make(chan struct{}, 1),
+		cfg:            cfg,
+		store:          database,
+		avatars:        avatars,
+		logos:          logos,
+		mailer:         mailing.New(cfg.Mailing.Mailgun, renderer),
+		limiter:        security.NewLoginLimiter(cfg.Login.PasswordMaxAttempts, cfg.Login.PasswordLockout),
+		bookingLimiter: security.NewRateLimiter(bookingMutationLimit, bookingMutationWindow),
+		dummyHash:      dummyHash,
+		now:            time.Now,
+		webhookHTTP:    &http.Client{Timeout: 10 * time.Second},
+		webhookWake:    make(chan struct{}, 1),
 	}
 	key, err := security.LoadGoogleTokenKey(cfg.Storage.LevelDBPath)
 	if err != nil {
@@ -152,11 +155,11 @@ func (s *Server) Handler() http.Handler {
 	mux.Handle("POST /api/users/{email}/reassign-bookings", s.requireAuth(http.HandlerFunc(s.reassignUserBookings)))
 	mux.Handle("DELETE /api/users/{email}", s.requireAuth(http.HandlerFunc(s.deleteUser)))
 	mux.Handle("GET /api/bookings", s.requireAuth(http.HandlerFunc(s.listBookings)))
-	mux.HandleFunc("POST /api/bookings", s.createBooking)
+	mux.Handle("POST /api/bookings", s.limitBookingMutations(http.HandlerFunc(s.createBooking)))
 	mux.Handle("DELETE /api/bookings/{id}", s.requireAuth(http.HandlerFunc(s.deleteBooking)))
 	mux.Handle("GET /api/events/{secret}", s.optionalAuth(http.HandlerFunc(s.getManagedBooking)))
-	mux.Handle("PATCH /api/events/{secret}", s.optionalAuth(http.HandlerFunc(s.updateManagedBooking)))
-	mux.Handle("POST /api/events/{secret}/cancel", s.optionalAuth(http.HandlerFunc(s.cancelManagedBooking)))
+	mux.Handle("PATCH /api/events/{secret}", s.limitBookingMutations(s.optionalAuth(http.HandlerFunc(s.updateManagedBooking))))
+	mux.Handle("POST /api/events/{secret}/cancel", s.limitBookingMutations(s.optionalAuth(http.HandlerFunc(s.cancelManagedBooking))))
 	mux.Handle("GET /api/event-types", s.requireAuth(http.HandlerFunc(s.listEventTypes)))
 	mux.Handle("POST /api/event-types", s.requireAuth(http.HandlerFunc(s.createEventType)))
 	mux.Handle("GET /api/event-types/{slug}", s.requireAuth(http.HandlerFunc(s.getEventType)))
@@ -398,6 +401,9 @@ func decodeJSON(w http.ResponseWriter, r *http.Request, destination any) error {
 }
 
 func remoteIP(r *http.Request) string {
+	if ip := r.Header.Get(clientIPHeader); ip != "" {
+		return ip
+	}
 	host, _, err := net.SplitHostPort(r.RemoteAddr)
 	if err == nil {
 		return host

@@ -63,3 +63,53 @@ func (l *LoginLimiter) Success(key string) {
 	defer l.mu.Unlock()
 	delete(l.attempts, key)
 }
+
+type RateLimiter struct {
+	mu     sync.Mutex
+	hits   map[string][]time.Time
+	limit  int
+	window time.Duration
+}
+
+func NewRateLimiter(limit int, window time.Duration) *RateLimiter {
+	return &RateLimiter{
+		hits:   make(map[string][]time.Time),
+		limit:  limit,
+		window: window,
+	}
+}
+
+func (l *RateLimiter) Allow(key string, now time.Time) bool {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	recent := l.recentHits(key, now)
+	if len(recent) >= l.limit {
+		l.hits[key] = recent
+		return false
+	}
+	l.hits[key] = append(recent, now)
+	if len(l.hits) > 10_000 {
+		for hitKey, hits := range l.hits {
+			if !hits[len(hits)-1].After(l.windowStart(now)) {
+				delete(l.hits, hitKey)
+			}
+		}
+	}
+	return true
+}
+
+func (l *RateLimiter) recentHits(key string, now time.Time) []time.Time {
+	start := l.windowStart(now)
+	hits := l.hits[key]
+	recent := hits[:0]
+	for _, hit := range hits {
+		if hit.After(start) {
+			recent = append(recent, hit)
+		}
+	}
+	return recent
+}
+
+func (l *RateLimiter) windowStart(now time.Time) time.Time {
+	return now.Add(-l.window)
+}
