@@ -188,6 +188,9 @@ func TestPublicConfigAndPortalUseStoredBrandName(t *testing.T) {
 	if !strings.Contains(string(portal), "DevForth") || strings.Contains(string(portal), "Let It Call") {
 		t.Fatalf("portal fallback did not use the brand: %s", portal)
 	}
+	if !strings.Contains(string(portal), `rel="icon" href="/favicon.svg"`) {
+		t.Fatalf("portal did not use the default favicon: %s", portal)
+	}
 }
 
 func TestBrandingAPIsStoreAndServeLogo(t *testing.T) {
@@ -235,6 +238,10 @@ func TestBrandingAPIsStoreAndServeLogo(t *testing.T) {
 	servedBody := expectStatus(t, served, http.StatusOK)
 	if served.Header.Get("Content-Type") != "image/png" || !bytes.Equal(servedBody, stored) {
 		t.Fatal("stored logo was not served as a PNG")
+	}
+	portal := expectStatus(t, f.request(http.MethodGet, "/book/example", nil), http.StatusOK)
+	if !strings.Contains(string(portal), `rel="icon" href="/content/logos/`+logoFilename+`"`) {
+		t.Fatalf("booking page did not use the brand logo as its favicon: %s", portal)
 	}
 	publicConfig := expectStatus(t, f.request(http.MethodGet, "/api/config/public", nil), http.StatusOK)
 	if !strings.Contains(string(publicConfig), `"brandName":"DevForth"`) || !strings.Contains(string(publicConfig), `"logoPath":"`+logoFilename+`"`) {
@@ -335,7 +342,13 @@ func TestCustomCSSIsServedFromWorkingDirectory(t *testing.T) {
 func TestBasePathMountsAPIAndPortal(t *testing.T) {
 	f := newFixtureAtBasePath(t, false, "/letitcall")
 	expectStatus(t, f.request(http.MethodGet, "/api/health", nil), http.StatusOK)
-	expectStatus(t, f.request(http.MethodGet, "/users", nil), http.StatusOK)
+	if err := f.store.PutBranding(model.Branding{Name: "DevForth", LogoPath: "logo-test.png"}); err != nil {
+		t.Fatal(err)
+	}
+	portal := expectStatus(t, f.request(http.MethodGet, "/users", nil), http.StatusOK)
+	if !strings.Contains(string(portal), `rel="icon" href="/letitcall/content/logos/logo-test.png"`) {
+		t.Fatalf("portal favicon did not use the base path: %s", portal)
+	}
 	expectStatus(t, f.login(adminEmail, adminPassword), http.StatusOK)
 	expectStatus(t, f.request(http.MethodGet, "/api/auth/session", nil), http.StatusOK)
 	request, err := http.NewRequest(http.MethodGet, f.server.URL+"/api/health", nil)

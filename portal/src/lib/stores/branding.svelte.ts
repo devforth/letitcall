@@ -1,4 +1,4 @@
-import { callApi } from '$lib/api';
+import { appPath, callApi, logoURL } from '$lib/api';
 import type { Branding, BrandingTheme, ThemeColors } from '$lib/types';
 
 const cacheKey = 'branding';
@@ -48,6 +48,9 @@ function applyTheme(theme: BrandingTheme) {
 export function applyBranding(value: Branding) {
 	branding.name = value.name;
 	branding.logoPath = value.logoPath ?? '';
+	document.querySelector<HTMLLinkElement>('link[rel="icon"]')!.href = branding.logoPath
+		? logoURL(branding.logoPath)
+		: appPath('/favicon.svg');
 	branding.theme = value.theme;
 	branding.publicTheme = value.publicTheme ?? 'both';
 	branding.preset = value.preset ?? 'custom';

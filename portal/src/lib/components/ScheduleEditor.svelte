@@ -25,6 +25,13 @@
 	let quickStart = $state('10:00');
 	let quickEnd = $state('16:00');
 	const quickInvalid = $derived(endsBeforeStart({ start: quickStart, end: quickEnd }));
+	const quickPresetChanges = $derived(
+		schedule.some((day) => {
+			const enabled = quickHoursEnabled(day);
+			return day.enabled !== enabled ||
+				(enabled && (day.start !== quickStart || day.end !== quickEnd || day.breaks.length > 0));
+		})
+	);
 
 	const labels: Record<string, string> = {
 		monday: 'Monday',
@@ -36,10 +43,13 @@
 		sunday: 'Sunday'
 	};
 
+	function quickHoursEnabled(day: ScheduleDay) {
+		return day.day === 'saturday' || day.day === 'sunday' ? applyWeekends : applyWeekdays;
+	}
+
 	function applyQuickHours() {
 		for (const day of schedule) {
-			const weekend = day.day === 'saturday' || day.day === 'sunday';
-			const enabled = weekend ? applyWeekends : applyWeekdays;
+			const enabled = quickHoursEnabled(day);
 			day.enabled = enabled;
 			day.start = enabled ? quickStart : undefined;
 			day.end = enabled ? quickEnd : undefined;
@@ -136,18 +146,20 @@
 			<div class="grid gap-3 sm:grid-cols-[12rem_12rem_auto] sm:items-center">
 				<TimeInput id="quick-start" label="From" bind:value={quickStart} step={stepMinutes * 60} />
 				<TimeInput id="quick-end" label="To" bind:value={quickEnd} invalid={quickInvalid} step={stepMinutes * 60} />
-				<Button
-					class="outlined-action-button justify-self-start"
-					variant="primary-outline"
-					style="padding-right: 1.125rem !important; padding-bottom: 0.5rem !important;"
-					disabled={quickInvalid}
-					onclick={applyQuickHours}
-				>
-					<span class="flex items-center gap-2">
-						<Icon icon={copyIcon} width="20" height="20" />
-						Apply
-					</span>
-				</Button>
+				{#if quickPresetChanges}
+					<Button
+						class="outlined-action-button justify-self-start"
+						variant="primary-outline"
+						style="padding-right: 1.125rem !important; padding-bottom: 0.5rem !important;"
+						disabled={quickInvalid}
+						onclick={applyQuickHours}
+					>
+						<span class="flex items-center gap-2">
+							<Icon icon={copyIcon} width="20" height="20" />
+							Apply
+						</span>
+					</Button>
+				{/if}
 			</div>
 		</div>
 		</details>

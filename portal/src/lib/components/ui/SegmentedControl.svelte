@@ -25,30 +25,60 @@
 	);
 </script>
 
-<div
-	class="segmented-control"
-	class:icon-only={iconOnly}
-	role="group"
-	aria-label={label}
-	style:grid-template-columns={`repeat(${options.length}, minmax(0, 1fr))`}
->
-	<span class="segmented-control-indicator" style:left={indicatorLeft} style:width={indicatorWidth}></span>
-	{#each options as option (option.value)}
-		<button
-			type="button"
-			class="segmented-control-option"
-			class:on={value === option.value}
-			class:icon-only={iconOnly}
-			aria-pressed={value === option.value}
-			aria-label={iconOnly ? option.label : undefined}
-			onclick={() => onchange(option.value)}
-		>
-			{#if option.icon}<Icon icon={option.icon} width="16" height="16" />{/if}
-			{#if !iconOnly}<span>{option.label}</span>{/if}
-			{#if option.suffix}<span class="segmented-control-suffix">{option.suffix}</span>{/if}
-		</button>
-	{/each}
-</div>
+{#snippet optionContent(option: (typeof options)[number])}
+	{#if option.icon}<Icon icon={option.icon} width="16" height="16" />{/if}
+	{#if !iconOnly}<span>{option.label}</span>{/if}
+	{#if option.suffix}<span class="segmented-control-suffix">{option.suffix}</span>{/if}
+{/snippet}
+
+{#snippet sizedOptionContent(option: (typeof options)[number])}
+	<span class="option-content">{@render optionContent(option)}</span>
+	{#if !iconOnly}
+		<span class="option-size regular" aria-hidden="true">{@render optionContent(option)}</span>
+		<span class="option-size bold" aria-hidden="true">{@render optionContent(option)}</span>
+	{/if}
+{/snippet}
+
+{#if options.length === 2}
+	<button
+		type="button"
+		class="segmented-control"
+		class:icon-only={iconOnly}
+		aria-label={`Switch ${label.toLowerCase()} to ${options[1 - selectedIndex].label}`}
+		style:grid-template-columns={`repeat(${options.length}, minmax(0, 1fr))`}
+		onclick={() => onchange(options[1 - selectedIndex].value)}
+	>
+		<span class="segmented-control-indicator" style:left={indicatorLeft} style:width={indicatorWidth}></span>
+		{#each options as option (option.value)}
+			<span class="segmented-control-option" class:on={value === option.value} class:icon-only={iconOnly}>
+				{@render sizedOptionContent(option)}
+			</span>
+		{/each}
+	</button>
+{:else}
+	<div
+		class="segmented-control"
+		class:icon-only={iconOnly}
+		role="group"
+		aria-label={label}
+		style:grid-template-columns={`repeat(${options.length}, minmax(0, 1fr))`}
+	>
+		<span class="segmented-control-indicator" style:left={indicatorLeft} style:width={indicatorWidth}></span>
+		{#each options as option (option.value)}
+			<button
+				type="button"
+				class="segmented-control-option"
+				class:on={value === option.value}
+				class:icon-only={iconOnly}
+				aria-pressed={value === option.value}
+				aria-label={iconOnly ? option.label : undefined}
+				onclick={() => onchange(option.value)}
+			>
+				{@render sizedOptionContent(option)}
+			</button>
+		{/each}
+	</div>
+{/if}
 
 <style>
 	.segmented-control {
@@ -63,13 +93,16 @@
 		background: rgb(var(--color-primary));
 	}
 
+	button.segmented-control {
+		cursor: pointer;
+	}
+
 	.segmented-control-option {
-		display: inline-flex;
+		display: inline-grid;
 		align-items: center;
 		justify-content: center;
 		position: relative;
 		z-index: 1;
-		gap: 0.35rem;
 		border: 0;
 		border-radius: 999px;
 		padding: 0.4rem 0.9rem;
@@ -80,6 +113,29 @@
 		cursor: pointer;
 		white-space: nowrap;
 		transition: color 0.2s;
+	}
+
+	.option-content,
+	.option-size {
+		display: inline-flex;
+		grid-area: 1 / 1;
+		align-items: center;
+		justify-content: center;
+		gap: 0.35rem;
+	}
+
+	.option-size {
+		visibility: hidden;
+	}
+
+	.option-size.regular {
+		font-weight: 400;
+		letter-spacing: normal;
+	}
+
+	.option-size.bold {
+		font-weight: 500;
+		letter-spacing: -0.02em;
 	}
 
 	.segmented-control-indicator {

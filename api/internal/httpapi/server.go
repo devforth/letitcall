@@ -331,6 +331,11 @@ func (s *Server) servePortal(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		contents = bytes.ReplaceAll(contents, []byte(model.DefaultBrandName), []byte(html.EscapeString(branding.Name)))
+		if branding.LogoPath != "" {
+			contents = bytes.ReplaceAll(contents,
+				[]byte(s.cfg.HTTP.BasePath()+"/favicon.svg"),
+				[]byte(s.cfg.HTTP.BasePath()+"/content/logos/"+branding.LogoPath))
+		}
 	}
 	if contentType := mime.TypeByExtension(path.Ext(assetPath)); contentType != "" {
 		w.Header().Set("Content-Type", contentType)
